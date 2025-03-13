@@ -3,3 +3,8 @@ build/
 logs/
 *.log
 .env*
+.cursorrules
+.cursorignore
+.cursor/
+mcp.json
+todo.md
