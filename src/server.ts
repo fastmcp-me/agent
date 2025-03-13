@@ -65,22 +65,34 @@ async function createClients(transports: Record<string, Transport>) {
     const clients: Record<string, Client> = {};
     for (const [name, transport] of Object.entries(transports)) {
         logger.info(`Creating client for ${name}`);
-        const client = await createClient(transport);
-
-        // retry 3 times
-        for (let i = 0; i < 3; i++) {
-            try {
-                await client.connect(transport);
-                break;
-            } catch (error) {
-                logger.error(`Failed to connect to transport: ${error}`);
-                await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+            const client = await createClient(transport);
+            
+            // Improved retry logic with exponential backoff
+            let retryDelay = 1000;
+            for (let i = 0; i < 3; i++) {
+                try {
+                    await client.connect(transport);
+                    logger.info(`Successfully connected to ${name}`);
+                    break;
+                } catch (error) {
+                    logger.error(`Failed to connect to ${name}: ${error}`);
+                    if (i < 2) {
+                        logger.info(`Retrying in ${retryDelay}ms...`);
+                        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+                        retryDelay *= 2; // Exponential backoff
+                    } else {
+                        throw new Error(`Failed to connect to ${name} after multiple attempts`);
+                    }
+                }
             }
+            
+            clients[name] = client;
+            logger.info(`Client created for ${name}`);
+        } catch (error) {
+            logger.error(`Failed to create client for ${name}: ${error}`);
+            // Consider adding a "degraded mode" flag here
         }
-
-        clients[name] = client;
-
-        logger.info(`Client created for ${name}`);
     }
     return clients;
 }
