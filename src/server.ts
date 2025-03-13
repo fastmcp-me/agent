@@ -1,3 +1,4 @@
+import fs from 'fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
     CallToolRequestSchema,
@@ -21,31 +22,34 @@ import {
     ToolListChangedNotificationSchema,
     PromptListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-
 import createClient from './client.js';
 import logger from './logger.js';
 
-const transports = {
-    'server-memory': new StdioClientTransport({
-        command: 'npx',
-        args: ['-y ', '@modelcontextprotocol/server-memory'],
-    }),
-    'puppeteer-server': new StdioClientTransport({
-        command: 'npx',
-        args: ['-y ', '@modelcontextprotocol/server-puppeteer'],
-    }),
-    'iterm-mcp': new StdioClientTransport({
-        command: 'npx',
-        args: ['-y ', 'iterm-mcp'],
-    }),
-    'mongo-server': new StdioClientTransport({
-        command: 'npx',
-        args: ['-y ', 'mcp-mongo-server', 'mongodb://mongo0.akool.orb.local'],
-    }),
-};
+const transports: Record<string, Transport> = {};
+
+interface MCPTransport extends StdioServerParameters {
+    disabled?: boolean;
+}
+
+const mcp = JSON.parse(fs.readFileSync('mcp.json', 'utf8')).mcpServers as Record<string, MCPTransport>;
+
+for (const [name, transport] of Object.entries(mcp)) {
+    if (transport.disabled) {
+        continue;
+    }
+    transport.env = {
+        ...Object.fromEntries(
+            Object.entries(process.env)
+                .filter(([_, v]) => v !== undefined)
+                .map(([k, v]) => [k, String(v)]),
+        ),
+        ...transport.env,
+    };
+    transports[name] = new StdioClientTransport(transport as StdioServerParameters);
+}
 
 const server = new Server(
     {
@@ -70,6 +74,7 @@ async function createClients(transports: Record<string, Transport>) {
                 break;
             } catch (error) {
                 logger.error(`Failed to connect to transport: ${error}`);
+                await new Promise((resolve) => setTimeout(resolve, 1000));
             }
         }
 
@@ -93,7 +98,7 @@ async function registerCapabilities(clients: Record<string, Client>) {
             RootsListChangedNotificationSchema,
         ].forEach((schema) => {
             client.setNotificationHandler(schema, async (notification) => {
-                logger.info(`Received notification in client: ${name} ${notification}`);
+                logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
                 server.notification(notification);
             });
         });
@@ -108,12 +113,13 @@ async function registerCapabilities(clients: Record<string, Client>) {
             PromptListChangedNotificationSchema,
         ].forEach((schema) => {
             server.setNotificationHandler(schema, async (notification) => {
-                logger.info(`Received notification in server: ${name} ${notification}`);
+                logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
                 client.notification(notification);
             });
         });
     }
 
+    logger.info(`Registering capabilities: ${JSON.stringify(capabilities)}`);
     server.registerCapabilities(capabilities);
 
     if (capabilities.resources) {
