@@ -10,7 +10,6 @@ import {
     ListResourceTemplatesRequestSchema,
     SubscribeRequestSchema,
     UnsubscribeRequestSchema,
-    NotificationSchema,
     ProgressNotificationSchema,
     ServerCapabilities,
     CancelledNotificationSchema,
@@ -21,12 +20,13 @@ import {
     ResourceListChangedNotificationSchema,
     ToolListChangedNotificationSchema,
     PromptListChangedNotificationSchema,
+    SetLevelRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import createClient from './client.js';
-import logger from './logger.js';
+import logger, { addMCPTransport, setMCPTransportConnected, setLogLevel } from './logger.js';
 
 const transports: Record<string, Transport> = {};
 
@@ -57,9 +57,14 @@ const server = new Server(
         version: '0.1.0',
     },
     {
-        capabilities: {},
+        capabilities: {
+            logging: {},
+        },
     },
 );
+
+// Initialize the MCP transport for logging
+addMCPTransport(server, '1mcp-agent');
 
 async function createClients(transports: Record<string, Transport>) {
     const clients: Record<string, Client> = {};
@@ -67,7 +72,7 @@ async function createClients(transports: Record<string, Transport>) {
         logger.info(`Creating client for ${name}`);
         try {
             const client = await createClient(transport);
-            
+
             // Improved retry logic with exponential backoff
             let retryDelay = 1000;
             for (let i = 0; i < 3; i++) {
@@ -86,7 +91,7 @@ async function createClients(transports: Record<string, Transport>) {
                     }
                 }
             }
-            
+
             clients[name] = client;
             logger.info(`Client created for ${name}`);
         } catch (error) {
@@ -133,6 +138,11 @@ async function registerCapabilities(clients: Record<string, Client>) {
 
     logger.info(`Registering capabilities: ${JSON.stringify(capabilities)}`);
     server.registerCapabilities(capabilities);
+
+    server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+        setLogLevel(request.params.level);
+        return {};
+    });
 
     if (capabilities.resources) {
         server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
@@ -255,5 +265,7 @@ async function registerCapabilities(clients: Record<string, Client>) {
 
 const clients = await createClients(transports);
 await registerCapabilities(clients);
+
+// Connection status is now managed in index.ts based on client connections
 
 export { server };

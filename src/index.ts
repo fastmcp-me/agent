@@ -4,7 +4,7 @@ import express from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 import { server } from './server.js';
-import logger from './logger.js';
+import logger, { setMCPTransportConnected } from './logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
 
 const app = express();
@@ -31,9 +31,22 @@ app.get(SSE_ENDPOINT, async (req: express.Request, res: express.Response) => {
         const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
         await server.connect(transport);
         transportMap.set(transport.sessionId, transport);
+
+        // Update MCP transport connection status when a client connects
+        if (transportMap.size === 1) {
+            setMCPTransportConnected(true);
+            logger.info('First client connected, enabling MCP logging transport');
+        }
+
         transport.onclose = () => {
             transportMap.delete(transport.sessionId);
             logger.info('transport closed', transport.sessionId);
+
+            // Update MCP transport connection status when all clients disconnect
+            if (transportMap.size === 0) {
+                setMCPTransportConnected(false);
+                logger.info('All clients disconnected, disabling MCP logging transport');
+            }
         };
     } catch (error) {
         logger.error('SSE connection error:', error);
