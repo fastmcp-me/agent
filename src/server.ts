@@ -1,271 +1,68 @@
-import fs from 'fs';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-    CallToolRequestSchema,
-    ListResourcesRequestSchema,
-    ListToolsRequestSchema,
-    ReadResourceRequestSchema,
-    ListPromptsRequestSchema,
-    GetPromptRequestSchema,
-    ListResourceTemplatesRequestSchema,
-    SubscribeRequestSchema,
-    UnsubscribeRequestSchema,
-    ProgressNotificationSchema,
-    ServerCapabilities,
-    CancelledNotificationSchema,
-    InitializedNotificationSchema,
-    RootsListChangedNotificationSchema,
-    LoggingMessageNotificationSchema,
-    ResourceUpdatedNotificationSchema,
-    ResourceListChangedNotificationSchema,
-    ToolListChangedNotificationSchema,
-    PromptListChangedNotificationSchema,
-    SetLevelRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import createClient from './client.js';
-import logger, { addMCPTransport, setMCPTransportConnected, setLogLevel } from './logger.js';
+import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
+import logger, { addMCPTransport } from './logger.js';
+import { createTransports } from './config/transportConfig.js';
+import { createClients } from './clients/clientManager.js';
+import { collectAndRegisterCapabilities } from './capabilities/capabilityManager.js';
 
-const transports: Record<string, Transport> = {};
+/**
+ * Initialize and configure the MCP server
+ * @returns The configured MCP server instance
+ */
+async function initializeServer(): Promise<Server> {
+    try {
+        // Create the server instance
+        const server = new Server(
+            {
+                name: MCP_SERVER_NAME,
+                version: MCP_SERVER_VERSION,
+            },
+            {
+                capabilities: {
+                    logging: {},
+                },
+            },
+        );
 
-interface MCPTransport extends StdioServerParameters {
-    disabled?: boolean;
-}
+        // Initialize the MCP transport for logging
+        addMCPTransport(server, MCP_SERVER_NAME);
+        logger.info('Server created and MCP transport initialized for logging');
 
-const mcp = JSON.parse(fs.readFileSync('mcp.json', 'utf8')).mcpServers as Record<string, MCPTransport>;
-
-for (const [name, transport] of Object.entries(mcp)) {
-    if (transport.disabled) {
-        continue;
-    }
-    transport.env = {
-        ...Object.fromEntries(
-            Object.entries(process.env)
-                .filter(([_, v]) => v !== undefined)
-                .map(([k, v]) => [k, String(v)]),
-        ),
-        ...transport.env,
-    };
-    transports[name] = new StdioClientTransport(transport as StdioServerParameters);
-}
-
-const server = new Server(
-    {
-        name: '1mcp-agent',
-        version: '0.1.0',
-    },
-    {
-        capabilities: {
-            logging: {},
-        },
-    },
-);
-
-// Initialize the MCP transport for logging
-addMCPTransport(server, '1mcp-agent');
-
-async function createClients(transports: Record<string, Transport>) {
-    const clients: Record<string, Client> = {};
-    for (const [name, transport] of Object.entries(transports)) {
-        logger.info(`Creating client for ${name}`);
-        try {
-            const client = await createClient(transport);
-
-            // Improved retry logic with exponential backoff
-            let retryDelay = 1000;
-            for (let i = 0; i < 3; i++) {
-                try {
-                    await client.connect(transport);
-                    logger.info(`Successfully connected to ${name}`);
-                    break;
-                } catch (error) {
-                    logger.error(`Failed to connect to ${name}: ${error}`);
-                    if (i < 2) {
-                        logger.info(`Retrying in ${retryDelay}ms...`);
-                        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-                        retryDelay *= 2; // Exponential backoff
-                    } else {
-                        throw new Error(`Failed to connect to ${name} after multiple attempts`);
-                    }
-                }
-            }
-
-            clients[name] = client;
-            logger.info(`Client created for ${name}`);
-        } catch (error) {
-            logger.error(`Failed to create client for ${name}: ${error}`);
-            // Consider adding a "degraded mode" flag here
-        }
-    }
-    return clients;
-}
-
-async function registerCapabilities(clients: Record<string, Client>) {
-    let capabilities: ServerCapabilities = {};
-    for (const [name, client] of Object.entries(clients)) {
-        const clientCapabilities = client.getServerCapabilities() || {};
-        capabilities = { ...capabilities, ...clientCapabilities };
-
-        [
-            CancelledNotificationSchema,
-            ProgressNotificationSchema,
-            InitializedNotificationSchema,
-            RootsListChangedNotificationSchema,
-        ].forEach((schema) => {
-            client.setNotificationHandler(schema, async (notification) => {
-                logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
-                server.notification(notification);
-            });
-        });
-
-        [
-            CancelledNotificationSchema,
-            ProgressNotificationSchema,
-            LoggingMessageNotificationSchema,
-            ResourceUpdatedNotificationSchema,
-            ResourceListChangedNotificationSchema,
-            ToolListChangedNotificationSchema,
-            PromptListChangedNotificationSchema,
-        ].forEach((schema) => {
-            server.setNotificationHandler(schema, async (notification) => {
-                logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
-                client.notification(notification);
-            });
-        });
-    }
-
-    logger.info(`Registering capabilities: ${JSON.stringify(capabilities)}`);
-    server.registerCapabilities(capabilities);
-
-    server.setRequestHandler(SetLevelRequestSchema, async (request) => {
-        setLogLevel(request.params.level);
-        return {};
-    });
-
-    if (capabilities.resources) {
-        server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
-            const resources = [];
-            for (const [name, client] of Object.entries(clients)) {
-                logger.info(`Listing resources for ${name}`);
-                try {
-                    const result = await client.listResources(request.params);
-                    resources.push(
-                        ...result.resources.map((resource) => ({
-                            uri: `${name}+${resource.uri}`,
-                            name: resource.name,
-                            description: resource.description,
-                            mimeType: resource.mimeType,
-                        })),
-                    );
-                } catch (e) {
-                    console.error(`Error listing resources for ${name}: ${e}`);
-                }
-            }
-            return { resources };
-        });
-
-        server.setRequestHandler(ListResourceTemplatesRequestSchema, async (request) => {
-            const resourceTemplates = [];
-            for (const [name, client] of Object.entries(clients)) {
-                logger.info(`Listing resource templates for ${name}`);
-                try {
-                    const result = await client.listResourceTemplates(request.params);
-                    resourceTemplates.push(
-                        ...result.resourceTemplates.map((template) => ({
-                            uriTemplate: `${name}+${template.uriTemplate}`,
-                            name: template.name,
-                            description: template.description,
-                            mimeType: template.mimeType,
-                        })),
-                    );
-                } catch (e) {
-                    console.error(`Error listing resource templates for ${name}: ${e}`);
-                }
-            }
-            return { resourceTemplates };
-        });
-
-        server.setRequestHandler(SubscribeRequestSchema, async (request) => {
-            const [name, resourceName] = request.params.uri.split('+');
-            const client = clients[name];
-            return client.subscribeResource({ ...request.params, uri: resourceName });
-        });
-
-        server.setRequestHandler(UnsubscribeRequestSchema, async (request) => {
-            const [name, resourceName] = request.params.uri.split('+');
-            const client = clients[name];
-            return client.unsubscribeResource({ ...request.params, uri: resourceName });
-        });
-
-        server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-            const [name, resourceName] = request.params.uri.split('+');
-            const client = clients[name];
-            return client.readResource({ ...request.params, uri: resourceName });
-        });
-    }
-
-    if (capabilities.tools) {
-        server.setRequestHandler(ListToolsRequestSchema, async (request) => {
-            const tools = [];
-            for (const [name, client] of Object.entries(clients)) {
-                logger.info(`Listing tools for ${name}`);
-                try {
-                    const result = await client.listTools(request.params);
-                    tools.push(
-                        ...result.tools.map((tool) => ({
-                            name: `${name}/${tool.name}`,
-                            description: tool.description,
-                            inputSchema: tool.inputSchema,
-                        })),
-                    );
-                } catch (e) {
-                    console.error(`Error listing tools for ${name}: ${e}`);
-                }
-            }
-            return { tools };
-        });
-
-        server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            const [name, toolName] = request.params.name.split('/');
-            const client = clients[name];
-            return client.callTool({ ...request.params, name: toolName });
-        });
-    }
-
-    if (capabilities.prompts) {
-        server.setRequestHandler(ListPromptsRequestSchema, async (request) => {
-            const prompts = [];
-            for (const [name, client] of Object.entries(clients)) {
-                logger.info(`Listing prompts for ${name}`);
-                try {
-                    const result = await client.listPrompts(request.params);
-                    prompts.push(
-                        ...result.prompts.map((prompt) => ({
-                            name: `${name}/${prompt.name}`,
-                            description: prompt.description,
-                            arguments: prompt.arguments,
-                        })),
-                    );
-                } catch (e) {
-                    console.error(`Error listing prompts for ${name}: ${e}`);
-                }
-            }
-            return { prompts };
-        });
-
-        server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-            const [name, promptName] = request.params.name.split('/');
-            const client = clients[name];
-            return client.getPrompt({ ...request.params, name: promptName });
-        });
+        return server;
+    } catch (error) {
+        logger.error(`Failed to initialize server: ${error}`);
+        throw error;
     }
 }
 
-const clients = await createClients(transports);
-await registerCapabilities(clients);
+/**
+ * Main function to set up the MCP server
+ */
+async function setupServer(): Promise<Server> {
+    try {
+        // Initialize the server
+        const server = await initializeServer();
 
-// Connection status is now managed in index.ts based on client connections
+        // Create transports from configuration
+        const transports = createTransports();
+        logger.info(`Created ${Object.keys(transports).length} transports`);
+
+        // Create clients for each transport
+        const clients = await createClients(transports);
+        logger.info(`Created ${Object.keys(clients).length} clients`);
+
+        // Collect capabilities and register handlers
+        await collectAndRegisterCapabilities(clients, server);
+
+        logger.info('Server setup completed successfully');
+        return server;
+    } catch (error) {
+        logger.error(`Failed to set up server: ${error}`);
+        throw error;
+    }
+}
+
+// Set up the server and export it
+const server = await setupServer();
 
 export { server };
