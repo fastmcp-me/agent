@@ -12,6 +12,7 @@ import {
     RootsListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger.js';
+import { withErrorHandling } from '../utils/errorHandling.js';
 
 /**
  * Sets up client-to-server notification handlers
@@ -31,7 +32,7 @@ export function setupClientToServerNotifications(clients: Record<string, Client>
 
     for (const [name, client] of Object.entries(clients)) {
         clientNotificationSchemas.forEach((schema) => {
-            client.setNotificationHandler(schema, async (notification) => {
+            client.setNotificationHandler(schema, withErrorHandling(async (notification) => {
                 logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
                 server.notification({
                     ...notification,
@@ -40,7 +41,7 @@ export function setupClientToServerNotifications(clients: Record<string, Client>
                         server: name,
                     },
                 });
-            });
+            }, `Error handling client notification from ${name}`));
         });
     }
 }
@@ -60,7 +61,7 @@ export function setupServerToClientNotifications(clients: Record<string, Client>
 
     for (const [name, client] of Object.entries(clients)) {
         serverNotificationSchemas.forEach((schema) => {
-            server.setNotificationHandler(schema, async (notification) => {
+            server.setNotificationHandler(schema, withErrorHandling(async (notification) => {
                 logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
                 client.notification({
                     ...notification,
@@ -69,7 +70,7 @@ export function setupServerToClientNotifications(clients: Record<string, Client>
                         client: name,
                     },
                 });
-            });
+            }, `Error handling server notification to ${name}`));
         });
     }
 }

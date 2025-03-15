@@ -3,6 +3,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
 import logger from '../logger.js';
 import { CONNECTION_RETRY } from '../constants.js';
+import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '../utils/errorHandling.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -53,8 +54,42 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
                 await new Promise((resolve) => setTimeout(resolve, retryDelay));
                 retryDelay *= 2; // Exponential backoff
             } else {
-                throw new Error(`Failed to connect to ${name} after ${CONNECTION_RETRY.MAX_ATTEMPTS} attempts`);
+                throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
             }
         }
     }
+}
+
+/**
+ * Gets a client by name with error handling
+ * @param clients Record of client instances
+ * @param clientName The name of the client to get
+ * @returns The client instance
+ * @throws ClientNotFoundError if the client is not found
+ */
+export function getClient(clients: Record<string, Client>, clientName: string): Client {
+    const client = clients[clientName];
+    if (!client) {
+        throw new ClientNotFoundError(clientName);
+    }
+    return client;
+}
+
+/**
+ * Executes a client operation with error handling
+ * @param clients Record of client instances
+ * @param clientName The name of the client to use
+ * @param operation The operation to execute
+ * @returns The result of the operation
+ */
+export async function executeClientOperation<T>(
+    clients: Record<string, Client>,
+    clientName: string,
+    operation: (client: Client) => Promise<T>
+): Promise<T> {
+    const client = getClient(clients, clientName);
+    return withErrorHandling(
+        async () => operation(client),
+        `Error executing operation on client ${clientName}`
+    )();
 }
