@@ -4,6 +4,7 @@ import logger, { addMCPTransport } from './logger.js';
 import { createTransports } from './config/transportConfig.js';
 import { createClients } from './clients/clientManager.js';
 import { collectAndRegisterCapabilities } from './capabilities/capabilityManager.js';
+import configReloadService from './services/configReloadService.js';
 
 /**
  * Initialize and configure the MCP server
@@ -53,6 +54,10 @@ async function setupServer(): Promise<Server> {
 
         // Collect capabilities and register handlers
         await collectAndRegisterCapabilities(clients, server);
+
+        // Initialize the configuration reload service
+        configReloadService.initialize(server, transports);
+        logger.info('Configuration reload service initialized');
 
         logger.info('Server setup completed successfully');
         return server;

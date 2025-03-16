@@ -6,6 +6,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { server } from './server.js';
 import logger, { setMCPTransportConnected } from './logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
+import configReloadService from './services/configReloadService.js';
 
 const app = express();
 
@@ -91,10 +92,43 @@ app.post(MESSAGES_ENDPOINT, async (req: express.Request, res: express.Response) 
 });
 
 /**
+ * Set up graceful shutdown handling
+ */
+function setupGracefulShutdown(): void {
+    const shutdown = async () => {
+        logger.info('Shutting down server...');
+
+        // Stop the configuration reload service
+        configReloadService.stop();
+
+        // Close all transports
+        for (const [sessionId, transport] of transportMap.entries()) {
+            try {
+                transport.close();
+                logger.info(`Closed transport: ${sessionId}`);
+            } catch (error) {
+                logger.error(`Error closing transport ${sessionId}: ${error}`);
+            }
+        }
+
+        logger.info('Server shutdown complete');
+        process.exit(0);
+    };
+
+    // Handle various signals for graceful shutdown
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+    process.on('SIGHUP', shutdown);
+}
+
+/**
  * Start the server using stdio transport.
  * This allows the server to communicate via standard input/output streams.
  */
 async function main() {
+    // Set up graceful shutdown handling
+    setupGracefulShutdown();
+
     // const transport = new StdioServerTransport();
     // await server.connect(transport);
     app.listen(PORT, () => {

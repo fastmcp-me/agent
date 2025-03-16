@@ -1,8 +1,7 @@
-import fs from 'fs';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { MCP_CONFIG_FILE } from '../constants.js';
 import logger from '../logger.js';
+import configManager from './configManager.js';
 
 /**
  * Interface for MCP transport configuration
@@ -16,12 +15,7 @@ export interface MCPTransport extends StdioServerParameters {
  * @returns Record of transport configurations
  */
 export function loadTransportConfig(): Record<string, MCPTransport> {
-    try {
-        return JSON.parse(fs.readFileSync(MCP_CONFIG_FILE, 'utf8')).mcpServers as Record<string, MCPTransport>;
-    } catch (error) {
-        logger.error(`Failed to load MCP config file: ${error}`);
-        return {};
-    }
+    return configManager.getTransportConfig();
 }
 
 /**
