@@ -18,10 +18,20 @@
   "files": [
     "build"
   ],
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,ts}": [
+      "prettier --write"
+    ]
+  },
   "scripts": {
     "dev": "tsc-watch --onSuccess \"node build/index.js\"",
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
-    "prepare": "npm run build",
+    "prepare": "husky",
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector build/index.js"
   },
@@ -34,9 +44,12 @@
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
-    "@types/yargs": "^17.0.33",
     "@types/express": "^5.0.0",
     "@types/node": "^20.11.24",
+    "@types/yargs": "^17.0.33",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "prettier": "^3.5.3",
     "tsc-watch": "^6.2.1",
     "typescript": "^5.3.3"
   }
