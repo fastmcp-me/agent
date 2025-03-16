@@ -22,26 +22,44 @@ const MCP_TO_WINSTON_LEVEL: Record<string, string> = {
     emergency: 'error',
 };
 
+// Custom format for console and file output
+const customFormat = winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.printf(({ timestamp, level, message, ...meta }) => {
+        const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta)}` : '';
+        return `${timestamp} [${level.toUpperCase()}] ${message}${metaStr}`;
+    }),
+);
+
 // Create the logger without the MCP transport initially
 const logger = winston.createLogger({
     level: 'info',
-    format: winston.format.simple(),
+    format: customFormat,
     defaultMeta: { service: '1mcp-agent' },
     transports: [
         new winston.transports.Console({
-            format: winston.format.splat(),
+            format: customFormat,
         }),
         //
         // - Write all logs with importance level of `error` or higher to `error.log`
         //   (i.e., error, fatal, but not other levels)
         //
-        new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+        new winston.transports.File({
+            filename: path.join(logsDir, 'error.log'),
+            level: 'error',
+            format: customFormat,
+        }),
         //
         // - Write all logs with importance level of `info` or higher to `combined.log`
         //   (i.e., fatal, error, warn, and info, but not trace)
         //
-        new winston.transports.File({ filename: 'logs/combined.log' }),
+        new winston.transports.File({
+            filename: path.join(logsDir, 'combined.log'),
+            format: customFormat,
+        }),
     ],
+    // Prevent logger from exiting on error
+    exitOnError: false,
 });
 
 // Store a reference to the MCP transport
