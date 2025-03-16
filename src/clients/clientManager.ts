@@ -11,25 +11,25 @@ import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '.
  * @returns Record of client instances
  */
 export async function createClients(transports: Record<string, Transport>): Promise<Record<string, Client>> {
-    const clients: Record<string, Client> = {};
+  const clients: Record<string, Client> = {};
 
-    for (const [name, transport] of Object.entries(transports)) {
-        logger.info(`Creating client for ${name}`);
-        try {
-            const client = await createClient(transport);
+  for (const [name, transport] of Object.entries(transports)) {
+    logger.info(`Creating client for ${name}`);
+    try {
+      const client = await createClient(transport);
 
-            // Connect with retry logic
-            await connectWithRetry(client, transport, name);
+      // Connect with retry logic
+      await connectWithRetry(client, transport, name);
 
-            clients[name] = client;
-            logger.info(`Client created for ${name}`);
-        } catch (error) {
-            logger.error(`Failed to create client for ${name}: ${error}`);
-            // We continue with other clients even if one fails
-        }
+      clients[name] = client;
+      logger.info(`Client created for ${name}`);
+    } catch (error) {
+      logger.error(`Failed to create client for ${name}: ${error}`);
+      // We continue with other clients even if one fails
     }
+  }
 
-    return clients;
+  return clients;
 }
 
 /**
@@ -39,25 +39,25 @@ export async function createClients(transports: Record<string, Transport>): Prom
  * @param name The name of the client for logging
  */
 async function connectWithRetry(client: Client, transport: Transport, name: string): Promise<void> {
-    let retryDelay = CONNECTION_RETRY.INITIAL_DELAY_MS;
+  let retryDelay = CONNECTION_RETRY.INITIAL_DELAY_MS;
 
-    for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
-        try {
-            await client.connect(transport);
-            logger.info(`Successfully connected to ${name}`);
-            return;
-        } catch (error) {
-            logger.error(`Failed to connect to ${name}: ${error}`);
+  for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
+    try {
+      await client.connect(transport);
+      logger.info(`Successfully connected to ${name}`);
+      return;
+    } catch (error) {
+      logger.error(`Failed to connect to ${name}: ${error}`);
 
-            if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
-                logger.info(`Retrying in ${retryDelay}ms...`);
-                await new Promise((resolve) => setTimeout(resolve, retryDelay));
-                retryDelay *= 2; // Exponential backoff
-            } else {
-                throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
-            }
-        }
+      if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
+        logger.info(`Retrying in ${retryDelay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        retryDelay *= 2; // Exponential backoff
+      } else {
+        throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
+      }
     }
+  }
 }
 
 /**
@@ -68,11 +68,11 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
  * @throws ClientNotFoundError if the client is not found
  */
 export function getClient(clients: Record<string, Client>, clientName: string): Client {
-    const client = clients[clientName];
-    if (!client) {
-        throw new ClientNotFoundError(clientName);
-    }
-    return client;
+  const client = clients[clientName];
+  if (!client) {
+    throw new ClientNotFoundError(clientName);
+  }
+  return client;
 }
 
 /**
@@ -83,13 +83,10 @@ export function getClient(clients: Record<string, Client>, clientName: string): 
  * @returns The result of the operation
  */
 export async function executeClientOperation<T>(
-    clients: Record<string, Client>,
-    clientName: string,
-    operation: (client: Client) => Promise<T>
+  clients: Record<string, Client>,
+  clientName: string,
+  operation: (client: Client) => Promise<T>,
 ): Promise<T> {
-    const client = getClient(clients, clientName);
-    return withErrorHandling(
-        async () => operation(client),
-        `Error executing operation on client ${clientName}`
-    )();
+  const client = getClient(clients, clientName);
+  return withErrorHandling(async () => operation(client), `Error executing operation on client ${clientName}`)();
 }

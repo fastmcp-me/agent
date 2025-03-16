@@ -1,27 +1,23 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
-    CallToolRequestSchema,
-    ListResourcesRequestSchema,
-    ListToolsRequestSchema,
-    ReadResourceRequestSchema,
-    ListPromptsRequestSchema,
-    GetPromptRequestSchema,
-    ListResourceTemplatesRequestSchema,
-    SubscribeRequestSchema,
-    UnsubscribeRequestSchema,
-    SetLevelRequestSchema,
-    ServerCapabilities,
+  CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
+  ListResourceTemplatesRequestSchema,
+  SubscribeRequestSchema,
+  UnsubscribeRequestSchema,
+  SetLevelRequestSchema,
+  ServerCapabilities,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger.js';
 import { setLogLevel } from '../logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
 import { executeClientOperation } from '../clients/clientManager.js';
-import {
-    ProxyError,
-    parseUri,
-    withErrorHandling
-} from '../utils/errorHandling.js';
+import { ProxyError, parseUri, withErrorHandling } from '../utils/errorHandling.js';
 
 /**
  * Sends a partial failure notification to inform clients about backend failures
@@ -30,25 +26,25 @@ import {
  * @param failedClients Array of failed clients with error details
  */
 function sendPartialFailureNotification(
-    server: Server,
-    operation: string,
-    failedClients: Array<{ name: string; error: string }>
+  server: Server,
+  operation: string,
+  failedClients: Array<{ name: string; error: string }>,
 ): void {
-    if (failedClients.length === 0) return;
+  if (failedClients.length === 0) return;
 
-    server.notification({
-        method: 'notifications/message',
-        params: {
-            level: 'warning',
-            message: `Partial failure during ${operation}`,
-            logger: MCP_SERVER_NAME,
-            data: {
-                operation,
-                failedClients,
-                timestamp: new Date().toISOString(),
-            },
-        },
-    });
+  server.notification({
+    method: 'notifications/message',
+    params: {
+      level: 'warning',
+      message: `Partial failure during ${operation}`,
+      logger: MCP_SERVER_NAME,
+      data: {
+        operation,
+        failedClients,
+        timestamp: new Date().toISOString(),
+      },
+    },
+  });
 }
 
 /**
@@ -58,30 +54,30 @@ function sendPartialFailureNotification(
  * @param capabilities The server capabilities
  */
 export function registerRequestHandlers(
-    clients: Record<string, Client>,
-    server: Server,
-    capabilities: ServerCapabilities
+  clients: Record<string, Client>,
+  server: Server,
+  capabilities: ServerCapabilities,
 ): void {
-    // Register logging level handler
-    server.setRequestHandler(SetLevelRequestSchema, async (request) => {
-        setLogLevel(request.params.level);
-        return {};
-    });
+  // Register logging level handler
+  server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+    setLogLevel(request.params.level);
+    return {};
+  });
 
-    // Register resource-related handlers if capability is available
-    if (capabilities.resources) {
-        registerResourceHandlers(clients, server);
-    }
+  // Register resource-related handlers if capability is available
+  if (capabilities.resources) {
+    registerResourceHandlers(clients, server);
+  }
 
-    // Register tool-related handlers if capability is available
-    if (capabilities.tools) {
-        registerToolHandlers(clients, server);
-    }
+  // Register tool-related handlers if capability is available
+  if (capabilities.tools) {
+    registerToolHandlers(clients, server);
+  }
 
-    // Register prompt-related handlers if capability is available
-    if (capabilities.prompts) {
-        registerPromptHandlers(clients, server);
-    }
+  // Register prompt-related handlers if capability is available
+  if (capabilities.prompts) {
+    registerPromptHandlers(clients, server);
+  }
 }
 
 /**
@@ -90,101 +86,119 @@ export function registerRequestHandlers(
  * @param server The MCP server instance
  */
 function registerResourceHandlers(clients: Record<string, Client>, server: Server): void {
-    // List Resources handler
-    server.setRequestHandler(ListResourcesRequestSchema, withErrorHandling(async (request) => {
-        const resources = [];
-        const failedClients = [];
+  // List Resources handler
+  server.setRequestHandler(
+    ListResourcesRequestSchema,
+    withErrorHandling(async (request) => {
+      const resources = [];
+      const failedClients = [];
 
-        for (const [name, client] of Object.entries(clients)) {
-            logger.info(`Listing resources for ${name}`);
-            try {
-                const result = await client.listResources(request.params);
-                resources.push(
-                    ...result.resources.map((resource) => ({
-                        uri: `${name}${MCP_URI_SEPARATOR}${resource.uri}`,
-                        name: resource.name,
-                        description: resource.description,
-                        mimeType: resource.mimeType,
-                    })),
-                );
-            } catch (error) {
-                logger.error(`Error listing resources for ${name}: ${error}`);
-                failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-            }
+      for (const [name, client] of Object.entries(clients)) {
+        logger.info(`Listing resources for ${name}`);
+        try {
+          const result = await client.listResources(request.params);
+          resources.push(
+            ...result.resources.map((resource) => ({
+              uri: `${name}${MCP_URI_SEPARATOR}${resource.uri}`,
+              name: resource.name,
+              description: resource.description,
+              mimeType: resource.mimeType,
+            })),
+          );
+        } catch (error) {
+          logger.error(`Error listing resources for ${name}: ${error}`);
+          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
         }
+      }
 
-        // If all clients failed, throw an error
-        if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-            throw new ProxyError('Failed to list resources from all clients', new Error(JSON.stringify(failedClients)));
+      // If all clients failed, throw an error
+      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+        throw new ProxyError('Failed to list resources from all clients', new Error(JSON.stringify(failedClients)));
+      }
+
+      // Send notification about partial failures
+      if (failedClients.length > 0) {
+        sendPartialFailureNotification(server, 'listResources', failedClients);
+      }
+
+      return { resources };
+    }, 'Error listing resources'),
+  );
+
+  // List Resource Templates handler
+  server.setRequestHandler(
+    ListResourceTemplatesRequestSchema,
+    withErrorHandling(async (request) => {
+      const resourceTemplates = [];
+      const failedClients = [];
+
+      for (const [name, client] of Object.entries(clients)) {
+        logger.info(`Listing resource templates for ${name}`);
+        try {
+          const result = await client.listResourceTemplates(request.params);
+          resourceTemplates.push(
+            ...result.resourceTemplates.map((template) => ({
+              uriTemplate: `${name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
+              name: template.name,
+              description: template.description,
+              mimeType: template.mimeType,
+            })),
+          );
+        } catch (error) {
+          logger.error(`Error listing resource templates for ${name}: ${error}`);
+          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
         }
+      }
 
-        // Send notification about partial failures
-        if (failedClients.length > 0) {
-            sendPartialFailureNotification(server, 'listResources', failedClients);
-        }
-
-        return { resources };
-    }, 'Error listing resources'));
-
-    // List Resource Templates handler
-    server.setRequestHandler(ListResourceTemplatesRequestSchema, withErrorHandling(async (request) => {
-        const resourceTemplates = [];
-        const failedClients = [];
-
-        for (const [name, client] of Object.entries(clients)) {
-            logger.info(`Listing resource templates for ${name}`);
-            try {
-                const result = await client.listResourceTemplates(request.params);
-                resourceTemplates.push(
-                    ...result.resourceTemplates.map((template) => ({
-                        uriTemplate: `${name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
-                        name: template.name,
-                        description: template.description,
-                        mimeType: template.mimeType,
-                    })),
-                );
-            } catch (error) {
-                logger.error(`Error listing resource templates for ${name}: ${error}`);
-                failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-            }
-        }
-
-        // If all clients failed, throw an error
-        if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-            throw new ProxyError('Failed to list resource templates from all clients', new Error(JSON.stringify(failedClients)));
-        }
-
-        // Send notification about partial failures
-        if (failedClients.length > 0) {
-            sendPartialFailureNotification(server, 'listResourceTemplates', failedClients);
-        }
-
-        return { resourceTemplates };
-    }, 'Error listing resource templates'));
-
-    // Subscribe Resource handler
-    server.setRequestHandler(SubscribeRequestSchema, withErrorHandling(async (request) => {
-        const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-        return executeClientOperation(clients, clientName, (client) =>
-            client.subscribeResource({ ...request.params, uri: resourceName })
+      // If all clients failed, throw an error
+      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+        throw new ProxyError(
+          'Failed to list resource templates from all clients',
+          new Error(JSON.stringify(failedClients)),
         );
-    }, 'Error subscribing to resource'));
+      }
 
-    // Unsubscribe Resource handler
-    server.setRequestHandler(UnsubscribeRequestSchema, withErrorHandling(async (request) => {
-        const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-        return executeClientOperation(clients, clientName, (client) =>
-            client.unsubscribeResource({ ...request.params, uri: resourceName })
-        );
-    }, 'Error unsubscribing from resource'));
+      // Send notification about partial failures
+      if (failedClients.length > 0) {
+        sendPartialFailureNotification(server, 'listResourceTemplates', failedClients);
+      }
 
-    // Read Resource handler
-    server.setRequestHandler(ReadResourceRequestSchema, withErrorHandling(async (request) => {
-        const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-        return executeClientOperation(clients, clientName, (client) =>
-            client.readResource({ ...request.params, uri: resourceName })
-        );
-    }, 'Error reading resource'));
+      return { resourceTemplates };
+    }, 'Error listing resource templates'),
+  );
+
+  // Subscribe Resource handler
+  server.setRequestHandler(
+    SubscribeRequestSchema,
+    withErrorHandling(async (request) => {
+      const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
+      return executeClientOperation(clients, clientName, (client) =>
+        client.subscribeResource({ ...request.params, uri: resourceName }),
+      );
+    }, 'Error subscribing to resource'),
+  );
+
+  // Unsubscribe Resource handler
+  server.setRequestHandler(
+    UnsubscribeRequestSchema,
+    withErrorHandling(async (request) => {
+      const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
+      return executeClientOperation(clients, clientName, (client) =>
+        client.unsubscribeResource({ ...request.params, uri: resourceName }),
+      );
+    }, 'Error unsubscribing from resource'),
+  );
+
+  // Read Resource handler
+  server.setRequestHandler(
+    ReadResourceRequestSchema,
+    withErrorHandling(async (request) => {
+      const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
+      return executeClientOperation(clients, clientName, (client) =>
+        client.readResource({ ...request.params, uri: resourceName }),
+      );
+    }, 'Error reading resource'),
+  );
 }
 
 /**
@@ -193,48 +207,54 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
  * @param server The MCP server instance
  */
 function registerToolHandlers(clients: Record<string, Client>, server: Server): void {
-    // List Tools handler
-    server.setRequestHandler(ListToolsRequestSchema, withErrorHandling(async (request) => {
-        const tools = [];
-        const failedClients = [];
+  // List Tools handler
+  server.setRequestHandler(
+    ListToolsRequestSchema,
+    withErrorHandling(async (request) => {
+      const tools = [];
+      const failedClients = [];
 
-        for (const [name, client] of Object.entries(clients)) {
-            logger.info(`Listing tools for ${name}`);
-            try {
-                const result = await client.listTools(request.params);
-                tools.push(
-                    ...result.tools.map((tool) => ({
-                        name: `${name}${MCP_URI_SEPARATOR}${tool.name}`,
-                        description: tool.description,
-                        inputSchema: tool.inputSchema,
-                    })),
-                );
-            } catch (error) {
-                logger.error(`Error listing tools for ${name}: ${error}`);
-                failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-            }
+      for (const [name, client] of Object.entries(clients)) {
+        logger.info(`Listing tools for ${name}`);
+        try {
+          const result = await client.listTools(request.params);
+          tools.push(
+            ...result.tools.map((tool) => ({
+              name: `${name}${MCP_URI_SEPARATOR}${tool.name}`,
+              description: tool.description,
+              inputSchema: tool.inputSchema,
+            })),
+          );
+        } catch (error) {
+          logger.error(`Error listing tools for ${name}: ${error}`);
+          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
         }
+      }
 
-        // If all clients failed, throw an error
-        if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-            throw new ProxyError('Failed to list tools from all clients', new Error(JSON.stringify(failedClients)));
-        }
+      // If all clients failed, throw an error
+      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+        throw new ProxyError('Failed to list tools from all clients', new Error(JSON.stringify(failedClients)));
+      }
 
-        // Send notification about partial failures
-        if (failedClients.length > 0) {
-            sendPartialFailureNotification(server, 'listTools', failedClients);
-        }
+      // Send notification about partial failures
+      if (failedClients.length > 0) {
+        sendPartialFailureNotification(server, 'listTools', failedClients);
+      }
 
-        return { tools };
-    }, 'Error listing tools'));
+      return { tools };
+    }, 'Error listing tools'),
+  );
 
-    // Call Tool handler
-    server.setRequestHandler(CallToolRequestSchema, withErrorHandling(async (request) => {
-        const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-        return executeClientOperation(clients, clientName, (client) =>
-            client.callTool({ ...request.params, name: toolName })
-        );
-    }, 'Error calling tool'));
+  // Call Tool handler
+  server.setRequestHandler(
+    CallToolRequestSchema,
+    withErrorHandling(async (request) => {
+      const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
+      return executeClientOperation(clients, clientName, (client) =>
+        client.callTool({ ...request.params, name: toolName }),
+      );
+    }, 'Error calling tool'),
+  );
 }
 
 /**
@@ -243,46 +263,52 @@ function registerToolHandlers(clients: Record<string, Client>, server: Server): 
  * @param server The MCP server instance
  */
 function registerPromptHandlers(clients: Record<string, Client>, server: Server): void {
-    // List Prompts handler
-    server.setRequestHandler(ListPromptsRequestSchema, withErrorHandling(async (request) => {
-        const prompts = [];
-        const failedClients = [];
+  // List Prompts handler
+  server.setRequestHandler(
+    ListPromptsRequestSchema,
+    withErrorHandling(async (request) => {
+      const prompts = [];
+      const failedClients = [];
 
-        for (const [name, client] of Object.entries(clients)) {
-            logger.info(`Listing prompts for ${name}`);
-            try {
-                const result = await client.listPrompts(request.params);
-                prompts.push(
-                    ...result.prompts.map((prompt) => ({
-                        name: `${name}${MCP_URI_SEPARATOR}${prompt.name}`,
-                        description: prompt.description,
-                        arguments: prompt.arguments,
-                    })),
-                );
-            } catch (error) {
-                logger.error(`Error listing prompts for ${name}: ${error}`);
-                failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-            }
+      for (const [name, client] of Object.entries(clients)) {
+        logger.info(`Listing prompts for ${name}`);
+        try {
+          const result = await client.listPrompts(request.params);
+          prompts.push(
+            ...result.prompts.map((prompt) => ({
+              name: `${name}${MCP_URI_SEPARATOR}${prompt.name}`,
+              description: prompt.description,
+              arguments: prompt.arguments,
+            })),
+          );
+        } catch (error) {
+          logger.error(`Error listing prompts for ${name}: ${error}`);
+          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
         }
+      }
 
-        // If all clients failed, throw an error
-        if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-            throw new ProxyError('Failed to list prompts from all clients', new Error(JSON.stringify(failedClients)));
-        }
+      // If all clients failed, throw an error
+      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+        throw new ProxyError('Failed to list prompts from all clients', new Error(JSON.stringify(failedClients)));
+      }
 
-        // Send notification about partial failures
-        if (failedClients.length > 0) {
-            sendPartialFailureNotification(server, 'listPrompts', failedClients);
-        }
+      // Send notification about partial failures
+      if (failedClients.length > 0) {
+        sendPartialFailureNotification(server, 'listPrompts', failedClients);
+      }
 
-        return { prompts };
-    }, 'Error listing prompts'));
+      return { prompts };
+    }, 'Error listing prompts'),
+  );
 
-    // Get Prompt handler
-    server.setRequestHandler(GetPromptRequestSchema, withErrorHandling(async (request) => {
-        const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-        return executeClientOperation(clients, clientName, (client) =>
-            client.getPrompt({ ...request.params, name: promptName })
-        );
-    }, 'Error getting prompt'));
+  // Get Prompt handler
+  server.setRequestHandler(
+    GetPromptRequestSchema,
+    withErrorHandling(async (request) => {
+      const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
+      return executeClientOperation(clients, clientName, (client) =>
+        client.getPrompt({ ...request.params, name: promptName }),
+      );
+    }, 'Error getting prompt'),
+  );
 }

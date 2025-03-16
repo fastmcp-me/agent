@@ -28,7 +28,7 @@ export class ClientConnectionError extends MCPError {
     super(
       `Failed to connect to client: ${clientName}${originalError ? ` - ${originalError.message}` : ''}`,
       ERROR_CODES.TRANSPORT_NOT_FOUND,
-      { originalError }
+      { originalError },
     );
     this.name = 'ClientConnectionError';
   }
@@ -46,7 +46,7 @@ export class ProxyError extends MCPError {
     super(
       message,
       ERROR_CODES.INTERNAL_SERVER_ERROR,
-      originalError ? { originalError: originalError.message } : undefined
+      originalError ? { originalError: originalError.message } : undefined,
     );
     this.name = 'ProxyError';
   }
@@ -60,7 +60,7 @@ export class ProxyError extends MCPError {
  */
 export function withErrorHandling<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T>,
-  errorMessage: string
+  errorMessage: string,
 ): (...args: Args) => Promise<T> {
   return async (...args: Args): Promise<T> => {
     try {
