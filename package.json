@@ -1,11 +1,12 @@
 {
-  "name": "agent",
+  "name": "1mcp",
   "version": "0.1.0",
-  "description": "A Model Context Protocol server",
+  "description": "One MCP server to aggregate them all - A unified Model Context Protocol server implementation",
+  "homepage": "https://1mcp.app",
   "private": true,
   "type": "module",
   "bin": {
-    "agent": "./build/index.js"
+    "1mcp": "./build/index.js"
   },
   "files": [
     "build"

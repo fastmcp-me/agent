@@ -35,7 +35,7 @@ const customFormat = winston.format.combine(
 const logger = winston.createLogger({
     level: 'info',
     format: customFormat,
-    defaultMeta: { service: '1mcp-agent' },
+    defaultMeta: { service: '1mcp' },
     transports: [
         new winston.transports.Console({
             format: customFormat,
