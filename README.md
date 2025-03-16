@@ -46,6 +46,25 @@ This project includes a Winston transport for the Model Context Protocol (MCP) l
 - Connection-aware logging (only sends logs when clients are connected)
 - Sensitive data sanitization
 
+## Usage
+
+You can run the server directly using `npx`:
+
+```bash
+# Run with HTTP/SSE transport (default)
+npx -y @1mcp/agent
+
+# Run with stdio transport
+npx -y @1mcp/agent --transport stdio
+
+# Show help
+npx -y @1mcp/agent --help
+```
+
+Available options:
+- `--transport, -t`: Transport type to use (choices: "stdio", "http", default: "http")
+- `--help, -h`: Show help
+
 ## Development
 
 Install dependencies:

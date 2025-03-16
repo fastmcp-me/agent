@@ -1,12 +1,31 @@
 #!/usr/bin/env node
 
 import express from 'express';
+import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { server } from './server.js';
 import logger, { setMCPTransportConnected } from './logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
 import configReloadService from './services/configReloadService.js';
+
+// Parse command line arguments
+const argv = yargs(hideBin(process.argv))
+    .usage('Usage: $0 [options]')
+    .options({
+        transport: {
+            alias: 't',
+            describe: 'Transport type to use (stdio or http)',
+            type: 'string',
+            choices: ['stdio', 'http'],
+            default: 'http'
+        }
+    })
+    .help()
+    .alias('help', 'h')
+    .parseSync();
 
 const app = express();
 
@@ -122,18 +141,23 @@ function setupGracefulShutdown(): void {
 }
 
 /**
- * Start the server using stdio transport.
- * This allows the server to communicate via standard input/output streams.
+ * Start the server using the specified transport.
  */
 async function main() {
     // Set up graceful shutdown handling
     setupGracefulShutdown();
 
-    // const transport = new StdioServerTransport();
-    // await server.connect(transport);
-    app.listen(PORT, () => {
-        logger.info(`Server is running on port ${PORT}`);
-    });
+    if (argv.transport === 'stdio') {
+        // Use stdio transport
+        const transport = new StdioServerTransport();
+        await server.connect(transport);
+        logger.info('Server started with stdio transport');
+    } else {
+        // Use HTTP/SSE transport
+        app.listen(PORT, () => {
+            logger.info(`Server is running on port ${PORT} with HTTP/SSE transport`);
+        });
+    }
 }
 
 main().catch((error) => {

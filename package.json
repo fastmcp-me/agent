@@ -1,9 +1,8 @@
 {
-  "name": "1mcp",
+  "name": "@1mcp/agent",
   "version": "0.1.0",
   "description": "One MCP server to aggregate them all - A unified Model Context Protocol server implementation",
   "homepage": "https://1mcp.app",
-  "private": true,
   "type": "module",
   "bin": {
     "1mcp": "./build/index.js"
@@ -22,9 +21,12 @@
     "@modelcontextprotocol/sdk": "^1.6.1",
     "express": "^4.21.2",
     "winston": "^3.17.0",
-    "winston-transport": "^4.9.0"
+    "winston-transport": "^4.9.0",
+    "yargs": "^17.7.2",
+    "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
+    "@types/yargs": "^17.0.33",
     "@types/express": "^5.0.0",
     "@types/node": "^20.11.24",
     "tsc-watch": "^6.2.1",
