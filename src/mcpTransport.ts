@@ -134,8 +134,8 @@ export class MCPTransport extends Transport {
             this.emit('logged', info);
         });
 
-        // If not connected, store the log for later
         if (!this.connected) {
+            callback();
             return;
         }
 
