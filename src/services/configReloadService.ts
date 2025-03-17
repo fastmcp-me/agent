@@ -61,25 +61,17 @@ export class ConfigReloadService {
     this.isReloading = true;
     logger.info('Handling configuration change...');
 
+    // Store current transports for reconnection
+    const currentTransportEntries = Object.entries(this.currentTransports);
+
     try {
       // Create new transports from updated configuration
       const newTransports = createTransports();
 
-      // Disconnect and clean up old transports that are no longer in the config
-      // or have changed configuration
-      const transportKeysToRemove = Object.keys(this.currentTransports).filter(
-        (key) =>
-          !newTransports[key] ||
-          JSON.stringify(newConfig[key]) !== JSON.stringify(configManager.getTransportConfig()[key]),
-      );
-
-      for (const key of transportKeysToRemove) {
+      // Close all current transports
+      for (const [key, transport] of currentTransportEntries) {
         try {
-          const transport = this.currentTransports[key];
-          // Attempt to close the transport if possible
-          // Note: Transport interface might not have a standard disconnect method,
-          // but we can safely try to close it if it's a closeable transport
-          if (transport && 'close' in transport && typeof (transport as any).close === 'function') {
+          if ('close' in transport && typeof (transport as any).close === 'function') {
             await (transport as any).close();
             logger.info(`Closed transport: ${key}`);
           }
@@ -91,8 +83,18 @@ export class ConfigReloadService {
       // Create clients for the new transports
       const newClients = await createClients(newTransports);
 
-      // Recollect and register capabilities with the server
+      // Register new capabilities with the server
       await collectAndRegisterCapabilities(newClients, this.server);
+
+      // Connect new transports
+      for (const [key, transport] of Object.entries(newTransports)) {
+        try {
+          await this.server.connect(transport);
+          logger.info(`Connected transport: ${key}`);
+        } catch (error) {
+          logger.error(`Error connecting transport ${key}: ${error}`);
+        }
+      }
 
       // Update current transports
       this.currentTransports = newTransports;
@@ -100,6 +102,16 @@ export class ConfigReloadService {
       logger.info('Configuration reload completed successfully');
     } catch (error) {
       logger.error(`Failed to reload configuration: ${error}`);
+
+      // Attempt to reconnect original transports on failure
+      for (const [key, transport] of currentTransportEntries) {
+        try {
+          await this.server.connect(transport);
+          logger.info(`Reconnected original transport after failure: ${key}`);
+        } catch (reconnectError) {
+          logger.error(`Error reconnecting original transport ${key}: ${reconnectError}`);
+        }
+      }
     } finally {
       this.isReloading = false;
     }
