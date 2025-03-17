@@ -27,7 +27,20 @@ export class MCPTransport extends Transport {
   constructor(options: MCPTransportOptions) {
     super(options);
     this.server = options.server;
-    this.loggerName = options.loggerName || '1mcp-agent';
+    this.loggerName = options.loggerName || '1mcp';
+
+    // Set up connection status handlers
+    this.setupConnectionHandlers();
+  }
+
+  /**
+   * Set up handlers for connection status changes
+   */
+  private setupConnectionHandlers(): void {
+    // Handle connection close
+    this.server.onclose = () => {
+      this.setConnected(false);
+    };
   }
 
   /**
@@ -35,7 +48,13 @@ export class MCPTransport extends Transport {
    * @param connected Whether the server is connected
    */
   setConnected(connected: boolean): void {
+    const previousState = this.connected;
     this.connected = connected;
+
+    // Log connection state changes
+    if (previousState !== connected) {
+      console.debug(`MCP Transport connection state changed to: ${connected ? 'connected' : 'disconnected'}`);
+    }
   }
 
   /**
@@ -134,13 +153,24 @@ export class MCPTransport extends Transport {
       this.emit('logged', info);
     });
 
-    if (!this.connected) {
-      callback();
-      return;
+    // Only try to send if connected
+    if (this.connected) {
+      try {
+        this.sendLogNotification(info);
+      } catch (error) {
+        // Ignore any errors during log sending
+      }
     }
 
-    this.sendLogNotification(info);
-
+    // Always call the callback to prevent blocking
     callback();
+  }
+
+  /**
+   * Clean up resources when the transport is closed
+   */
+  close(): void {
+    this.setConnected(false);
+    this.server.onclose = undefined;
   }
 }
