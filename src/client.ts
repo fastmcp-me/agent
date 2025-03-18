@@ -1,11 +1,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
 
-export default async function createClient(transport: Transport) {
+export default async function createClient() {
   const client = new Client(
     {
-      name: '1mcp',
-      version: '1.0.0',
+      name: MCP_SERVER_NAME,
+      version: MCP_SERVER_VERSION,
     },
     {
       capabilities: {

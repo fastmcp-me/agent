@@ -2,7 +2,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
-import { CONNECTION_RETRY } from '../constants.js';
+import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
 import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '../utils/errorHandling.js';
 
 /**
@@ -16,7 +16,7 @@ export async function createClients(transports: Record<string, Transport>): Prom
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
     try {
-      const client = await createClient(transport);
+      const client = await createClient();
 
       // Connect with retry logic
       await connectWithRetry(client, transport, name);
@@ -44,7 +44,13 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
   for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
     try {
       await client.connect(transport);
-      logger.info(`Successfully connected to ${name}`);
+
+      const sv = await client.getServerVersion();
+      if (sv?.name === MCP_SERVER_NAME) {
+        throw new ClientConnectionError(name, new Error('Aborted to prevent circular dependency'));
+      }
+
+      logger.info(`Successfully connected to ${name} with server ${sv?.name} version ${sv?.version}`);
       return;
     } catch (error) {
       logger.error(`Failed to connect to ${name}: ${error}`);
