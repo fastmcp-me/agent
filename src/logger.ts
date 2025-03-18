@@ -44,7 +44,6 @@ const consoleFormat = winston.format.combine(
 const logger = winston.createLogger({
   level: 'info',
   format: customFormat,
-  defaultMeta: { service: '1mcp' },
   transports: [
     new winston.transports.Console({
       format: consoleFormat,
@@ -83,7 +82,7 @@ export function addMCPTransport(server: Server, loggerName?: string): void {
   // Add the MCP transport to the logger
   mcpTransport = new MCPTransport({
     server,
-    loggerName: loggerName || '1mcp-agent',
+    loggerName: loggerName || '1mcp',
     level: 'info',
   });
   logger.add(mcpTransport);
