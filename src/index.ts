@@ -1,17 +1,15 @@
 #!/usr/bin/env node
 
-import express from 'express';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { setupServer } from './server.js';
-import logger, { setMCPTransportConnected } from './logger.js';
-import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
+import logger from './logger.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';
+import { ExpressServer } from './server/expressServer.js';
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -35,93 +33,10 @@ const argv = yargs(hideBin(process.argv))
   .alias('help', 'h')
   .parseSync();
 
-const app = express();
-let serverManager: ServerManager;
-
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-
-// Add error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error('Express error:', err);
-  res.status(500).json({
-    error: {
-      code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
-    },
-  });
-});
-
-app.get(SSE_ENDPOINT, async (req: express.Request, res: express.Response) => {
-  try {
-    logger.info('sse', { query: req.query, headers: req.headers });
-    const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
-
-    // Connect the transport using the server manager
-    await serverManager.connectTransport(transport, transport.sessionId);
-
-    // Update MCP transport connection status when a client connects
-    if (serverManager.getActiveTransportsCount() === 1) {
-      setMCPTransportConnected(true);
-      logger.info('First client connected, enabling MCP logging transport');
-    }
-
-    transport.onclose = () => {
-      serverManager.disconnectTransport(transport.sessionId);
-      logger.info('transport closed', transport.sessionId);
-
-      // Update MCP transport connection status when all clients disconnect
-      if (serverManager.getActiveTransportsCount() === 0) {
-        setMCPTransportConnected(false);
-        logger.info('All clients disconnected, disabling MCP logging transport');
-      }
-    };
-  } catch (error) {
-    logger.error('SSE connection error:', error);
-    res.status(500).end();
-  }
-});
-
-app.post(MESSAGES_ENDPOINT, async (req: express.Request, res: express.Response) => {
-  try {
-    const sessionId = req.query.sessionId as string;
-    if (!sessionId) {
-      res.status(400).json({
-        error: {
-          code: ERROR_CODES.INVALID_PARAMS,
-          message: 'Invalid params: sessionId is required',
-        },
-      });
-      return;
-    }
-
-    logger.info('message', { body: req.body, sessionId });
-    const transport = serverManager.getTransport(sessionId);
-    if (transport instanceof SSEServerTransport) {
-      await transport.handlePostMessage(req, res);
-      return;
-    }
-    res.status(404).json({
-      error: {
-        code: ERROR_CODES.TRANSPORT_NOT_FOUND,
-        message: 'Transport not found',
-      },
-    });
-  } catch (error) {
-    logger.error('Message handling error:', error);
-    res.status(500).json({
-      error: {
-        code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-        message: 'Internal server error',
-      },
-    });
-  }
-});
-
 /**
  * Set up graceful shutdown handling
  */
-function setupGracefulShutdown(): void {
+function setupGracefulShutdown(serverManager: ServerManager): void {
   const shutdown = async () => {
     logger.info('Shutting down server...');
 
@@ -153,14 +68,13 @@ function setupGracefulShutdown(): void {
  */
 async function main() {
   try {
-    // Set up graceful shutdown handling
-    setupGracefulShutdown();
-
     ConfigManager.getInstance(argv.config);
 
     // Initialize server and get server manager with custom config path if provided
-    const manager = await setupServer();
-    serverManager = manager;
+    const serverManager = await setupServer();
+
+    // Set up graceful shutdown handling
+    setupGracefulShutdown(serverManager);
 
     if (argv.transport === 'stdio') {
       // Use stdio transport
@@ -169,9 +83,8 @@ async function main() {
       logger.info('Server started with stdio transport');
     } else {
       // Use HTTP/SSE transport
-      app.listen(PORT, () => {
-        logger.info(`Server is running on port ${PORT} with HTTP/SSE transport`);
-      });
+      const expressServer = new ExpressServer(serverManager);
+      expressServer.start();
     }
   } catch (error) {
     logger.error('Server error:', error);
