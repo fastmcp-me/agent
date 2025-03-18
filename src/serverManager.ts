@@ -3,7 +3,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import logger from './logger.js';
 import configReloadService from './services/configReloadService.js';
-import { collectAndRegisterCapabilities } from './capabilities/capabilityManager.js';
+import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
 
 export class ServerManager {
@@ -48,7 +48,7 @@ export class ServerManager {
       enhanceServerWithLogging(server);
 
       // Collect capabilities and register handlers
-      await collectAndRegisterCapabilities(this.clients, server);
+      await setupCapabilities(this.clients, server);
 
       // Initialize the configuration reload service
       configReloadService.initialize(server, this.clientTransports);

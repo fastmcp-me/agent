@@ -34,3 +34,10 @@ export const CONNECTION_RETRY = {
   MAX_ATTEMPTS: 3,
   INITIAL_DELAY_MS: 1000,
 };
+
+export const MCP_SERVER_CAPABILITIES = {
+  logging: {},
+  resources: {},
+  tools: {},
+  prompts: {},
+};

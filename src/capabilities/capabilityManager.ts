@@ -14,20 +14,13 @@ import { registerRequestHandlers } from '../handlers/requestHandlers.js';
  * @param server The MCP server instance
  * @returns The combined server capabilities
  */
-export async function collectAndRegisterCapabilities(
-  clients: Record<string, Client>,
-  server: Server,
-): Promise<ServerCapabilities> {
+export async function setupCapabilities(clients: Record<string, Client>, server: Server): Promise<ServerCapabilities> {
   // Collect capabilities from all clients
   const capabilities = collectCapabilities(clients);
 
   // Set up notification handlers
   setupClientToServerNotifications(clients, server);
   setupServerToClientNotifications(clients, server);
-
-  // Register capabilities with the server
-  logger.info(`Registering capabilities: ${JSON.stringify(capabilities)}`);
-  server.registerCapabilities(capabilities);
 
   // Register request handlers based on capabilities
   registerRequestHandlers(clients, server, capabilities);

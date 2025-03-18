@@ -1,16 +1,18 @@
-import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
+import { MCP_SERVER_CAPABILITIES, MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
 import logger from './logger.js';
 import { createTransports } from './config/transportConfig.js';
 import { createClients } from './clients/clientManager.js';
 import { ServerManager } from './serverManager.js';
+import configManager from './config/configManager.js';
 
 /**
  * Main function to set up the MCP server
  */
 async function setupServer(): Promise<ServerManager> {
   try {
+    const mcpConfig = configManager.getTransportConfig();
     // Create transports from configuration
-    const transports = createTransports();
+    const transports = createTransports(mcpConfig);
     logger.info(`Created ${Object.keys(transports).length} transports`);
 
     // Create clients for each transport
@@ -19,7 +21,7 @@ async function setupServer(): Promise<ServerManager> {
 
     const serverManager = ServerManager.getInstance(
       { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
-      { capabilities: { logging: {} } },
+      { capabilities: MCP_SERVER_CAPABILITIES },
       clients,
       transports,
     );
