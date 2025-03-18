@@ -1,6 +1,6 @@
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 import configManager, { ConfigChangeEvent } from '../config/configManager.js';
 import { createTransports, MCPTransport } from '../config/transportConfig.js';
 import { createClients } from '../clients/clientManager.js';

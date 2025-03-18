@@ -11,7 +11,7 @@ import {
   InitializedNotificationSchema,
   RootsListChangedNotificationSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 
 /**

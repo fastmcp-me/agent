@@ -13,8 +13,8 @@ import {
   SetLevelRequestSchema,
   ServerCapabilities,
 } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../logger.js';
-import { setLogLevel } from '../logger.js';
+import logger from '../logger/logger.js';
+import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
 import { executeClientOperation } from '../clients/clientManager.js';
 import { ProxyError, parseUri, withErrorHandling } from '../utils/errorHandling.js';

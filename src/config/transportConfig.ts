@@ -1,6 +1,6 @@
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 
 /**
  * Interface for MCP transport configuration

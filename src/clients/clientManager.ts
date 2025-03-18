@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 import { CONNECTION_RETRY } from '../constants.js';
 import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '../utils/errorHandling.js';
 

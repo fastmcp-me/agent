@@ -5,7 +5,7 @@ import { hideBin } from 'yargs/helpers';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { setupServer } from './server.js';
-import logger from './logger.js';
+import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';

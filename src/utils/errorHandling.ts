@@ -1,5 +1,5 @@
 import { ERROR_CODES } from '../constants.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 
 /**
  * Custom error types for the MCP agent

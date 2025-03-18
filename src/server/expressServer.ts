@@ -1,7 +1,7 @@
 import express from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ServerManager } from '../serverManager.js';
-import logger, { setMCPTransportConnected } from '../logger.js';
+import logger, { setMCPTransportConnected } from '../logger/logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from '../constants.js';
 
 export class ExpressServer {

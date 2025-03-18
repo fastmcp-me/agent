@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { MCP_CONFIG_FILE } from '../constants.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 import { MCPTransport } from './transportConfig.js';
 
 /**

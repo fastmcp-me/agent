@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../logger.js';
+import logger from '../logger/logger.js';
 import {
   setupClientToServerNotifications,
   setupServerToClientNotifications,
