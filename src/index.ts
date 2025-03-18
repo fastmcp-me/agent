@@ -11,6 +11,7 @@ import logger, { setMCPTransportConnected } from './logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
+import { ConfigManager } from './config/configManager.js';
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -22,6 +23,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       choices: ['stdio', 'sse'],
       default: 'sse',
+    },
+    config: {
+      alias: 'c',
+      describe: 'Path to the config file',
+      type: 'string',
+      default: undefined,
     },
   })
   .help()
@@ -149,7 +156,9 @@ async function main() {
     // Set up graceful shutdown handling
     setupGracefulShutdown();
 
-    // Initialize server and get server manager
+    ConfigManager.getInstance(argv.config);
+
+    // Initialize server and get server manager with custom config path if provided
     const manager = await setupServer();
     serverManager = manager;
 

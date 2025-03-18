@@ -3,14 +3,14 @@ import logger from './logger.js';
 import { createTransports } from './config/transportConfig.js';
 import { createClients } from './clients/clientManager.js';
 import { ServerManager } from './serverManager.js';
-import configManager from './config/configManager.js';
+import { ConfigManager } from './config/configManager.js';
 
 /**
  * Main function to set up the MCP server
  */
 async function setupServer(): Promise<ServerManager> {
   try {
-    const mcpConfig = configManager.getTransportConfig();
+    const mcpConfig = ConfigManager.getInstance().getTransportConfig();
     // Create transports from configuration
     const transports = createTransports(mcpConfig);
     logger.info(`Created ${Object.keys(transports).length} transports`);

@@ -23,20 +23,22 @@ export class ConfigManager extends EventEmitter {
 
   /**
    * Private constructor to enforce singleton pattern
+   * @param configFilePath - Path to the config file
    */
-  private constructor() {
+  private constructor(configFilePath?: string) {
     super();
-    this.configFilePath = path.resolve(process.cwd(), MCP_CONFIG_FILE);
+    this.configFilePath = configFilePath || path.resolve(process.cwd(), MCP_CONFIG_FILE);
     this.loadConfig();
   }
 
   /**
    * Get the singleton instance of the ConfigManager
+   * @param configFilePath - Optional path to the config file
    * @returns The ConfigManager instance
    */
-  public static getInstance(): ConfigManager {
+  public static getInstance(configFilePath?: string): ConfigManager {
     if (!ConfigManager.instance) {
-      ConfigManager.instance = new ConfigManager();
+      ConfigManager.instance = new ConfigManager(configFilePath);
     }
     return ConfigManager.instance;
   }
