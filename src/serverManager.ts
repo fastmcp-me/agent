@@ -4,6 +4,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import logger from './logger.js';
 import configReloadService from './services/configReloadService.js';
 import { collectAndRegisterCapabilities } from './capabilities/capabilityManager.js';
+import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -42,6 +43,9 @@ export class ServerManager {
     try {
       // Create a new server instance for this transport
       const server = new Server(this.serverConfig, this.serverCapabilities);
+
+      // Enhance server with logging middleware
+      enhanceServerWithLogging(server);
 
       // Collect capabilities and register handlers
       await collectAndRegisterCapabilities(this.clients, server);

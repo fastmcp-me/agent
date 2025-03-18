@@ -31,6 +31,15 @@ const customFormat = winston.format.combine(
   }),
 );
 
+const consoleFormat = winston.format.combine(
+  winston.format.timestamp(),
+  winston.format.printf(({ timestamp, level, message, ...meta }) => {
+    const keys = Object.keys(meta);
+    const metaStr = keys.length > 0 ? ` ${keys.map((key) => `${key}=${JSON.stringify(meta[key])}`).join(' ')}` : '';
+    return `${timestamp} [${level.toUpperCase()}] message=${JSON.stringify(message)}${metaStr}`;
+  }),
+);
+
 // Create the logger without the MCP transport initially
 const logger = winston.createLogger({
   level: 'info',
@@ -38,7 +47,7 @@ const logger = winston.createLogger({
   defaultMeta: { service: '1mcp' },
   transports: [
     new winston.transports.Console({
-      format: customFormat,
+      format: consoleFormat,
     }),
     //
     // - Write all logs with importance level of `error` or higher to `error.log`
