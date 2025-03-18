@@ -6,10 +6,11 @@ import { hideBin } from 'yargs/helpers';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
-import { server } from './server.js';
+import { setupServer } from './server.js';
 import logger, { setMCPTransportConnected } from './logger.js';
 import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from './constants.js';
 import configReloadService from './services/configReloadService.js';
+import { ServerManager } from './serverManager.js';
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -17,10 +18,10 @@ const argv = yargs(hideBin(process.argv))
   .options({
     transport: {
       alias: 't',
-      describe: 'Transport type to use (stdio or http)',
+      describe: 'Transport type to use (stdio or sse)',
       type: 'string',
-      choices: ['stdio', 'http'],
-      default: 'http',
+      choices: ['stdio', 'sse'],
+      default: 'sse',
     },
   })
   .help()
@@ -28,11 +29,10 @@ const argv = yargs(hideBin(process.argv))
   .parseSync();
 
 const app = express();
+let serverManager: ServerManager;
 
 // app.use(express.json());
 // app.use(express.urlencoded({ extended: true }));
-
-const transportMap = new Map<string, SSEServerTransport>();
 
 // Add error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -49,21 +49,22 @@ app.get(SSE_ENDPOINT, async (req: express.Request, res: express.Response) => {
   try {
     logger.info('sse', { query: req.query, headers: req.headers });
     const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
-    await server.connect(transport);
-    transportMap.set(transport.sessionId, transport);
+
+    // Connect the transport using the server manager
+    await serverManager.connectTransport(transport, transport.sessionId);
 
     // Update MCP transport connection status when a client connects
-    if (transportMap.size === 1) {
+    if (serverManager.getActiveTransportsCount() === 1) {
       setMCPTransportConnected(true);
       logger.info('First client connected, enabling MCP logging transport');
     }
 
     transport.onclose = () => {
-      transportMap.delete(transport.sessionId);
+      serverManager.disconnectTransport(transport.sessionId);
       logger.info('transport closed', transport.sessionId);
 
       // Update MCP transport connection status when all clients disconnect
-      if (transportMap.size === 0) {
+      if (serverManager.getActiveTransportsCount() === 0) {
         setMCPTransportConnected(false);
         logger.info('All clients disconnected, disabling MCP logging transport');
       }
@@ -88,8 +89,8 @@ app.post(MESSAGES_ENDPOINT, async (req: express.Request, res: express.Response) 
     }
 
     logger.info('message', { body: req.body, sessionId });
-    const transport = transportMap.get(sessionId);
-    if (transport) {
+    const transport = serverManager.getTransport(sessionId);
+    if (transport instanceof SSEServerTransport) {
       await transport.handlePostMessage(req, res);
       return;
     }
@@ -121,9 +122,9 @@ function setupGracefulShutdown(): void {
     configReloadService.stop();
 
     // Close all transports
-    for (const [sessionId, transport] of transportMap.entries()) {
+    for (const [sessionId, transport] of serverManager.getTransports().entries()) {
       try {
-        transport.close();
+        transport?.close();
         logger.info(`Closed transport: ${sessionId}`);
       } catch (error) {
         logger.error(`Error closing transport ${sessionId}: ${error}`);
@@ -144,19 +145,28 @@ function setupGracefulShutdown(): void {
  * Start the server using the specified transport.
  */
 async function main() {
-  // Set up graceful shutdown handling
-  setupGracefulShutdown();
+  try {
+    // Set up graceful shutdown handling
+    setupGracefulShutdown();
 
-  if (argv.transport === 'stdio') {
-    // Use stdio transport
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    logger.info('Server started with stdio transport');
-  } else {
-    // Use HTTP/SSE transport
-    app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT} with HTTP/SSE transport`);
-    });
+    // Initialize server and get server manager
+    const manager = await setupServer();
+    serverManager = manager;
+
+    if (argv.transport === 'stdio') {
+      // Use stdio transport
+      const transport = new StdioServerTransport();
+      await serverManager.connectTransport(transport, 'stdio');
+      logger.info('Server started with stdio transport');
+    } else {
+      // Use HTTP/SSE transport
+      app.listen(PORT, () => {
+        logger.info(`Server is running on port ${PORT} with HTTP/SSE transport`);
+      });
+    }
+  } catch (error) {
+    logger.error('Server error:', error);
+    process.exit(1);
   }
 }
 
