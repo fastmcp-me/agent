@@ -8,7 +8,7 @@ import logger from '../logger/logger.js';
  * Zod schema for transport configuration
  */
 export const transportConfigSchema = z.object({
-  type: z.enum(['stdio', 'sse']).optional(),
+  type: z.enum(['stdio', 'sse', 'http']).optional(),
   disabled: z.boolean().optional(),
 
   // SSEServerParameters fields
@@ -56,7 +56,7 @@ export function createTransports(mcpConfig: Record<string, MCPServerParams>): Re
       };
 
       // Create transport based on type
-      if (validatedTransport.type === 'sse') {
+      if (validatedTransport.type === 'sse' || validatedTransport.type === 'http') {
         if (!validatedTransport.url) {
           throw new Error(`URL is required for SSE transport: ${name}`);
         }
