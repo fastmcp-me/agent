@@ -1,6 +1,6 @@
 {
   "name": "@1mcp/agent",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "One MCP server to aggregate them all - A unified Model Context Protocol server implementation",
   "homepage": "https://1mcp.app",
   "license": "Apache-2.0",
