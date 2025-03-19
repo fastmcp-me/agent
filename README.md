@@ -13,51 +13,28 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - Supports dynamic configuration reloading without server restart
 - Handles graceful shutdown and resource cleanup
 
-The implementation includes:
+## Quick Start
 
-- Express-based HTTP server with SSE (Server-Sent Events) support
-- Winston-based logging system with MCP protocol integration
-- Support for MCP capabilities and notifications
-- Smart request routing and capability aggregation
-- Multiple transport options (HTTP/SSE and stdio)
-- Dynamic configuration management
+To enable Cursor to use existing MCP servers already configured in Claude Desktop, follow these steps:
 
-## Server Implementation
+1. Run the 1MCP server with the Claude Desktop config file:
+```bash
+npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop_config.json
+```
 
-The server is implemented using:
+2. Add the 1MCP server to your Cursor config file (`~/.cursor/mcp.json`):
+```json
+{
+    "mcpServers": {
+        "1mcp": {
+            "type": "http",
+            "url": "http://localhost:3050"
+        }
+    }
+}
+```
 
-- Express.js for HTTP handling
-- Server-Sent Events (SSE) for real-time communication
-- MCP SDK for protocol implementation
-- ServerManager for managing multiple server instances
-- ConfigManager for dynamic configuration handling
-
-### Server Configuration
-
-The server supports multiple transport options and configuration methods:
-
-- HTTP/SSE transport (default) running on port 3050
-- stdio transport for direct process communication
-- Configuration through environment variables
-- Configuration file support with hot-reloading
-
-Available endpoints (HTTP/SSE transport):
-- `/sse` - SSE endpoint for establishing connections
-- `/messages` - Endpoint for receiving messages from clients
-
-## MCP Logging Implementation
-
-This project includes a Winston transport for the Model Context Protocol (MCP) logging protocol. The implementation allows logs from the agent to be sent to MCP clients using the standard MCP logging notification format.
-
-### Features
-
-- Seamless integration with Winston logger
-- Automatic mapping of Winston log levels to MCP log levels
-- Support for structured logging data
-- Configurable logger name
-- Connection-aware logging (only sends logs when clients are connected)
-- Sensitive data sanitization
-- Support for both HTTP/SSE and stdio transports
+3. Enjoy it!
 
 ## Usage
 
@@ -70,11 +47,8 @@ npx -y @1mcp/agent
 # Run with stdio transport
 npx -y @1mcp/agent --transport stdio
 
-# Run with cursor config file
-npx -y @1mcp/agent --config ~/.cursor/mcp.json
-
-# Run with claude desktop config file
-npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop_config.json
+# Run with AI assistant config file
+npx -y @1mcp/agent --config /path/to/ai/assistant/config.json
 
 # Show help
 npx -y @1mcp/agent --help
@@ -84,6 +58,95 @@ Available options:
 - `--transport, -t`: Transport type to use (choices: "stdio", "sse", default: "sse")
 - `--config, -c`: Path to the configuration file
 - `--help, -h`: Show help
+
+## Configuration
+
+### Global Configuration
+
+The server automatically manages configuration in a global location:
+
+- macOS/Linux: `~/.config/1mcp/mcp.json`
+- Windows: `%APPDATA%/1mcp/mcp.json`
+
+### Configuration File Format
+
+```json
+{
+  "mcpServers": {
+    "mcp-server-fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "disabled": false
+    },
+    "server-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "disabled": false
+    }
+  }
+}
+```
+
+## How It Works
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "AI Assistants"
+        A1[Claude Desktop]
+        A2[Cursor]
+        A3[Cherry Studio]
+        A4[Roo Code]
+    end
+
+    subgraph "1MCP Server"
+        MCP[1MCP Agent]
+    end
+
+    subgraph "MCP Servers"
+        S1[Server 1]
+        S2[Server 2]
+        S3[Server 3]
+    end
+
+    A1 -->|sse| MCP
+    A2 -->|sse| MCP
+    A3 -->|sse| MCP
+    A4 -->|sse| MCP
+
+    MCP --> |sse| S1
+    MCP --> |stdio| S2
+    MCP --> |stdio| S3
+```
+
+### Request Flow
+
+```mermaid
+sequenceDiagram
+    participant Client as AI Assistant
+    participant 1MCP as 1MCP Server
+    participant MCP as MCP Servers
+
+    Client->>1MCP: Send MCP Request
+    activate 1MCP
+
+    1MCP->>1MCP: Validate Request
+    1MCP->>1MCP: Load Config
+    1MCP->>MCP: Forward Request
+    activate MCP
+
+    MCP-->>1MCP: Response
+    deactivate MCP
+
+    1MCP-->>Client: Forward Response
+    deactivate 1MCP
+```
 
 ## Development
 
@@ -105,43 +168,6 @@ pnpm watch
 Run the server:
 ```bash
 pnpm dev
-```
-
-## Installation
-
-To use with Claude Desktop, add the server config:
-
-On MacOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "1mcp": {
-      "command": "/path/to/agent/build/index.js",
-      "args": ["--transport", "stdio"]
-    }
-  }
-}
-```
-
-### Configuration File
-
-Create a `mcp-config.json` file in your project root:
-
-```json
-{
-  "mcpServers": {
-    "backend1": {
-      "type": "http",
-      "url": "http://localhost:3000"
-    },
-    "backend2": {
-      "type": "stdio",
-      "command": "/path/to/backend2"
-    }
-  }
-}
 ```
 
 ### Debugging
