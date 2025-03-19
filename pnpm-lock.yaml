@@ -29,6 +29,9 @@ importers:
       yargs-parser:
         specifier: ^21.1.1
         version: 21.1.1
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.2
     devDependencies:
       '@types/express':
         specifier: ^5.0.0

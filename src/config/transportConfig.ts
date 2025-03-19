@@ -1,17 +1,32 @@
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { z, ZodError } from 'zod';
 import logger from '../logger/logger.js';
 
 /**
- * Interface for MCP transport configuration
+ * Zod schema for transport configuration
  */
-export interface MCPServerParams extends Partial<StdioServerParameters> {
-  type?: 'stdio' | 'sse';
-  url?: string;
-  headers?: Record<string, string>;
-  disabled?: boolean;
-}
+export const transportConfigSchema = z.object({
+  type: z.enum(['stdio', 'sse']).optional(),
+  disabled: z.boolean().optional(),
+
+  // SSEServerParameters fields
+  url: z.string().url().optional(),
+  headers: z.record(z.string()).optional(),
+
+  // StdioServerParameters fields
+  command: z.string().optional(),
+  args: z.array(z.string()).optional(),
+  stderr: z.union([z.string(), z.number()]).optional(),
+  cwd: z.string().optional(),
+  env: z.record(z.string()).optional(),
+});
+
+/**
+ * Type for transport configuration
+ */
+export type MCPServerParams = z.infer<typeof transportConfigSchema>;
 
 /**
  * Creates transport instances from configuration
@@ -27,33 +42,46 @@ export function createTransports(mcpConfig: Record<string, MCPServerParams>): Re
     }
 
     try {
+      // Validate transport configuration
+      const validatedTransport = transportConfigSchema.parse(transport);
+
       // Merge environment variables
-      transport.env = {
+      validatedTransport.env = {
         ...Object.fromEntries(
           Object.entries(process.env)
             .filter(([_, v]) => v !== undefined)
             .map(([k, v]) => [k, String(v)]),
         ),
-        ...transport.env,
+        ...validatedTransport.env,
       };
 
       // Create transport based on type
-      if (transport.type === 'sse') {
-        if (!transport.url) {
+      if (validatedTransport.type === 'sse') {
+        if (!validatedTransport.url) {
           throw new Error(`URL is required for SSE transport: ${name}`);
         }
-        transports[name] = new SSEClientTransport(new URL(transport.url), {
+        transports[name] = new SSEClientTransport(new URL(validatedTransport.url), {
           requestInit: {
-            headers: transport.headers,
+            headers: validatedTransport.headers,
           },
         });
       } else {
-        transports[name] = new StdioClientTransport(transport as StdioServerParameters);
+        // For stdio transport, ensure required fields are present
+        if (!validatedTransport.command) {
+          throw new Error(`Command is required for stdio transport: ${name}`);
+        }
+        transports[name] = new StdioClientTransport(validatedTransport as StdioServerParameters);
       }
 
-      logger.debug(`Created ${transport.type} transport for ${name}`);
+      logger.debug(`Created ${validatedTransport.type} transport for ${name}`);
     } catch (error) {
-      logger.error(`Failed to create transport for ${name}: ${error}`);
+      if (error instanceof ZodError) {
+        logger.error(`Invalid transport configuration for ${name}:`, error.errors);
+      } else if (error instanceof Error) {
+        logger.error(`Failed to create transport for ${name}: ${error.message}`);
+      } else {
+        logger.error(`Failed to create transport for ${name}: ${String(error)}`);
+      }
     }
   }
 
