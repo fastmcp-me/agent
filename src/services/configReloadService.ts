@@ -2,7 +2,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import logger from '../logger/logger.js';
 import configManager, { ConfigChangeEvent } from '../config/configManager.js';
-import { createTransports, MCPTransport } from '../config/transportConfig.js';
+import { createTransports, MCPServerParams } from '../config/transportConfig.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 
@@ -53,7 +53,7 @@ export class ConfigReloadService {
    * Handle configuration changes
    * @param newConfig The new transport configuration
    */
-  private async handleConfigChange(newConfig: Record<string, MCPTransport>): Promise<void> {
+  private async handleConfigChange(newConfig: Record<string, MCPServerParams>): Promise<void> {
     if (!this.server || this.isReloading) {
       return;
     }

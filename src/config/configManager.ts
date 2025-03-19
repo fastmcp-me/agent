@@ -3,7 +3,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { MCP_CONFIG_FILE } from '../constants.js';
 import logger from '../logger/logger.js';
-import { MCPTransport } from './transportConfig.js';
+import { MCPServerParams } from './transportConfig.js';
 
 /**
  * Configuration change event types
@@ -18,7 +18,7 @@ export enum ConfigChangeEvent {
 export class ConfigManager extends EventEmitter {
   private static instance: ConfigManager;
   private configWatcher: fs.FSWatcher | null = null;
-  private transportConfig: Record<string, MCPTransport> = {};
+  private transportConfig: Record<string, MCPServerParams> = {};
   private configFilePath: string;
 
   /**
@@ -112,7 +112,7 @@ export class ConfigManager extends EventEmitter {
    * Get the current transport configuration
    * @returns The current transport configuration
    */
-  public getTransportConfig(): Record<string, MCPTransport> {
+  public getTransportConfig(): Record<string, MCPServerParams> {
     return { ...this.transportConfig };
   }
 }
