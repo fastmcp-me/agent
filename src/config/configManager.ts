@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
-import { MCP_CONFIG_FILE } from '../constants.js';
+import { getGlobalConfigPath, getGlobalConfigDir, DEFAULT_CONFIG } from '../constants.js';
 import logger from '../logger/logger.js';
 import { MCPServerParams } from './transportConfig.js';
 
@@ -23,24 +23,45 @@ export class ConfigManager extends EventEmitter {
 
   /**
    * Private constructor to enforce singleton pattern
-   * @param configFilePath - Path to the config file
+   * @param configFilePath - Optional path to the config file. If not provided, uses global config path
    */
   private constructor(configFilePath?: string) {
     super();
-    this.configFilePath = configFilePath || path.resolve(process.cwd(), MCP_CONFIG_FILE);
+    this.configFilePath = configFilePath || getGlobalConfigPath();
+    this.ensureConfigExists();
     this.loadConfig();
   }
 
   /**
-   * Get the singleton instance of the ConfigManager
+   * Get the singleton instance of ConfigManager
    * @param configFilePath - Optional path to the config file
-   * @returns The ConfigManager instance
    */
   public static getInstance(configFilePath?: string): ConfigManager {
     if (!ConfigManager.instance) {
       ConfigManager.instance = new ConfigManager(configFilePath);
     }
     return ConfigManager.instance;
+  }
+
+  /**
+   * Ensure the config directory and file exist
+   */
+  private ensureConfigExists(): void {
+    try {
+      const configDir = getGlobalConfigDir();
+      if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true });
+        logger.info(`Created config directory: ${configDir}`);
+      }
+
+      if (!fs.existsSync(this.configFilePath)) {
+        fs.writeFileSync(this.configFilePath, JSON.stringify(DEFAULT_CONFIG, null, 2));
+        logger.info(`Created default config file: ${this.configFilePath}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to ensure config exists: ${error}`);
+      throw error;
+    }
   }
 
   /**

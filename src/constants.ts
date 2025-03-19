@@ -29,6 +29,36 @@ export const MCP_SERVER_NAME = '1mcp';
 export const MCP_SERVER_VERSION = '0.2.0';
 export const MCP_URI_SEPARATOR = '_1mcp_';
 
+// Global config paths
+export const CONFIG_DIR_NAME = '1mcp';
+export const DEFAULT_CONFIG = {
+  mcpServers: {},
+};
+
+/**
+ * Get the global config directory path based on OS
+ */
+export function getGlobalConfigDir(): string {
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  if (!homeDir) {
+    throw new Error('Could not determine home directory');
+  }
+
+  const configDir =
+    process.platform === 'darwin' || process.platform === 'linux'
+      ? `${homeDir}/.config/${CONFIG_DIR_NAME}`
+      : `${homeDir}/AppData/Roaming/${CONFIG_DIR_NAME}`;
+
+  return configDir;
+}
+
+/**
+ * Get the global config file path
+ */
+export function getGlobalConfigPath(): string {
+  return `${getGlobalConfigDir()}/${MCP_CONFIG_FILE}`;
+}
+
 // Connection retry settings
 export const CONNECTION_RETRY = {
   MAX_ATTEMPTS: 3,
