@@ -1,5 +1,5 @@
 import logger from '../logger/logger.js';
-import configManager, { ConfigChangeEvent } from '../config/configManager.js';
+import { ConfigChangeEvent, ConfigManager } from '../config/configManager.js';
 import { MCPServerParams, ClientTransports } from '../types.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
@@ -38,6 +38,8 @@ export class ConfigReloadService {
   public initialize(serverInfo: ServerInfo, initialTransports: ClientTransports): void {
     this.serverInfo = serverInfo;
     this.currentTransports = initialTransports;
+
+    const configManager = ConfigManager.getInstance();
 
     // Set up configuration change listener
     configManager.on(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED, this.handleConfigChange.bind(this));
@@ -98,6 +100,7 @@ export class ConfigReloadService {
    * Stop the service and clean up resources
    */
   public stop(): void {
+    const configManager = ConfigManager.getInstance();
     configManager.stopWatching();
     configManager.removeAllListeners(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED);
     logger.info('Config reload service stopped');

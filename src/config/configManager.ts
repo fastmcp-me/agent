@@ -138,4 +138,4 @@ export class ConfigManager extends EventEmitter {
   }
 }
 
-export default ConfigManager.getInstance();
+export default ConfigManager;
