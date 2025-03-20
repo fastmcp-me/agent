@@ -43,6 +43,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Test
+        run: pnpm test
+
   publish:
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
