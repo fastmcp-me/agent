@@ -1,5 +1,3 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import {
@@ -7,23 +5,25 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { Clients } from '../clients/clientManager.js';
+import { Clients, ServerInfo } from '../types.js';
+
 /**
  * Collects capabilities from all clients and registers them with the server
  * @param clients Record of client instances
  * @param server The MCP server instance
+ * @param tags Array of tags to filter clients by
  * @returns The combined server capabilities
  */
-export async function setupCapabilities(clients: Clients, server: Server): Promise<ServerCapabilities> {
+export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo): Promise<ServerCapabilities> {
   // Collect capabilities from all clients
   const capabilities = collectCapabilities(clients);
 
   // Set up notification handlers
-  setupClientToServerNotifications(clients, server);
-  setupServerToClientNotifications(clients, server);
+  setupClientToServerNotifications(clients, serverInfo);
+  setupServerToClientNotifications(clients, serverInfo);
 
   // Register request handlers based on capabilities
-  registerRequestHandlers(clients, server, capabilities);
+  registerRequestHandlers(clients, serverInfo, capabilities);
 
   return capabilities;
 }

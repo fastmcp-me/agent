@@ -3,31 +3,10 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
-import { ClientTransport, ClientTransports } from '../config/transportConfig.js';
+import { ClientTransports } from '../config/transportConfig.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 import { ClientConnectionError, ClientNotFoundError } from '../utils/errorTypes.js';
-
-export enum ClientStatus {
-  Connected = 'connected',
-  Disconnected = 'disconnected',
-  Error = 'error',
-}
-
-export type ClientInfo = {
-  readonly name: string;
-  readonly transport: ClientTransport;
-  readonly client: Client;
-  readonly status: ClientStatus;
-  readonly lastError?: Error;
-  readonly lastConnected?: Date;
-};
-
-export type Clients = Readonly<Record<string, ClientInfo>>;
-
-export type ClientOperationOptions = {
-  readonly retryCount?: number;
-  readonly retryDelay?: number;
-};
+import { ClientStatus, ClientInfo, Clients, ClientOperationOptions } from '../types.js';
 
 /**
  * Creates client instances for all transports with retry logic

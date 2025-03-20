@@ -34,8 +34,24 @@ export class ExpressServer {
         logger.info('sse', { query: req.query, headers: req.headers });
         const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
 
+        // Extract and validate tags from query parameters
+        let tags: string[] | undefined;
+        if (req.query.tags) {
+          const tagsStr = req.query.tags as string;
+          if (typeof tagsStr !== 'string') {
+            res.status(400).json({
+              error: {
+                code: ERROR_CODES.INVALID_PARAMS,
+                message: 'Invalid params: tags must be a string',
+              },
+            });
+            return;
+          }
+          tags = tagsStr.split(',').filter((tag) => tag.trim().length > 0);
+        }
+
         // Connect the transport using the server manager
-        await this.serverManager.connectTransport(transport, transport.sessionId);
+        await this.serverManager.connectTransport(transport, transport.sessionId, tags);
 
         // Update MCP transport connection status when a client connects
         if (this.serverManager.getActiveTransportsCount() === 1) {

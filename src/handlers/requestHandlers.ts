@@ -1,4 +1,3 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
   ListResourcesRequestSchema,
@@ -12,13 +11,19 @@ import {
   SetLevelRequestSchema,
   ServerCapabilities,
   CallToolResultSchema,
+  ListResourcesRequest,
+  ListToolsRequest,
+  ListPromptsRequest,
+  ListResourceTemplatesRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
-import { Clients, executeClientOperation } from '../clients/clientManager.js';
+import { executeClientOperation } from '../clients/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
 import { MCPError } from '../utils/errorTypes.js';
+import { filterClientsByTags } from '../utils/clientFiltering.js';
+import { Clients, ServerInfo } from '../types.js';
 
 /**
  * Sends a partial failure notification to inform clients about backend failures
@@ -27,13 +32,13 @@ import { MCPError } from '../utils/errorTypes.js';
  * @param failedClients Array of failed clients with error details
  */
 function sendPartialFailureNotification(
-  server: Server,
+  serverInfo: ServerInfo,
   operation: string,
   failedClients: Array<{ name: string; error: string }>,
 ): void {
   if (failedClients.length === 0) return;
 
-  server.notification({
+  serverInfo.server.notification({
     method: 'notifications/message',
     params: {
       level: 'warning',
@@ -53,44 +58,50 @@ function sendPartialFailureNotification(
  * @param clients Record of client instances
  * @param server The MCP server instance
  * @param capabilities The server capabilities
+ * @param tags Array of tags to filter clients by
  */
-export function registerRequestHandlers(clients: Clients, server: Server, capabilities: ServerCapabilities): void {
+export function registerRequestHandlers(
+  clients: Clients,
+  serverInfo: ServerInfo,
+  capabilities: ServerCapabilities,
+): void {
   // Register logging level handler
-  server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+  serverInfo.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
     setLogLevel(request.params.level);
     return {};
   });
 
   // Register resource-related handlers if capability is available
   if (capabilities.resources) {
-    registerResourceHandlers(clients, server);
+    registerResourceHandlers(clients, serverInfo);
   }
 
   // Register tool-related handlers if capability is available
   if (capabilities.tools) {
-    registerToolHandlers(clients, server);
+    registerToolHandlers(clients, serverInfo);
   }
 
   // Register prompt-related handlers if capability is available
   if (capabilities.prompts) {
-    registerPromptHandlers(clients, server);
+    registerPromptHandlers(clients, serverInfo);
   }
 }
 
 /**
  * Registers resource-related request handlers
  * @param clients Record of client instances
- * @param server The MCP server instance
+ * @param serverInfo The MCP server instance
  */
-function registerResourceHandlers(clients: Clients, server: Server): void {
+function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): void {
   // List Resources handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     ListResourcesRequestSchema,
-    withErrorHandling(async (request) => {
+    withErrorHandling(async (request: ListResourcesRequest) => {
       const resources = [];
       const failedClients = [];
+      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
 
-      for (const [name, clientInfo] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(filteredClients)) {
         logger.info(`Listing resources for ${name}`);
         try {
           const result = await clientInfo.client.listResources(request.params, {
@@ -111,7 +122,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
         throw new MCPError('Failed to list resources from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -119,7 +130,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
 
       // Send notification about partial failures
       if (failedClients.length > 0) {
-        sendPartialFailureNotification(server, 'listResources', failedClients);
+        sendPartialFailureNotification(serverInfo, 'listResources', failedClients);
       }
 
       return { resources };
@@ -127,13 +138,14 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
   );
 
   // List Resource Templates handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     ListResourceTemplatesRequestSchema,
-    withErrorHandling(async (request) => {
+    withErrorHandling(async (request: ListResourceTemplatesRequest) => {
       const resourceTemplates = [];
       const failedClients = [];
+      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
 
-      for (const [name, clientInfo] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(filteredClients)) {
         logger.info(`Listing resource templates for ${name}`);
         try {
           const result = await clientInfo.client.listResourceTemplates(request.params, {
@@ -154,7 +166,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
         throw new MCPError('Failed to list resource templates from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -162,7 +174,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
 
       // Send notification about partial failures
       if (failedClients.length > 0) {
-        sendPartialFailureNotification(server, 'listResourceTemplates', failedClients);
+        sendPartialFailureNotification(serverInfo, 'listResourceTemplates', failedClients);
       }
 
       return { resourceTemplates };
@@ -170,7 +182,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
   );
 
   // Subscribe Resource handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     SubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
@@ -186,7 +198,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
   );
 
   // Unsubscribe Resource handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     UnsubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
@@ -202,7 +214,7 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
   );
 
   // Read Resource handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     ReadResourceRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
@@ -221,17 +233,18 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
 /**
  * Registers tool-related request handlers
  * @param clients Record of client instances
- * @param server The MCP server instance
+ * @param serverInfo The MCP server instance
  */
-function registerToolHandlers(clients: Clients, server: Server): void {
+function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
   // List Tools handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     ListToolsRequestSchema,
-    withErrorHandling(async (request) => {
+    withErrorHandling(async (request: ListToolsRequest) => {
       const tools = [];
       const failedClients = [];
+      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
 
-      for (const [name, clientInfo] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(filteredClients)) {
         logger.info(`Listing tools for ${name}`);
         try {
           const result = await clientInfo.client.listTools(request.params, {
@@ -251,7 +264,7 @@ function registerToolHandlers(clients: Clients, server: Server): void {
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
         throw new MCPError('Failed to list tools from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -259,7 +272,7 @@ function registerToolHandlers(clients: Clients, server: Server): void {
 
       // Send notification about partial failures
       if (failedClients.length > 0) {
-        sendPartialFailureNotification(server, 'listTools', failedClients);
+        sendPartialFailureNotification(serverInfo, 'listTools', failedClients);
       }
 
       return { tools };
@@ -267,7 +280,7 @@ function registerToolHandlers(clients: Clients, server: Server): void {
   );
 
   // Call Tool handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     CallToolRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
@@ -283,17 +296,18 @@ function registerToolHandlers(clients: Clients, server: Server): void {
 /**
  * Registers prompt-related request handlers
  * @param clients Record of client instances
- * @param server The MCP server instance
+ * @param serverInfo The MCP server instance
  */
-function registerPromptHandlers(clients: Clients, server: Server): void {
+function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void {
   // List Prompts handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     ListPromptsRequestSchema,
-    withErrorHandling(async (request) => {
+    withErrorHandling(async (request: ListPromptsRequest) => {
       const prompts = [];
       const failedClients = [];
+      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
 
-      for (const [name, clientInfo] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(filteredClients)) {
         logger.info(`Listing prompts for ${name}`);
         try {
           const result = await clientInfo.client.listPrompts(request.params);
@@ -311,7 +325,7 @@ function registerPromptHandlers(clients: Clients, server: Server): void {
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
+      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
         throw new MCPError('Failed to list prompts from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -319,7 +333,7 @@ function registerPromptHandlers(clients: Clients, server: Server): void {
 
       // Send notification about partial failures
       if (failedClients.length > 0) {
-        sendPartialFailureNotification(server, 'listPrompts', failedClients);
+        sendPartialFailureNotification(serverInfo, 'listPrompts', failedClients);
       }
 
       return { prompts };
@@ -327,7 +341,7 @@ function registerPromptHandlers(clients: Clients, server: Server): void {
   );
 
   // Get Prompt handler
-  server.setRequestHandler(
+  serverInfo.server.setRequestHandler(
     GetPromptRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);

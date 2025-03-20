@@ -28,6 +28,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       default: undefined,
     },
+    tags: {
+      alias: 'g',
+      describe: 'Tags to filter clients (comma-separated)',
+      type: 'string',
+      default: undefined,
+    },
   })
   .help()
   .alias('help', 'h')
@@ -79,7 +85,16 @@ async function main() {
     if (argv.transport === 'stdio') {
       // Use stdio transport
       const transport = new StdioServerTransport();
-      await serverManager.connectTransport(transport, 'stdio');
+      // Parse and validate tags from CLI if provided
+      let tags: string[] | undefined;
+      if (argv.tags) {
+        tags = argv.tags.split(',').filter((tag) => tag.trim().length > 0);
+        if (tags.length === 0) {
+          logger.warn('No valid tags provided, ignoring tags parameter');
+          tags = undefined;
+        }
+      }
+      await serverManager.connectTransport(transport, 'stdio', tags);
       logger.info('Server started with stdio transport');
     } else {
       // Use HTTP/SSE transport

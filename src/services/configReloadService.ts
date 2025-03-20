@@ -5,13 +5,13 @@ import configManager, { ConfigChangeEvent } from '../config/configManager.js';
 import { ClientTransports, createTransports, MCPServerParams } from '../config/transportConfig.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
-
+import { ServerInfo } from '../types.js';
 /**
  * Service to handle dynamic configuration reloading
  */
 export class ConfigReloadService {
   private static instance: ConfigReloadService;
-  private server: Server | null = null;
+  private serverInfo: ServerInfo | null = null;
   private currentTransports: ClientTransports = {};
   private isReloading = false;
 
@@ -33,11 +33,11 @@ export class ConfigReloadService {
 
   /**
    * Initialize the service with the server instance
-   * @param server The MCP server instance
+   * @param serverInfo The MCP server instance
    * @param initialTransports The initial transports
    */
-  public initialize(server: Server, initialTransports: ClientTransports): void {
-    this.server = server;
+  public initialize(serverInfo: ServerInfo, initialTransports: ClientTransports): void {
+    this.serverInfo = serverInfo;
     this.currentTransports = initialTransports;
 
     // Set up configuration change listener
@@ -54,7 +54,7 @@ export class ConfigReloadService {
    * @param newConfig The new transport configuration
    */
   private async handleConfigChange(newConfig: Record<string, MCPServerParams>): Promise<void> {
-    if (!this.server || this.isReloading) {
+    if (!this.serverInfo || this.isReloading) {
       return;
     }
 
@@ -82,7 +82,7 @@ export class ConfigReloadService {
       const newClients = await createClients(newTransports);
 
       // Register new capabilities with the server
-      await setupCapabilities(newClients, this.server);
+      await setupCapabilities(newClients, this.serverInfo);
 
       // Update current transports
       this.currentTransports = newTransports;

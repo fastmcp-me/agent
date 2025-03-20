@@ -5,12 +5,12 @@ import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
-import { Clients } from './clients/clientManager.js';
+import { Clients, ServerInfo } from './types.js';
 import { ClientTransports } from './config/transportConfig.js';
 
 export class ServerManager {
   private static instance: ServerManager;
-  private servers: Map<string, Server> = new Map();
+  private servers: Map<string, ServerInfo> = new Map();
   private serverConfig: { name: string; version: string };
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
@@ -41,7 +41,7 @@ export class ServerManager {
     return ServerManager.instance;
   }
 
-  public async connectTransport(transport: Transport, sessionId: string): Promise<void> {
+  public async connectTransport(transport: Transport, sessionId: string, tags?: string[]): Promise<void> {
     try {
       // Create a new server instance for this transport
       const server = new Server(this.serverConfig, this.serverCapabilities);
@@ -49,17 +49,22 @@ export class ServerManager {
       // Enhance server with logging middleware
       enhanceServerWithLogging(server);
 
-      // Collect capabilities and register handlers
-      await setupCapabilities(this.clients, server);
+      const serverInfo: ServerInfo = {
+        server,
+        tags,
+      };
+
+      // Set up capabilities for this server instance
+      await setupCapabilities(this.clients, serverInfo);
 
       // Initialize the configuration reload service
-      configReloadService.initialize(server, this.clientTransports);
+      configReloadService.initialize(serverInfo, this.clientTransports);
+
+      // Store the server instance
+      this.servers.set(sessionId, serverInfo);
 
       // Connect the transport to the new server instance
       await server.connect(transport);
-
-      // Store the server instance
-      this.servers.set(sessionId, server);
 
       logger.info(`Connected transport for session ${sessionId}`);
     } catch (error) {
@@ -77,24 +82,28 @@ export class ServerManager {
   }
 
   public getTransport(sessionId: string): Transport | undefined {
-    return this.servers.get(sessionId)?.transport;
+    return this.servers.get(sessionId)?.server.transport;
   }
 
   public getTransports(): Map<string, Transport> {
     const transports = new Map<string, Transport>();
     for (const [id, server] of this.servers.entries()) {
-      if (server.transport) {
-        transports.set(id, server.transport);
+      if (server.server.transport) {
+        transports.set(id, server.server.transport);
       }
     }
     return transports;
+  }
+
+  public getClientTransports(): ClientTransports {
+    return this.clientTransports;
   }
 
   public getActiveTransportsCount(): number {
     return this.servers.size;
   }
 
-  public getServer(sessionId: string): Server | undefined {
+  public getServer(sessionId: string): ServerInfo | undefined {
     return this.servers.get(sessionId);
   }
 }

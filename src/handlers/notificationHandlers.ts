@@ -1,5 +1,3 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CancelledNotificationSchema,
   ProgressNotificationSchema,
@@ -13,14 +11,13 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
-import { Clients } from '../clients/clientManager.js';
-
+import { Clients, ServerInfo } from '../types.js';
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
- * @param server The MCP server instance
+ * @param serverInfo The MCP server instance
  */
-export function setupClientToServerNotifications(clients: Clients, server: Server): void {
+export function setupClientToServerNotifications(clients: Clients, serverInfo: ServerInfo): void {
   const clientNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -37,7 +34,7 @@ export function setupClientToServerNotifications(clients: Clients, server: Serve
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
-          server.notification({
+          serverInfo.server.notification({
             ...notification,
             params: {
               ...notification.params,
@@ -53,9 +50,9 @@ export function setupClientToServerNotifications(clients: Clients, server: Serve
 /**
  * Sets up server-to-client notification handlers
  * @param clients Record of client instances
- * @param server The MCP server instance
+ * @param serverInfo The MCP server instance
  */
-export function setupServerToClientNotifications(clients: Clients, server: Server): void {
+export function setupServerToClientNotifications(clients: Clients, serverInfo: ServerInfo): void {
   const serverNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -65,7 +62,7 @@ export function setupServerToClientNotifications(clients: Clients, server: Serve
 
   for (const [name, clientInfo] of Object.entries(clients)) {
     serverNotificationSchemas.forEach((schema) => {
-      server.setNotificationHandler(
+      serverInfo.server.setNotificationHandler(
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
