@@ -157,7 +157,7 @@ export class MCPTransport extends Transport {
     if (this.connected) {
       try {
         this.sendLogNotification(info);
-      } catch (error) {
+      } catch (_) {
         // Ignore any errors during log sending
       }
     }
