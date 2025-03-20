@@ -7,14 +7,14 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-
+import { Clients } from '../clients/clientManager.js';
 /**
  * Collects capabilities from all clients and registers them with the server
  * @param clients Record of client instances
  * @param server The MCP server instance
  * @returns The combined server capabilities
  */
-export async function setupCapabilities(clients: Record<string, Client>, server: Server): Promise<ServerCapabilities> {
+export async function setupCapabilities(clients: Clients, server: Server): Promise<ServerCapabilities> {
   // Collect capabilities from all clients
   const capabilities = collectCapabilities(clients);
 
@@ -33,12 +33,12 @@ export async function setupCapabilities(clients: Record<string, Client>, server:
  * @param clients Record of client instances
  * @returns The combined server capabilities
  */
-function collectCapabilities(clients: Record<string, Client>): ServerCapabilities {
+function collectCapabilities(clients: Clients): ServerCapabilities {
   let capabilities: ServerCapabilities = {};
 
-  for (const [name, client] of Object.entries(clients)) {
+  for (const [name, clientInfo] of Object.entries(clients)) {
     try {
-      const clientCapabilities = client.getServerCapabilities() || {};
+      const clientCapabilities = clientInfo.client.getServerCapabilities() || {};
       logger.debug(`Capabilities from ${name}: ${JSON.stringify(clientCapabilities)}`);
       capabilities = { ...capabilities, ...clientCapabilities };
     } catch (error) {

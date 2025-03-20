@@ -10,6 +10,8 @@ import logger from '../logger/logger.js';
 export const transportConfigSchema = z.object({
   type: z.enum(['stdio', 'sse', 'http']).optional(),
   disabled: z.boolean().optional(),
+  timeout: z.number().optional(),
+  tags: z.array(z.string()).optional(),
 
   // SSEServerParameters fields
   url: z.string().url().optional(),
@@ -28,12 +30,21 @@ export const transportConfigSchema = z.object({
  */
 export type MCPServerParams = z.infer<typeof transportConfigSchema>;
 
+export type ClientTransport = {
+  name: string;
+  transport: Transport;
+  timeout?: number;
+  tags?: string[];
+};
+
+export type ClientTransports = Record<string, ClientTransport>;
+
 /**
  * Creates transport instances from configuration
  * @returns Record of transport instances
  */
-export function createTransports(mcpConfig: Record<string, MCPServerParams>): Record<string, Transport> {
-  const transports: Record<string, Transport> = {};
+export function createTransports(mcpConfig: Record<string, MCPServerParams>): ClientTransports {
+  const transports: ClientTransports = {};
 
   for (const [name, transport] of Object.entries(mcpConfig)) {
     if (transport.disabled) {
@@ -60,17 +71,27 @@ export function createTransports(mcpConfig: Record<string, MCPServerParams>): Re
         if (!validatedTransport.url) {
           throw new Error(`URL is required for SSE transport: ${name}`);
         }
-        transports[name] = new SSEClientTransport(new URL(validatedTransport.url), {
-          requestInit: {
-            headers: validatedTransport.headers,
-          },
-        });
+        transports[name] = {
+          name,
+          transport: new SSEClientTransport(new URL(validatedTransport.url), {
+            requestInit: {
+              headers: validatedTransport.headers,
+            },
+          }),
+          timeout: validatedTransport.timeout,
+          tags: validatedTransport.tags,
+        };
       } else {
         // For stdio transport, ensure required fields are present
         if (!validatedTransport.command) {
           throw new Error(`Command is required for stdio transport: ${name}`);
         }
-        transports[name] = new StdioClientTransport(validatedTransport as StdioServerParameters);
+        transports[name] = {
+          name,
+          transport: new StdioClientTransport(validatedTransport as StdioServerParameters),
+          timeout: validatedTransport.timeout,
+          tags: validatedTransport.tags,
+        };
       }
 
       logger.debug(`Created ${validatedTransport.type} transport for ${name}`);

@@ -13,13 +13,14 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
+import { Clients } from '../clients/clientManager.js';
 
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
  * @param server The MCP server instance
  */
-export function setupClientToServerNotifications(clients: Record<string, Client>, server: Server): void {
+export function setupClientToServerNotifications(clients: Clients, server: Server): void {
   const clientNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -30,9 +31,9 @@ export function setupClientToServerNotifications(clients: Record<string, Client>
     PromptListChangedNotificationSchema,
   ];
 
-  for (const [name, client] of Object.entries(clients)) {
+  for (const [name, clientInfo] of Object.entries(clients)) {
     clientNotificationSchemas.forEach((schema) => {
-      client.setNotificationHandler(
+      clientInfo.client.setNotificationHandler(
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
@@ -54,7 +55,7 @@ export function setupClientToServerNotifications(clients: Record<string, Client>
  * @param clients Record of client instances
  * @param server The MCP server instance
  */
-export function setupServerToClientNotifications(clients: Record<string, Client>, server: Server): void {
+export function setupServerToClientNotifications(clients: Clients, server: Server): void {
   const serverNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -62,13 +63,13 @@ export function setupServerToClientNotifications(clients: Record<string, Client>
     RootsListChangedNotificationSchema,
   ];
 
-  for (const [name, client] of Object.entries(clients)) {
+  for (const [name, clientInfo] of Object.entries(clients)) {
     serverNotificationSchemas.forEach((schema) => {
       server.setNotificationHandler(
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
-          client.notification({
+          clientInfo.client.notification({
             ...notification,
             params: {
               ...notification.params,

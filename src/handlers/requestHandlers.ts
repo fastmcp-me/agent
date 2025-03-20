@@ -12,11 +12,12 @@ import {
   UnsubscribeRequestSchema,
   SetLevelRequestSchema,
   ServerCapabilities,
+  CallToolResultSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
-import { executeClientOperation } from '../clients/clientManager.js';
+import { Clients, executeClientOperation } from '../clients/clientManager.js';
 import { ProxyError, parseUri, withErrorHandling } from '../utils/errorHandling.js';
 
 /**
@@ -53,11 +54,7 @@ function sendPartialFailureNotification(
  * @param server The MCP server instance
  * @param capabilities The server capabilities
  */
-export function registerRequestHandlers(
-  clients: Record<string, Client>,
-  server: Server,
-  capabilities: ServerCapabilities,
-): void {
+export function registerRequestHandlers(clients: Clients, server: Server, capabilities: ServerCapabilities): void {
   // Register logging level handler
   server.setRequestHandler(SetLevelRequestSchema, async (request) => {
     setLogLevel(request.params.level);
@@ -85,7 +82,7 @@ export function registerRequestHandlers(
  * @param clients Record of client instances
  * @param server The MCP server instance
  */
-function registerResourceHandlers(clients: Record<string, Client>, server: Server): void {
+function registerResourceHandlers(clients: Clients, server: Server): void {
   // List Resources handler
   server.setRequestHandler(
     ListResourcesRequestSchema,
@@ -93,10 +90,12 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
       const resources = [];
       const failedClients = [];
 
-      for (const [name, client] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(clients)) {
         logger.info(`Listing resources for ${name}`);
         try {
-          const result = await client.listResources(request.params);
+          const result = await clientInfo.client.listResources(request.params, {
+            timeout: clientInfo.transport.timeout,
+          });
           resources.push(
             ...result.resources.map((resource) => ({
               uri: `${name}${MCP_URI_SEPARATOR}${resource.uri}`,
@@ -132,10 +131,12 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
       const resourceTemplates = [];
       const failedClients = [];
 
-      for (const [name, client] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(clients)) {
         logger.info(`Listing resource templates for ${name}`);
         try {
-          const result = await client.listResourceTemplates(request.params);
+          const result = await clientInfo.client.listResourceTemplates(request.params, {
+            timeout: clientInfo.transport.timeout,
+          });
           resourceTemplates.push(
             ...result.resourceTemplates.map((template) => ({
               uriTemplate: `${name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
@@ -172,8 +173,13 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
     SubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (client) =>
-        client.subscribeResource({ ...request.params, uri: resourceName }),
+      return executeClientOperation(clients, clientName, (clientInfo) =>
+        clientInfo.client.subscribeResource(
+          { ...request.params, uri: resourceName },
+          {
+            timeout: clientInfo.transport.timeout,
+          },
+        ),
       );
     }, 'Error subscribing to resource'),
   );
@@ -183,8 +189,13 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
     UnsubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (client) =>
-        client.unsubscribeResource({ ...request.params, uri: resourceName }),
+      return executeClientOperation(clients, clientName, (clientInfo) =>
+        clientInfo.client.unsubscribeResource(
+          { ...request.params, uri: resourceName },
+          {
+            timeout: clientInfo.transport.timeout,
+          },
+        ),
       );
     }, 'Error unsubscribing from resource'),
   );
@@ -194,8 +205,13 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
     ReadResourceRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (client) =>
-        client.readResource({ ...request.params, uri: resourceName }),
+      return executeClientOperation(clients, clientName, (clientInfo) =>
+        clientInfo.client.readResource(
+          { ...request.params, uri: resourceName },
+          {
+            timeout: clientInfo.transport.timeout,
+          },
+        ),
       );
     }, 'Error reading resource'),
   );
@@ -206,7 +222,7 @@ function registerResourceHandlers(clients: Record<string, Client>, server: Serve
  * @param clients Record of client instances
  * @param server The MCP server instance
  */
-function registerToolHandlers(clients: Record<string, Client>, server: Server): void {
+function registerToolHandlers(clients: Clients, server: Server): void {
   // List Tools handler
   server.setRequestHandler(
     ListToolsRequestSchema,
@@ -214,10 +230,12 @@ function registerToolHandlers(clients: Record<string, Client>, server: Server): 
       const tools = [];
       const failedClients = [];
 
-      for (const [name, client] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(clients)) {
         logger.info(`Listing tools for ${name}`);
         try {
-          const result = await client.listTools(request.params);
+          const result = await clientInfo.client.listTools(request.params, {
+            timeout: clientInfo.transport.timeout,
+          });
           tools.push(
             ...result.tools.map((tool) => ({
               name: `${name}${MCP_URI_SEPARATOR}${tool.name}`,
@@ -250,8 +268,10 @@ function registerToolHandlers(clients: Record<string, Client>, server: Server): 
     CallToolRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (client) =>
-        client.callTool({ ...request.params, name: toolName }),
+      return executeClientOperation(clients, clientName, (clientInfo) =>
+        clientInfo.client.callTool({ ...request.params, name: toolName }, CallToolResultSchema, {
+          timeout: clientInfo.transport.timeout,
+        }),
       );
     }, 'Error calling tool'),
   );
@@ -262,7 +282,7 @@ function registerToolHandlers(clients: Record<string, Client>, server: Server): 
  * @param clients Record of client instances
  * @param server The MCP server instance
  */
-function registerPromptHandlers(clients: Record<string, Client>, server: Server): void {
+function registerPromptHandlers(clients: Clients, server: Server): void {
   // List Prompts handler
   server.setRequestHandler(
     ListPromptsRequestSchema,
@@ -270,10 +290,10 @@ function registerPromptHandlers(clients: Record<string, Client>, server: Server)
       const prompts = [];
       const failedClients = [];
 
-      for (const [name, client] of Object.entries(clients)) {
+      for (const [name, clientInfo] of Object.entries(clients)) {
         logger.info(`Listing prompts for ${name}`);
         try {
-          const result = await client.listPrompts(request.params);
+          const result = await clientInfo.client.listPrompts(request.params);
           prompts.push(
             ...result.prompts.map((prompt) => ({
               name: `${name}${MCP_URI_SEPARATOR}${prompt.name}`,
@@ -306,8 +326,8 @@ function registerPromptHandlers(clients: Record<string, Client>, server: Server)
     GetPromptRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (client) =>
-        client.getPrompt({ ...request.params, name: promptName }),
+      return executeClientOperation(clients, clientName, (clientInfo) =>
+        clientInfo.client.getPrompt({ ...request.params, name: promptName }),
       );
     }, 'Error getting prompt'),
   );

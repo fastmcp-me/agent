@@ -2,7 +2,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import logger from '../logger/logger.js';
 import configManager, { ConfigChangeEvent } from '../config/configManager.js';
-import { createTransports, MCPServerParams } from '../config/transportConfig.js';
+import { ClientTransports, createTransports, MCPServerParams } from '../config/transportConfig.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 
@@ -12,7 +12,7 @@ import { setupCapabilities } from '../capabilities/capabilityManager.js';
 export class ConfigReloadService {
   private static instance: ConfigReloadService;
   private server: Server | null = null;
-  private currentTransports: Record<string, Transport> = {};
+  private currentTransports: ClientTransports = {};
   private isReloading = false;
 
   /**
@@ -36,7 +36,7 @@ export class ConfigReloadService {
    * @param server The MCP server instance
    * @param initialTransports The initial transports
    */
-  public initialize(server: Server, initialTransports: Record<string, Transport>): void {
+  public initialize(server: Server, initialTransports: ClientTransports): void {
     this.server = server;
     this.currentTransports = initialTransports;
 
@@ -68,7 +68,7 @@ export class ConfigReloadService {
       // Close all current transports
       for (const [key, transport] of currentTransportEntries) {
         try {
-          await transport.close();
+          await transport.transport.close();
           logger.info(`Closed transport: ${key}`);
         } catch (error) {
           logger.error(`Error closing transport ${key}: ${error}`);

@@ -5,6 +5,8 @@ import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
+import { Clients } from './clients/clientManager.js';
+import { ClientTransports } from './config/transportConfig.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -12,14 +14,14 @@ export class ServerManager {
   private serverConfig: { name: string; version: string };
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
-  private clients: Record<string, Client> = {};
-  private clientTransports: Record<string, Transport> = {};
+  private clients: Clients = {};
+  private clientTransports: ClientTransports = {};
 
   private constructor(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: Record<string, Client>,
-    clientTransports: Record<string, Transport>,
+    clients: Clients,
+    clientTransports: ClientTransports,
   ) {
     this.serverConfig = config;
     this.serverCapabilities = capabilities;
@@ -30,8 +32,8 @@ export class ServerManager {
   public static getInstance(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: Record<string, Client>,
-    clientTransports: Record<string, Transport>,
+    clients: Clients,
+    clientTransports: ClientTransports,
   ): ServerManager {
     if (!ServerManager.instance) {
       ServerManager.instance = new ServerManager(config, capabilities, clients, clientTransports);

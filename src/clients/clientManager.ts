@@ -4,14 +4,23 @@ import createClient from '../client.js';
 import logger from '../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
 import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '../utils/errorHandling.js';
+import { ClientTransport, ClientTransports } from '../config/transportConfig.js';
+
+export type ClientInfo = {
+  name: string;
+  transport: ClientTransport;
+  client: Client;
+};
+
+export type Clients = Record<string, ClientInfo>;
 
 /**
  * Creates client instances for all transports with retry logic
  * @param transports Record of transport instances
  * @returns Record of client instances
  */
-export async function createClients(transports: Record<string, Transport>): Promise<Record<string, Client>> {
-  const clients: Record<string, Client> = {};
+export async function createClients(transports: ClientTransports): Promise<Clients> {
+  const clients: Clients = {};
 
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
@@ -19,9 +28,13 @@ export async function createClients(transports: Record<string, Transport>): Prom
       const client = await createClient();
 
       // Connect with retry logic
-      await connectWithRetry(client, transport, name);
+      await connectWithRetry(client, transport.transport, name);
 
-      clients[name] = client;
+      clients[name] = {
+        name,
+        transport,
+        client,
+      };
       logger.info(`Client created for ${name}`);
     } catch (error) {
       logger.error(`Failed to create client for ${name}: ${error}`);
@@ -73,7 +86,7 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
  * @returns The client instance
  * @throws ClientNotFoundError if the client is not found
  */
-export function getClient(clients: Record<string, Client>, clientName: string): Client {
+export function getClient(clients: Clients, clientName: string): ClientInfo {
   const client = clients[clientName];
   if (!client) {
     throw new ClientNotFoundError(clientName);
@@ -89,10 +102,10 @@ export function getClient(clients: Record<string, Client>, clientName: string): 
  * @returns The result of the operation
  */
 export async function executeClientOperation<T>(
-  clients: Record<string, Client>,
+  clients: Clients,
   clientName: string,
-  operation: (client: Client) => Promise<T>,
+  operation: (clientInfo: ClientInfo) => Promise<T>,
 ): Promise<T> {
-  const client = getClient(clients, clientName);
-  return withErrorHandling(async () => operation(client), `Error executing operation on client ${clientName}`)();
+  const clientInfo = getClient(clients, clientName);
+  return withErrorHandling(async () => operation(clientInfo), `Error executing operation on client ${clientName}`)();
 }
