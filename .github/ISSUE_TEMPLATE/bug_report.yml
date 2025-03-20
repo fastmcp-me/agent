@@ -1,0 +1,48 @@
+name: Bug Report
+description: File a bug report
+labels: ["bug"]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: Which version of the app are you using?
+      description: Please specify the app version you're using (e.g. v0.2.0)
+    validations:
+      required: true
+  - type: input
+    id: server
+    attributes:
+      label: Which server are you using?
+      description: Please specify the server you're using (e.g. https://github.com/modelcontextprotocol/servers/tree/main/src/memory)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How do you trigger this bug? Please walk us through it step by step.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant server logs
+      description: Please copy and paste any relevant output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional context
+      description: Add any other context about the problem here, such as screenshots or related issues.
