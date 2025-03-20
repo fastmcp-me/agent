@@ -1,11 +1,10 @@
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import logger from '../logger/logger.js';
 import configManager, { ConfigChangeEvent } from '../config/configManager.js';
-import { ClientTransports, createTransports, MCPServerParams } from '../config/transportConfig.js';
+import { MCPServerParams, ClientTransports } from '../types.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { ServerInfo } from '../types.js';
+import { createTransports } from '../config/transportConfig.js';
 /**
  * Service to handle dynamic configuration reloading
  */

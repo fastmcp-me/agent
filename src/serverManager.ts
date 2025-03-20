@@ -5,8 +5,7 @@ import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
-import { Clients, ServerInfo } from './types.js';
-import { ClientTransports } from './config/transportConfig.js';
+import { Clients, ServerInfo, ClientTransports } from './types.js';
 
 export class ServerManager {
   private static instance: ServerManager;

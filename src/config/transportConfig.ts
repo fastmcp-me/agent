@@ -1,43 +1,9 @@
-import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
-import { z, ZodError } from 'zod';
+import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
-
-/**
- * Zod schema for transport configuration
- */
-export const transportConfigSchema = z.object({
-  type: z.enum(['stdio', 'sse', 'http']).optional(),
-  disabled: z.boolean().optional(),
-  timeout: z.number().optional(),
-  tags: z.array(z.string()).optional(),
-
-  // SSEServerParameters fields
-  url: z.string().url().optional(),
-  headers: z.record(z.string()).optional(),
-
-  // StdioServerParameters fields
-  command: z.string().optional(),
-  args: z.array(z.string()).optional(),
-  stderr: z.union([z.string(), z.number()]).optional(),
-  cwd: z.string().optional(),
-  env: z.record(z.string()).optional(),
-});
-
-/**
- * Type for transport configuration
- */
-export type MCPServerParams = z.infer<typeof transportConfigSchema>;
-
-export type ClientTransport = {
-  name: string;
-  transport: Transport;
-  timeout?: number;
-  tags?: string[];
-};
-
-export type ClientTransports = Record<string, ClientTransport>;
+import { transportConfigSchema } from '../types.js';
+import { MCPServerParams, ClientTransports } from '../types.js';
 
 /**
  * Creates transport instances from configuration
