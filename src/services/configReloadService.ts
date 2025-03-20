@@ -1,17 +1,17 @@
 import logger from '../logger/logger.js';
 import { ConfigChangeEvent, ConfigManager } from '../config/configManager.js';
-import { MCPServerParams, ClientTransports } from '../types.js';
+import { MCPServerParams, ServerInfo, EnhancedTransport } from '../types.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
-import { ServerInfo } from '../types.js';
 import { createTransports } from '../config/transportConfig.js';
+
 /**
  * Service to handle dynamic configuration reloading
  */
 export class ConfigReloadService {
   private static instance: ConfigReloadService;
   private serverInfo: ServerInfo | null = null;
-  private currentTransports: ClientTransports = {};
+  private currentTransports: Record<string, EnhancedTransport> = {};
   private isReloading = false;
 
   /**
@@ -35,7 +35,7 @@ export class ConfigReloadService {
    * @param serverInfo The MCP server instance
    * @param initialTransports The initial transports
    */
-  public initialize(serverInfo: ServerInfo, initialTransports: ClientTransports): void {
+  public initialize(serverInfo: ServerInfo, initialTransports: Record<string, EnhancedTransport>): void {
     this.serverInfo = serverInfo;
     this.currentTransports = initialTransports;
 
@@ -69,7 +69,7 @@ export class ConfigReloadService {
       // Close all current transports
       for (const [key, transport] of currentTransportEntries) {
         try {
-          await transport.transport.close();
+          await transport.close();
           logger.info(`Closed transport: ${key}`);
         } catch (error) {
           logger.error(`Error closing transport ${key}: ${error}`);

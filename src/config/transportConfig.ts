@@ -3,72 +3,54 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { transportConfigSchema } from '../types.js';
-import { MCPServerParams, ClientTransports } from '../types.js';
+import { MCPServerParams, EnhancedTransport } from '../types.js';
 
 /**
  * Creates transport instances from configuration
  * @returns Record of transport instances
  */
-export function createTransports(mcpConfig: Record<string, MCPServerParams>): ClientTransports {
-  const transports: ClientTransports = {};
+export function createTransports(config: Record<string, MCPServerParams>): Record<string, EnhancedTransport> {
+  const transports: Record<string, EnhancedTransport> = {};
 
-  for (const [name, transport] of Object.entries(mcpConfig)) {
-    if (transport.disabled) {
+  for (const [name, params] of Object.entries(config)) {
+    if (params.disabled) {
       logger.debug(`Skipping disabled transport: ${name}`);
       continue;
     }
 
     try {
-      // Validate transport configuration
-      const validatedTransport = transportConfigSchema.parse(transport);
+      const validatedTransport = transportConfigSchema.parse(params);
 
-      // Merge environment variables
-      validatedTransport.env = {
-        ...Object.fromEntries(
-          Object.entries(process.env)
-            .filter(([_, v]) => v !== undefined)
-            .map(([k, v]) => [k, String(v)]),
-        ),
-        ...validatedTransport.env,
-      };
-
-      // Create transport based on type
       if (validatedTransport.type === 'sse' || validatedTransport.type === 'http') {
         if (!validatedTransport.url) {
           throw new Error(`URL is required for SSE transport: ${name}`);
         }
-        transports[name] = {
-          name,
-          transport: new SSEClientTransport(new URL(validatedTransport.url), {
-            requestInit: {
-              headers: validatedTransport.headers,
-            },
-          }),
-          timeout: validatedTransport.timeout,
-          tags: validatedTransport.tags,
-        };
+        const transport = new SSEClientTransport(new URL(validatedTransport.url), {
+          requestInit: {
+            headers: validatedTransport.headers,
+          },
+        }) as EnhancedTransport;
+        transport.timeout = validatedTransport.timeout;
+        transport.tags = validatedTransport.tags;
+        transports[name] = transport;
       } else {
-        // For stdio transport, ensure required fields are present
         if (!validatedTransport.command) {
           throw new Error(`Command is required for stdio transport: ${name}`);
         }
-        transports[name] = {
-          name,
-          transport: new StdioClientTransport(validatedTransport as StdioServerParameters),
-          timeout: validatedTransport.timeout,
-          tags: validatedTransport.tags,
-        };
+        const transport = new StdioClientTransport(validatedTransport as StdioServerParameters) as EnhancedTransport;
+        transport.timeout = validatedTransport.timeout;
+        transport.tags = validatedTransport.tags;
+        transports[name] = transport;
       }
 
-      logger.debug(`Created ${validatedTransport.type} transport for ${name}`);
+      logger.debug(`Created transport: ${name}`);
     } catch (error) {
       if (error instanceof ZodError) {
         logger.error(`Invalid transport configuration for ${name}:`, error.errors);
-      } else if (error instanceof Error) {
-        logger.error(`Failed to create transport for ${name}: ${error.message}`);
       } else {
-        logger.error(`Failed to create transport for ${name}: ${String(error)}`);
+        logger.error(`Error creating transport ${name}:`, error);
       }
+      throw error;
     }
   }
 

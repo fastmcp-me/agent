@@ -5,14 +5,14 @@ import logger from '../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 import { ClientConnectionError, ClientNotFoundError } from '../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, ClientOperationOptions, ClientTransports } from '../types.js';
+import { ClientStatus, ClientInfo, Clients, ClientOperationOptions } from '../types.js';
 
 /**
  * Creates client instances for all transports with retry logic
  * @param transports Record of transport instances
  * @returns Record of client instances
  */
-export async function createClients(transports: ClientTransports): Promise<Clients> {
+export async function createClients(transports: Record<string, Transport>): Promise<Clients> {
   const clients: Record<string, ClientInfo> = {};
 
   for (const [name, transport] of Object.entries(transports)) {
@@ -21,7 +21,7 @@ export async function createClients(transports: ClientTransports): Promise<Clien
       const client = await createClient();
 
       // Connect with retry logic
-      await connectWithRetry(client, transport.transport, name);
+      await connectWithRetry(client, transport, name);
 
       clients[name] = {
         name,

@@ -4,7 +4,7 @@ import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
-import { Clients, ServerInfo, ClientTransports } from './types.js';
+import { Clients, ServerInfo } from './types.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -13,28 +13,28 @@ export class ServerManager {
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
   private clients: Clients = {};
-  private clientTransports: ClientTransports = {};
+  private transports: Record<string, Transport> = {};
 
   private constructor(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
     clients: Clients,
-    clientTransports: ClientTransports,
+    transports: Record<string, Transport>,
   ) {
     this.serverConfig = config;
     this.serverCapabilities = capabilities;
     this.clients = clients;
-    this.clientTransports = clientTransports;
+    this.transports = transports;
   }
 
   public static getInstance(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
     clients: Clients,
-    clientTransports: ClientTransports,
+    transports: Record<string, Transport>,
   ): ServerManager {
     if (!ServerManager.instance) {
-      ServerManager.instance = new ServerManager(config, capabilities, clients, clientTransports);
+      ServerManager.instance = new ServerManager(config, capabilities, clients, transports);
     }
     return ServerManager.instance;
   }
@@ -56,7 +56,7 @@ export class ServerManager {
       await setupCapabilities(this.clients, serverInfo);
 
       // Initialize the configuration reload service
-      configReloadService.initialize(serverInfo, this.clientTransports);
+      configReloadService.initialize(serverInfo, this.transports);
 
       // Store the server instance
       this.servers.set(sessionId, serverInfo);
@@ -93,8 +93,8 @@ export class ServerManager {
     return transports;
   }
 
-  public getClientTransports(): ClientTransports {
-    return this.clientTransports;
+  public getClientTransports(): Record<string, Transport> {
+    return this.transports;
   }
 
   public getActiveTransportsCount(): number {

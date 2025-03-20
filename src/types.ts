@@ -4,6 +4,44 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { z } from 'zod';
 
 /**
+ * Enhanced transport interface that includes MCP-specific properties
+ */
+export interface EnhancedTransport extends Transport {
+  timeout?: number;
+  tags?: string[];
+}
+
+/**
+ * Base interface for common transport properties
+ */
+export interface BaseTransportConfig {
+  readonly timeout?: number;
+  readonly disabled?: boolean;
+  readonly tags?: string[];
+}
+
+/**
+ * Common configuration for HTTP-based transports (HTTP and SSE)
+ */
+export interface HTTPBasedTransportConfig extends BaseTransportConfig {
+  readonly type: 'http' | 'sse';
+  readonly url: string;
+  readonly headers?: Record<string, string>;
+}
+
+/**
+ * Stdio transport specific configuration
+ */
+export interface StdioTransportConfig extends BaseTransportConfig {
+  readonly type: 'stdio';
+  readonly command: string;
+  readonly args?: string[];
+  readonly stderr?: string | number;
+  readonly cwd?: string;
+  readonly env?: Record<string, string>;
+}
+
+/**
  * Zod schema for transport configuration
  */
 export const transportConfigSchema = z.object({
@@ -12,7 +50,7 @@ export const transportConfigSchema = z.object({
   timeout: z.number().optional(),
   tags: z.array(z.string()).optional(),
 
-  // SSEServerParameters fields
+  // HTTP/SSE Parameters
   url: z.string().url().optional(),
   headers: z.record(z.string()).optional(),
 
@@ -25,42 +63,56 @@ export const transportConfigSchema = z.object({
 });
 
 /**
- * Type for transport configuration
+ * Union type for all transport configurations
+ */
+export type TransportConfig = HTTPBasedTransportConfig | StdioTransportConfig;
+
+/**
+ * Type for MCP server parameters derived from transport config schema
  */
 export type MCPServerParams = z.infer<typeof transportConfigSchema>;
 
-export type ClientTransport = {
-  name: string;
-  transport: Transport;
-  timeout?: number;
-  tags?: string[];
-};
+/**
+ * Server information including tags
+ */
+export interface ServerInfo {
+  readonly server: Server;
+  readonly tags?: string[];
+}
 
-export type ClientTransports = Record<string, ClientTransport>;
-
-export type ServerInfo = {
-  server: Server;
-  tags?: string[];
-};
-
+/**
+ * Enum representing possible client connection states
+ */
 export enum ClientStatus {
+  /** Client is successfully connected */
   Connected = 'connected',
+  /** Client is disconnected */
   Disconnected = 'disconnected',
+  /** Client encountered an error */
   Error = 'error',
 }
 
-export type ClientInfo = {
+/**
+ * Complete client information including transport, status and history
+ */
+export interface ClientInfo {
   readonly name: string;
-  readonly transport: ClientTransport;
+  readonly transport: EnhancedTransport;
   readonly client: Client;
   readonly status: ClientStatus;
   readonly lastError?: Error;
   readonly lastConnected?: Date;
-};
+}
 
-export type Clients = Readonly<Record<string, ClientInfo>>;
+/**
+ * Map of client information indexed by client name
+ */
+export type Clients = Record<string, ClientInfo>;
 
-export type ClientOperationOptions = {
+/**
+ * Options for client operations
+ */
+export interface ClientOperationOptions {
   readonly retryCount?: number;
   readonly retryDelay?: number;
-};
+}
