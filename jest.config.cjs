@@ -1,5 +1,5 @@
 module.exports = {
-  preset: 'ts-jest',
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
@@ -8,8 +8,14 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
+      tsconfig: {
+        allowJs: true,
+      },
     }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(@modelcontextprotocol|pkce-challenge)/.*)',
+  ],
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
