@@ -1,62 +1,12 @@
 import { ERROR_CODES } from '../constants.js';
 import logger from '../logger/logger.js';
+import { MCPError, MCPErrorType, InvalidRequestError } from './errorTypes.js';
 
 /**
- * Custom error types for the MCP agent
- */
-export class MCPError extends Error {
-  code: number;
-  data?: any;
-
-  constructor(message: string, code: number, data?: any) {
-    super(message);
-    this.name = 'MCPError';
-    this.code = code;
-    this.data = data;
-  }
-}
-
-export class ClientNotFoundError extends MCPError {
-  constructor(clientName: string) {
-    super(`Client not found: ${clientName}`, ERROR_CODES.TRANSPORT_NOT_FOUND);
-    this.name = 'ClientNotFoundError';
-  }
-}
-
-export class ClientConnectionError extends MCPError {
-  constructor(clientName: string, originalError?: Error) {
-    super(
-      `Failed to connect to client: ${clientName}${originalError ? ` - ${originalError.message}` : ''}`,
-      ERROR_CODES.TRANSPORT_NOT_FOUND,
-      { originalError },
-    );
-    this.name = 'ClientConnectionError';
-  }
-}
-
-export class InvalidRequestError extends MCPError {
-  constructor(message: string, data?: any) {
-    super(message, ERROR_CODES.INVALID_PARAMS, data);
-    this.name = 'InvalidRequestError';
-  }
-}
-
-export class ProxyError extends MCPError {
-  constructor(message: string, originalError?: Error) {
-    super(
-      message,
-      ERROR_CODES.INTERNAL_SERVER_ERROR,
-      originalError ? { originalError: originalError.message } : undefined,
-    );
-    this.name = 'ProxyError';
-  }
-}
-
-/**
- * Handles errors in async functions by wrapping them in a try/catch block
- * @param fn The async function to wrap
- * @param errorMessage The error message to log
- * @returns A wrapped function that handles errors
+ * Wraps a function with error handling
+ * @param fn The function to wrap
+ * @param errorMessage The error message to use if the function fails
+ * @returns The wrapped function
  */
 export function withErrorHandling<T, Args extends any[]>(
   fn: (...args: Args) => Promise<T>,
@@ -73,10 +23,76 @@ export function withErrorHandling<T, Args extends any[]>(
         throw error;
       }
 
-      // Convert other errors to ProxyError
-      throw new ProxyError(errorMessage, error instanceof Error ? error : new Error(String(error)));
+      // Convert other errors to MCPError
+      throw new MCPError(errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        originalError: error instanceof Error ? error : new Error(String(error)),
+      });
     }
   };
+}
+
+/**
+ * Normalizes an error to an MCPError type
+ * @param error The error to normalize
+ * @param errorMessage The error message to use if the error is not an MCPError
+ * @returns The normalized error
+ */
+export function normalizeError(error: unknown, errorMessage: string): MCPErrorType {
+  if (error instanceof MCPError) {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return new MCPError(error.message || errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR);
+  }
+
+  return new MCPError(errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR);
+}
+
+/**
+ * Checks if an error is a specific MCPError type
+ * @param error The error to check
+ * @param errorType The error type to check against
+ * @returns True if the error is of the specified type
+ */
+export function isMCPError<T extends MCPError>(error: unknown, errorType: new (...args: any[]) => T): error is T {
+  return error instanceof errorType;
+}
+
+/**
+ * Gets the error code from an error
+ * @param error The error to get the code from
+ * @returns The error code
+ */
+export function getErrorCode(error: unknown): number {
+  if (error instanceof MCPError) {
+    return error.code;
+  }
+  return ERROR_CODES.INTERNAL_SERVER_ERROR;
+}
+
+/**
+ * Gets the error message from an error
+ * @param error The error to get the message from
+ * @returns The error message
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+/**
+ * Gets the error cause from an error
+ * @param error The error to get the cause from
+ * @returns The error cause
+ */
+export function getErrorCause(error: unknown): Error | undefined {
+  if (error instanceof Error && 'cause' in error) {
+    return error.cause as Error;
+  }
+  return undefined;
 }
 
 /**

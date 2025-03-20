@@ -1,4 +1,3 @@
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import {
   CallToolRequestSchema,
@@ -16,9 +15,10 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { setLogLevel } from '../logger/logger.js';
-import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
+import { MCP_URI_SEPARATOR, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
 import { Clients, executeClientOperation } from '../clients/clientManager.js';
-import { ProxyError, parseUri, withErrorHandling } from '../utils/errorHandling.js';
+import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
+import { MCPError } from '../utils/errorTypes.js';
 
 /**
  * Sends a partial failure notification to inform clients about backend failures
@@ -112,7 +112,9 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-        throw new ProxyError('Failed to list resources from all clients', new Error(JSON.stringify(failedClients)));
+        throw new MCPError('Failed to list resources from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+          failedClients,
+        });
       }
 
       // Send notification about partial failures
@@ -153,10 +155,9 @@ function registerResourceHandlers(clients: Clients, server: Server): void {
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-        throw new ProxyError(
-          'Failed to list resource templates from all clients',
-          new Error(JSON.stringify(failedClients)),
-        );
+        throw new MCPError('Failed to list resource templates from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+          failedClients,
+        });
       }
 
       // Send notification about partial failures
@@ -251,7 +252,9 @@ function registerToolHandlers(clients: Clients, server: Server): void {
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-        throw new ProxyError('Failed to list tools from all clients', new Error(JSON.stringify(failedClients)));
+        throw new MCPError('Failed to list tools from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+          failedClients,
+        });
       }
 
       // Send notification about partial failures
@@ -309,7 +312,9 @@ function registerPromptHandlers(clients: Clients, server: Server): void {
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(clients).length && Object.keys(clients).length > 0) {
-        throw new ProxyError('Failed to list prompts from all clients', new Error(JSON.stringify(failedClients)));
+        throw new MCPError('Failed to list prompts from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+          failedClients,
+        });
       }
 
       // Send notification about partial failures

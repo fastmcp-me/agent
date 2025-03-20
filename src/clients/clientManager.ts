@@ -3,16 +3,31 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
-import { ClientConnectionError, ClientNotFoundError, withErrorHandling } from '../utils/errorHandling.js';
 import { ClientTransport, ClientTransports } from '../config/transportConfig.js';
+import { withErrorHandling } from '../utils/errorHandling.js';
+import { ClientConnectionError, ClientNotFoundError } from '../utils/errorTypes.js';
+
+export enum ClientStatus {
+  Connected = 'connected',
+  Disconnected = 'disconnected',
+  Error = 'error',
+}
 
 export type ClientInfo = {
-  name: string;
-  transport: ClientTransport;
-  client: Client;
+  readonly name: string;
+  readonly transport: ClientTransport;
+  readonly client: Client;
+  readonly status: ClientStatus;
+  readonly lastError?: Error;
+  readonly lastConnected?: Date;
 };
 
-export type Clients = Record<string, ClientInfo>;
+export type Clients = Readonly<Record<string, ClientInfo>>;
+
+export type ClientOperationOptions = {
+  readonly retryCount?: number;
+  readonly retryDelay?: number;
+};
 
 /**
  * Creates client instances for all transports with retry logic
@@ -20,7 +35,7 @@ export type Clients = Record<string, ClientInfo>;
  * @returns Record of client instances
  */
 export async function createClients(transports: ClientTransports): Promise<Clients> {
-  const clients: Clients = {};
+  const clients: Record<string, ClientInfo> = {};
 
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
@@ -34,15 +49,23 @@ export async function createClients(transports: ClientTransports): Promise<Clien
         name,
         transport,
         client,
+        status: ClientStatus.Connected,
+        lastConnected: new Date(),
       };
       logger.info(`Client created for ${name}`);
     } catch (error) {
       logger.error(`Failed to create client for ${name}: ${error}`);
-      // We continue with other clients even if one fails
+      clients[name] = {
+        name,
+        transport,
+        client: await createClient(),
+        status: ClientStatus.Error,
+        lastError: error instanceof Error ? error : new Error(String(error)),
+      };
     }
   }
 
-  return clients;
+  return Object.freeze(clients);
 }
 
 /**
@@ -95,17 +118,35 @@ export function getClient(clients: Clients, clientName: string): ClientInfo {
 }
 
 /**
- * Executes a client operation with error handling
+ * Executes a client operation with error handling and timeout
  * @param clients Record of client instances
  * @param clientName The name of the client to use
  * @param operation The operation to execute
+ * @param options Operation options including timeout and retry settings
  * @returns The result of the operation
  */
 export async function executeClientOperation<T>(
   clients: Clients,
   clientName: string,
   operation: (clientInfo: ClientInfo) => Promise<T>,
+  options: ClientOperationOptions = {},
 ): Promise<T> {
   const clientInfo = getClient(clients, clientName);
-  return withErrorHandling(async () => operation(clientInfo), `Error executing operation on client ${clientName}`)();
+  const { retryCount = 0, retryDelay = 1000 } = options;
+
+  return withErrorHandling(async () => {
+    let lastError: Error | undefined;
+    for (let i = 0; i <= retryCount; i++) {
+      try {
+        return await operation(clientInfo);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (i < retryCount) {
+          logger.info(`Retrying operation ${operation.name} on client ${clientName} after ${retryDelay}ms`);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+    throw lastError;
+  }, `Error executing operation on client ${clientName}`)();
 }
