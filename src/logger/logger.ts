@@ -48,23 +48,6 @@ const logger = winston.createLogger({
     new winston.transports.Console({
       format: consoleFormat,
     }),
-    //
-    // - Write all logs with importance level of `error` or higher to `error.log`
-    //   (i.e., error, fatal, but not other levels)
-    //
-    new winston.transports.File({
-      filename: path.join(logsDir, 'error.log'),
-      level: 'error',
-      format: customFormat,
-    }),
-    //
-    // - Write all logs with importance level of `info` or higher to `combined.log`
-    //   (i.e., fatal, error, warn, and info, but not trace)
-    //
-    new winston.transports.File({
-      filename: path.join(logsDir, 'combined.log'),
-      format: customFormat,
-    }),
   ],
   // Prevent logger from exiting on error
   exitOnError: false,
