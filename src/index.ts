@@ -10,6 +10,7 @@ import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';
 import { ExpressServer } from './server/expressServer.js';
+import { PORT, HOST } from './constants.js';
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -21,6 +22,18 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       choices: ['stdio', 'sse'],
       default: 'sse',
+    },
+    port: {
+      alias: 'P',
+      describe: 'SSE port to listen on, applicable when transport is sse',
+      type: 'number',
+      default: PORT,
+    },
+    host: {
+      alias: 'H',
+      describe: 'SSE host to listen on, applicable when transport is sse',
+      type: 'string',
+      default: HOST,
     },
     config: {
       alias: 'c',
@@ -99,7 +112,7 @@ async function main() {
     } else {
       // Use HTTP/SSE transport
       const expressServer = new ExpressServer(serverManager);
-      expressServer.start();
+      expressServer.start(argv.port, argv.host);
     }
   } catch (error) {
     logger.error('Server error:', error);

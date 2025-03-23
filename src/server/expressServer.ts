@@ -2,7 +2,7 @@ import express from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ServerManager } from '../serverManager.js';
 import logger, { setMCPTransportConnected } from '../logger/logger.js';
-import { PORT, SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from '../constants.js';
+import { SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from '../constants.js';
 
 export class ExpressServer {
   private app: express.Application;
@@ -112,9 +112,9 @@ export class ExpressServer {
     });
   }
 
-  public start(): void {
-    this.app.listen(PORT, () => {
-      logger.info(`Server is running on port ${PORT} with HTTP/SSE transport`);
+  public start(port: number, host: string): void {
+    this.app.listen(port, host, () => {
+      logger.info(`Server is running on port ${port} with HTTP/SSE transport`);
     });
   }
 }
