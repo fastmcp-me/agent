@@ -28,7 +28,7 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
     "mcpServers": {
         "1mcp": {
             "type": "http",
-            "url": "http://localhost:3050"
+            "url": "http://localhost:3050/sse"
         }
     }
 }
@@ -41,23 +41,80 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
 You can run the server directly using `npx`:
 
 ```bash
-# Run with HTTP/SSE transport (default)
+# Basic usage (starts server with SSE transport)
 npx -y @1mcp/agent
 
-# Run with stdio transport
+# Use existing Claude Desktop config
+npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop_config.json
+
+# Use stdio transport instead of SSE
 npx -y @1mcp/agent --transport stdio
 
-# Run with AI assistant config file
-npx -y @1mcp/agent --config /path/to/ai/assistant/config.json
-
-# Show help
+# Show all available options
 npx -y @1mcp/agent --help
 ```
 
 Available options:
-- `--transport, -t`: Transport type to use (choices: "stdio", "sse", default: "sse")
-- `--config, -c`: Path to the configuration file
+- `--transport, -t`: Choose transport type ("stdio" or "sse", default: "sse")
+- `--config, -c`: Use a specific config file
+- `--port, -P`: Change SSE port (default: 3050)
+- `--host, -H`: Change SSE host (default: localhost)
+- `--tags, -g`: Filter servers by tags (see Tags section below)
 - `--help, -h`: Show help
+
+### Understanding Tags
+
+Tags help you control which MCP servers are available to different clients. Think of tags as labels that describe what each server can do.
+
+#### How to Use Tags
+
+1. **In your server config**: Add tags to each server to describe its capabilities
+```json
+{
+  "mcpServers": {
+    "web-server": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "tags": ["network", "web"],
+      "disabled": false
+    },
+    "file-server": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Downloads"],
+      "tags": ["filesystem"],
+      "disabled": false
+    }
+  }
+}
+```
+
+2. **When starting 1MCP in stdio mode**: You can filter servers by tags
+```bash
+# Only start servers with the "network" tag
+npx -y @1mcp/agent --transport stdio --tags "network"
+
+# Start servers with either "network" or "filesystem" tags
+npx -y @1mcp/agent --transport stdio --tags "network,filesystem"
+```
+
+3. **When using SSE transport**: Clients can request servers with specific tags
+```json
+{
+    "mcpServers": {
+        "1mcp": {
+            "type": "http",
+            "url": "http://localhost:3050/sse?tags=network"  // Only connect to network-capable servers
+        }
+    }
+}
+```
+
+Example tags:
+- `network`: For servers that make web requests
+- `filesystem`: For servers that handle file operations
+- `memory`: For servers that provide memory/storage
+- `shell`: For servers that run shell commands
+- `db`: For servers that handle database operations
 
 ## Configuration
 
