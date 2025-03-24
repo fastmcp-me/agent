@@ -2,7 +2,21 @@
   "name": "@1mcp/agent",
   "version": "0.4.0",
   "description": "One MCP server to aggregate them all - A unified Model Context Protocol server implementation",
-  "homepage": "https://1mcp.app",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "mcp-client",
+    "model-context-protocol",
+    "agent",
+    "proxy",
+    "server",
+    "cli",
+    "ai",
+    "llm",
+    "model-aggregation",
+    "typescript"
+  ],
+  "homepage": "https://github.com/1mcp-app/agent",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
