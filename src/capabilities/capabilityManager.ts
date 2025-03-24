@@ -14,7 +14,7 @@ import { Clients, ServerInfo } from '../types.js';
  * @param tags Array of tags to filter clients by
  * @returns The combined server capabilities
  */
-export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo): Promise<ServerCapabilities> {
+export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo) {
   // Collect capabilities from all clients
   const capabilities = collectCapabilities(clients);
 
@@ -23,7 +23,7 @@ export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo
   setupServerToClientNotifications(clients, serverInfo);
 
   // Register request handlers based on capabilities
-  registerRequestHandlers(clients, serverInfo, capabilities);
+  registerRequestHandlers(clients, serverInfo);
 
   return capabilities;
 }
@@ -34,13 +34,22 @@ export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo
  * @returns The combined server capabilities
  */
 function collectCapabilities(clients: Clients): ServerCapabilities {
-  let capabilities: ServerCapabilities = {};
+  const capabilities: ServerCapabilities = {};
 
   for (const [name, clientInfo] of Object.entries(clients)) {
     try {
-      const clientCapabilities = clientInfo.client.getServerCapabilities() || {};
-      logger.debug(`Capabilities from ${name}: ${JSON.stringify(clientCapabilities)}`);
-      capabilities = { ...capabilities, ...clientCapabilities };
+      const serverCapabilities = clientInfo.client.getServerCapabilities() || {};
+      logger.debug(`Capabilities from ${name}: ${JSON.stringify(serverCapabilities)}`);
+
+      // Store capabilities per client
+      clientInfo.capabilities = serverCapabilities;
+
+      // Aggregate capabilities
+      capabilities.resources = { ...capabilities.resources, ...serverCapabilities.resources };
+      capabilities.tools = { ...capabilities.tools, ...serverCapabilities.tools };
+      capabilities.prompts = { ...capabilities.prompts, ...serverCapabilities.prompts };
+      capabilities.experimental = { ...capabilities.experimental, ...serverCapabilities.experimental };
+      capabilities.logging = { ...capabilities.logging, ...serverCapabilities.logging };
     } catch (error) {
       logger.error(`Failed to get capabilities from ${name}: ${error}`);
     }

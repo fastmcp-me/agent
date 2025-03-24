@@ -9,20 +9,18 @@ import {
   SubscribeRequestSchema,
   UnsubscribeRequestSchema,
   SetLevelRequestSchema,
-  ServerCapabilities,
   CallToolResultSchema,
   ListResourcesRequest,
   ListToolsRequest,
   ListPromptsRequest,
   ListResourceTemplatesRequest,
 } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../logger/logger.js';
-import { setLogLevel } from '../logger/logger.js';
+import logger, { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
 import { executeClientOperation } from '../clients/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
 import { MCPError } from '../utils/errorTypes.js';
-import { filterClientsByTags } from '../utils/clientFiltering.js';
+import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
 import { Clients, ServerInfo } from '../types.js';
 
 /**
@@ -60,31 +58,21 @@ function sendPartialFailureNotification(
  * @param capabilities The server capabilities
  * @param tags Array of tags to filter clients by
  */
-export function registerRequestHandlers(
-  clients: Clients,
-  serverInfo: ServerInfo,
-  capabilities: ServerCapabilities,
-): void {
+export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
   // Register logging level handler
   serverInfo.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
     setLogLevel(request.params.level);
     return {};
   });
 
-  // Register resource-related handlers if capability is available
-  if (capabilities.resources) {
-    registerResourceHandlers(clients, serverInfo);
-  }
+  // Register resource-related handlers
+  registerResourceHandlers(clients, serverInfo);
 
-  // Register tool-related handlers if capability is available
-  if (capabilities.tools) {
-    registerToolHandlers(clients, serverInfo);
-  }
+  // Register tool-related handlers
+  registerToolHandlers(clients, serverInfo);
 
-  // Register prompt-related handlers if capability is available
-  if (capabilities.prompts) {
-    registerPromptHandlers(clients, serverInfo);
-  }
+  // Register prompt-related handlers
+  registerPromptHandlers(clients, serverInfo);
 }
 
 /**
@@ -99,7 +87,8 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
     withErrorHandling(async (request: ListResourcesRequest) => {
       const resources = [];
       const failedClients = [];
-      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
+
+      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
 
       for (const [name, clientInfo] of Object.entries(filteredClients)) {
         logger.info(`Listing resources for ${name}`);
@@ -121,9 +110,9 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
         }
       }
 
-      // If all clients failed, throw an error
+      // If all capable clients failed, throw an error
       if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
-        throw new MCPError('Failed to list resources from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        throw new MCPError('Failed to list resources from all capable clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
       }
@@ -143,9 +132,9 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
     withErrorHandling(async (request: ListResourceTemplatesRequest) => {
       const resourceTemplates = [];
       const failedClients = [];
-      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
+      const capableClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(filteredClients)) {
+      for (const [name, clientInfo] of Object.entries(capableClients)) {
         logger.info(`Listing resource templates for ${name}`);
         try {
           const result = await clientInfo.client.listResourceTemplates(request.params, {
@@ -166,7 +155,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
+      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
         throw new MCPError('Failed to list resource templates from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -242,9 +231,9 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
     withErrorHandling(async (request: ListToolsRequest) => {
       const tools = [];
       const failedClients = [];
-      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
+      const capableClients = filterClients(byCapabilities({ tools: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(filteredClients)) {
+      for (const [name, clientInfo] of Object.entries(capableClients)) {
         logger.info(`Listing tools for ${name}`);
         try {
           const result = await clientInfo.client.listTools(request.params, {
@@ -264,7 +253,7 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
+      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
         throw new MCPError('Failed to list tools from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });
@@ -305,9 +294,9 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
     withErrorHandling(async (request: ListPromptsRequest) => {
       const prompts = [];
       const failedClients = [];
-      const filteredClients = filterClientsByTags(clients, serverInfo.tags);
+      const capableClients = filterClients(byCapabilities({ prompts: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(filteredClients)) {
+      for (const [name, clientInfo] of Object.entries(capableClients)) {
         logger.info(`Listing prompts for ${name}`);
         try {
           const result = await clientInfo.client.listPrompts(request.params);
@@ -325,7 +314,7 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
       }
 
       // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
+      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
         throw new MCPError('Failed to list prompts from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
           failedClients,
         });

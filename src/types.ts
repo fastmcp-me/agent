@@ -1,6 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 
 /**
@@ -102,6 +103,7 @@ export interface ClientInfo {
   readonly status: ClientStatus;
   readonly lastError?: Error;
   readonly lastConnected?: Date;
+  capabilities?: ServerCapabilities;
 }
 
 /**
