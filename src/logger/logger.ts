@@ -1,14 +1,6 @@
-import fs from 'fs';
-import path from 'path';
 import winston from 'winston';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { MCPTransport } from './mcpTransport.js';
-
-// Ensure logs directory exists
-const logsDir = path.join(process.cwd(), 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
-}
 
 // Map MCP log levels to Winston log levels
 const MCP_TO_WINSTON_LEVEL: Record<string, string> = {
