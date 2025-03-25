@@ -1,6 +1,7 @@
 import winston from 'winston';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { MCPTransport } from './mcpTransport.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 
 // Map MCP log levels to Winston log levels
 const MCP_TO_WINSTON_LEVEL: Record<string, string> = {
@@ -37,7 +38,9 @@ const logger = winston.createLogger({
   level: 'info',
   format: customFormat,
   transports: [
+    // Add a silent transport by default to prevent "no transports" warnings
     new winston.transports.Console({
+      silent: true,
       format: consoleFormat,
     }),
   ],
@@ -60,7 +63,19 @@ export function addMCPTransport(server: Server, loggerName?: string): void {
     loggerName: loggerName || '1mcp',
     level: 'info',
   });
-  logger.add(mcpTransport);
+
+  logger.transports = [mcpTransport];
+
+  // Add appropriate transport based on server type
+  if (server instanceof SSEServerTransport) {
+    // For SSE server, add console transport for visibility
+    logger.add(
+      new winston.transports.Console({
+        format: consoleFormat,
+        level: 'info',
+      }),
+    );
+  }
 }
 
 /**
