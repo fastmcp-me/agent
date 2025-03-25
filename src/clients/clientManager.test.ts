@@ -6,7 +6,7 @@ import {
   executeOperation,
   executeClientOperation,
   executeServerOperation,
-} from '../clients/clientManager.js';
+} from './clientManager.js';
 import createClientFn from '../client.js';
 import logger from '../logger/logger.js';
 import { ClientStatus, ClientInfo, ServerInfo } from '../types.js';

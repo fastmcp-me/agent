@@ -1,7 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { ConfigManager, ConfigChangeEvent } from './configManager.js';
+import { DEFAULT_CONFIG } from '../constants.js';
+import { setupCommonJestMocks } from '../test-utils/mocks/commonMocks.js';
+import { testConfig } from '../test-utils/fixtures/commonFixtures.js';
+import { clearAllMocks, createEventEmitterSpy } from '../test-utils/helpers/testHelpers.js';
 
-// Mock modules before importing ConfigManager
+// Mock modules
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
   mkdirSync: jest.fn(),
@@ -10,38 +15,23 @@ jest.mock('fs', () => ({
   watch: jest.fn(() => ({ close: jest.fn() })),
 }));
 
-const mockLogger = {
-  error: jest.fn(),
-  warn: jest.fn(),
-  info: jest.fn(),
-  debug: jest.fn(),
-  level: 'info',
-  transports: [],
-};
-
-jest.doMock('../logger/logger.js', () => ({
-  __esModule: true,
-  default: mockLogger,
-}));
+// Setup common mocks
+setupCommonJestMocks();
 
 // Mock constants
-jest.doMock('../constants.js', () => ({
+jest.mock('../constants.js', () => ({
   __esModule: true,
   DEFAULT_CONFIG: { mcpServers: {} },
   getGlobalConfigPath: jest.fn(),
   getGlobalConfigDir: jest.fn().mockReturnValue('/test'),
 }));
 
-// Import after mocks are set up
-import { ConfigManager, ConfigChangeEvent } from './configManager.js';
-import { DEFAULT_CONFIG } from '../constants.js';
-
 describe('ConfigManager', () => {
   const testConfigPath = '/test/config.json';
 
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+    // Reset all mocks and timers
+    clearAllMocks();
     // Reset singleton instance
     (ConfigManager as any).instance = undefined;
     // Default mock implementations
@@ -99,26 +89,20 @@ describe('ConfigManager', () => {
       instance.startWatching();
 
       // Setup spy for event emission
-      const emitSpy = jest.spyOn(instance, 'emit');
+      const emitSpy = createEventEmitterSpy(instance);
 
       // Mock new config data
-      const newConfig = { mcpServers: { test: { url: 'test-url' } } };
-      (fs.readFileSync as jest.Mock).mockReturnValueOnce(JSON.stringify(newConfig));
+      (fs.readFileSync as jest.Mock).mockReturnValueOnce(JSON.stringify(testConfig));
 
       // Simulate file change
       watchCallback('change', path.basename(testConfigPath));
 
-      expect(emitSpy).toHaveBeenCalledWith(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED, newConfig.mcpServers);
+      expect(emitSpy).toHaveBeenCalledWith(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED, testConfig.mcpServers);
     });
   });
 
   describe('getTransportConfig', () => {
     it('should return copy of transport config', () => {
-      const testConfig = {
-        mcpServers: {
-          test: { url: 'test-url' },
-        },
-      };
       (fs.readFileSync as jest.Mock).mockReturnValueOnce(JSON.stringify(testConfig));
 
       const instance = ConfigManager.getInstance(testConfigPath);

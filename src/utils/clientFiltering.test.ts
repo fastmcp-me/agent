@@ -1,12 +1,12 @@
-import { Clients } from '../../types.js';
+import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+import { Clients } from '../types.js';
 import {
   filterClients,
   byCapabilities,
   byTags,
   filterClientsByCapabilities,
   filterClientsByTags,
-} from '../clientFiltering.js';
-import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+} from './clientFiltering.js';
 
 describe('Client Filtering Utils', () => {
   const mockClients: Clients = {
