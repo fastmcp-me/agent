@@ -2,10 +2,9 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
-import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
-import { withErrorHandling } from '../utils/errorHandling.js';
-import { ClientConnectionError, ClientNotFoundError } from '../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, ClientOperationOptions } from '../types.js';
+import { CONNECTION_RETRY, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
+import { ClientConnectionError, ClientNotFoundError, MCPError } from '../utils/errorTypes.js';
+import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo } from '../types.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -96,35 +95,72 @@ export function getClient(clients: Clients, clientName: string): ClientInfo {
 }
 
 /**
- * Executes a client operation with error handling and timeout
+ * Executes an operation with error handling and retry logic
+ * @param operation The operation to execute
+ * @param context The execution context (client info or server info)
+ * @param options Operation options including timeout and retry settings
+ * @returns The result of the operation
+ */
+export async function executeOperation<T>(
+  operation: () => Promise<T>,
+  contextName: string,
+  options: OperationOptions = {},
+): Promise<T> {
+  const { retryCount = 0, retryDelay = 1000 } = options;
+
+  let lastError: Error | undefined;
+  for (let i = 0; i <= retryCount; i++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (i < retryCount) {
+        logger.info(`Retrying operation ${operation.name} on ${contextName} after ${retryDelay}ms`);
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      }
+    }
+  }
+
+  // If we get here, we've exhausted all retries
+  logger.error(`Operation failed on ${contextName} after ${retryCount + 1} attempts: ${lastError}`);
+
+  if (lastError instanceof MCPError) {
+    throw lastError;
+  }
+
+  const mcpError = new MCPError(`Error executing operation on ${contextName}`, ERROR_CODES.INTERNAL_SERVER_ERROR, {
+    originalError: lastError,
+  });
+  throw mcpError;
+}
+
+/**
+ * Executes a client operation with error handling and retry logic
  * @param clients Record of client instances
  * @param clientName The name of the client to use
  * @param operation The operation to execute
  * @param options Operation options including timeout and retry settings
- * @returns The result of the operation
  */
 export async function executeClientOperation<T>(
   clients: Clients,
   clientName: string,
   operation: (clientInfo: ClientInfo) => Promise<T>,
-  options: ClientOperationOptions = {},
+  options: OperationOptions = {},
 ): Promise<T> {
   const clientInfo = getClient(clients, clientName);
-  const { retryCount = 0, retryDelay = 1000 } = options;
+  return executeOperation(() => operation(clientInfo), `client ${clientName}`, options);
+}
 
-  return withErrorHandling(async () => {
-    let lastError: Error | undefined;
-    for (let i = 0; i <= retryCount; i++) {
-      try {
-        return await operation(clientInfo);
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        if (i < retryCount) {
-          logger.info(`Retrying operation ${operation.name} on client ${clientName} after ${retryDelay}ms`);
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        }
-      }
-    }
-    throw lastError;
-  }, `Error executing operation on client ${clientName}`)();
+/**
+ * Executes a server operation with error handling and retry logic
+ * @param server The server to execute the operation on
+ * @param operation The operation to execute
+ * @param options Operation options including timeout and retry settings
+ */
+export async function executeServerOperation<T>(
+  server: ServerInfo,
+  operation: (server: ServerInfo) => Promise<T>,
+  options: OperationOptions = {},
+): Promise<T> {
+  return executeOperation(() => operation(server), 'server', options);
 }

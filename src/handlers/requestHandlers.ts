@@ -14,10 +14,14 @@ import {
   ListToolsRequest,
   ListPromptsRequest,
   ListResourceTemplatesRequest,
+  CreateMessageRequestSchema,
+  ListRootsRequestSchema,
+  CreateMessageRequest,
+  ListRootsRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger, { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
-import { executeClientOperation } from '../clients/clientManager.js';
+import { executeClientOperation, executeServerOperation } from '../clients/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
 import { MCPError } from '../utils/errorTypes.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
@@ -52,6 +56,37 @@ function sendPartialFailureNotification(
 }
 
 /**
+ * Registers server-specific request handlers
+ * @param clients Record of client instances
+ * @param serverInfo The MCP server instance
+ */
+function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
+  Object.entries(clients).forEach(([_, clientInfo]) => {
+    clientInfo.client.setRequestHandler(
+      CreateMessageRequestSchema,
+      withErrorHandling(async (request: CreateMessageRequest) => {
+        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+          _server.server.createMessage(request.params, {
+            timeout: clientInfo.transport.timeout,
+          }),
+        );
+      }, 'Error creating message'),
+    );
+
+    clientInfo.client.setRequestHandler(
+      ListRootsRequestSchema,
+      withErrorHandling(async (request: ListRootsRequest) => {
+        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+          _server.server.listRoots(request.params, {
+            timeout: clientInfo.transport.timeout,
+          }),
+        );
+      }, 'Error listing roots'),
+    );
+  });
+}
+
+/**
  * Registers all request handlers based on available capabilities
  * @param clients Record of client instances
  * @param server The MCP server instance
@@ -73,6 +108,9 @@ export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo
 
   // Register prompt-related handlers
   registerPromptHandlers(clients, serverInfo);
+
+  // Register server-specific request handlers
+  registerServerRequestHandlers(clients, serverInfo);
 }
 
 /**

@@ -114,7 +114,7 @@ export type Clients = Record<string, ClientInfo>;
 /**
  * Options for client operations
  */
-export interface ClientOperationOptions {
+export interface OperationOptions {
   readonly retryCount?: number;
   readonly retryDelay?: number;
 }
