@@ -229,10 +229,10 @@ pnpm dev
 
 ### Debugging
 
-Since MCP servers communicate over stdio, debugging can be challenging. We recommend using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
+Using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector), which is available as a package script:
 
 ```bash
-pnpm run inspector
+pnpm inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
