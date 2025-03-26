@@ -1,11 +1,3 @@
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageJson = JSON.parse(readFileSync(join(__dirname, '../package.json'), 'utf8'));
-
 /**
  * Application constants
  */
@@ -35,7 +27,7 @@ export const ERROR_CODES = {
 // MCP constants
 export const MCP_CONFIG_FILE = 'mcp.json';
 export const MCP_SERVER_NAME = '1mcp';
-export const MCP_SERVER_VERSION = packageJson.version;
+export const MCP_SERVER_VERSION = '0.4.0';
 
 export const MCP_URI_SEPARATOR = '_1mcp_';
 
