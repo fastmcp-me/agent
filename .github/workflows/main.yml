@@ -94,7 +94,11 @@ jobs:
 
       - name: Add changelog to commit and update version
         run: |
+          # Create a temporary branch from the tag
+          git checkout -b temp-release-branch
+
           git add CHANGELOG.md
+
           VERSION=${GITHUB_REF#refs/tags/v}
 
           # Update package.json version
@@ -106,7 +110,9 @@ jobs:
           # Add both files and commit
           git add package.json src/constants.ts
           git commit -m "chore: update changelog and version to $VERSION [skip ci]"
-          git push
+
+          # Push to main branch
+          git push origin temp-release-branch:main
 
       - name: Build
         run: pnpm build
