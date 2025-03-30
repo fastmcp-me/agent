@@ -1,5 +1,5 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
+import { MCP_SERVER_NAME, MCP_SERVER_VERSION, MCP_CLIENT_CAPABILITIES } from './constants.js';
 
 export default async function createClient() {
   const client = new Client(
@@ -8,15 +8,7 @@ export default async function createClient() {
       version: MCP_SERVER_VERSION,
     },
     {
-      capabilities: {
-        experimental: {},
-        roots: {},
-        sampling: {},
-        logging: {},
-        prompts: {},
-        resources: {},
-        tools: {},
-      },
+      capabilities: MCP_CLIENT_CAPABILITIES,
     },
   );
 

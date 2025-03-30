@@ -2,6 +2,8 @@
  * Application constants
  */
 
+import { ClientCapabilities, ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
+
 // Server configuration
 export const PORT = 3050;
 export const HOST = '127.0.0.1';
@@ -67,9 +69,24 @@ export const CONNECTION_RETRY = {
   INITIAL_DELAY_MS: 1000,
 };
 
-export const MCP_SERVER_CAPABILITIES = {
+export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
   logging: {},
-  resources: {},
-  tools: {},
-  prompts: {},
+  resources: {
+    listChanged: false,
+  },
+  tools: {
+    listChanged: false,
+  },
+  prompts: {
+    listChanged: false,
+  },
+};
+
+export const MCP_CLIENT_CAPABILITIES: ClientCapabilities = {
+  roots: {
+    listChanged: false,
+  },
+  sampling: {
+    listChanged: false,
+  },
 };
