@@ -50,7 +50,7 @@
   "scripts": {
     "dev": "tsc-watch --onSuccess \"node build/index.js --config ./mcp.json\"",
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "watch": "tsc --watch",
     "inspector": "npx -y @modelcontextprotocol/inspector",
     "lint": "eslint . --ext .ts",
