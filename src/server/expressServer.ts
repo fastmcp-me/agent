@@ -55,18 +55,22 @@ export class ExpressServer {
 
         // Update MCP transport connection status when a client connects
         if (this.serverManager.getActiveTransportsCount() === 1) {
-          setMCPTransportConnected(true);
-          logger.info('First client connected, enabling MCP logging transport');
+          const serverInfo = this.serverManager.getServer(transport.sessionId);
+          if (serverInfo) {
+            setMCPTransportConnected(serverInfo, true);
+            logger.info('First client connected, enabling MCP logging transport');
+          }
         }
 
         transport.onclose = () => {
+          const serverInfo = this.serverManager.getServer(transport.sessionId);
           this.serverManager.disconnectTransport(transport.sessionId);
           logger.info('transport closed', transport.sessionId);
 
           // Update MCP transport connection status when all clients disconnect
-          if (this.serverManager.getActiveTransportsCount() === 0) {
-            setMCPTransportConnected(false);
-            logger.info('All clients disconnected, disabling MCP logging transport');
+          if (serverInfo) {
+            setMCPTransportConnected(serverInfo, false);
+            logger.info('Client disconnected, removing MCP logging transport');
           }
         };
       } catch (error) {

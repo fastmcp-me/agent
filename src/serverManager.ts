@@ -44,15 +44,17 @@ export class ServerManager {
       // Create a new server instance for this transport
       const server = new Server(this.serverConfig, this.serverCapabilities);
 
-      addMCPTransport(server);
-
-      // Enhance server with logging middleware
-      enhanceServerWithLogging(server);
-
+      // Create server info object first
       const serverInfo: ServerInfo = {
         server,
         tags,
       };
+
+      // Add MCP transport with server info
+      addMCPTransport(serverInfo);
+
+      // Enhance server with logging middleware
+      enhanceServerWithLogging(server);
 
       // Set up capabilities for this server instance
       await setupCapabilities(this.clients, serverInfo);

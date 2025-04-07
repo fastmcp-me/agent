@@ -1,8 +1,9 @@
+import { z } from 'zod';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
+import { MCPTransport } from './logger/mcpTransport.js';
 
 /**
  * Enhanced transport interface that includes MCP-specific properties
@@ -79,6 +80,7 @@ export type MCPServerParams = z.infer<typeof transportConfigSchema>;
 export interface ServerInfo {
   readonly server: Server;
   readonly tags?: string[];
+  mcpTransport?: MCPTransport;
 }
 
 /**
