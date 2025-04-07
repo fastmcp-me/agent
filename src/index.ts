@@ -5,7 +5,7 @@ import { hideBin } from 'yargs/helpers';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { setupServer } from './server.js';
-import logger from './logger/logger.js';
+import logger, { enableConsoleTransport } from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';
@@ -87,6 +87,10 @@ function setupGracefulShutdown(serverManager: ServerManager): void {
  */
 async function main() {
   try {
+    if (argv.transport === 'sse') {
+      enableConsoleTransport();
+    }
+
     ConfigManager.getInstance(argv.config);
 
     // Initialize server and get server manager with custom config path if provided

@@ -1,6 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import logger from './logger/logger.js';
+import logger, { addMCPTransport } from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
@@ -43,6 +43,8 @@ export class ServerManager {
     try {
       // Create a new server instance for this transport
       const server = new Server(this.serverConfig, this.serverCapabilities);
+
+      addMCPTransport(server);
 
       // Enhance server with logging middleware
       enhanceServerWithLogging(server);
