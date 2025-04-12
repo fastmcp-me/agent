@@ -15,6 +15,7 @@ import { PORT, HOST } from './constants.js';
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
   .usage('Usage: $0 [options]')
+  .env('ONE_MCP') // Enable environment variable parsing with ONE_MCP prefix
   .options({
     transport: {
       alias: 't',
