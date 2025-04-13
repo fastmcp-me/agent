@@ -2,6 +2,10 @@
 
 A unified Model Context Protocol server implementation that aggregates multiple MCP servers into one.
 
+[![NPM Version](https://img.shields.io/npm/v/@1mcp/agent)](https://www.npmjs.com/package/@1mcp/agent)
+[![NPM License](https://img.shields.io/npm/l/@1mcp/agent)](https://www.npmjs.com/package/@1mcp/agent)
+[![smithery badge](https://smithery.ai/badge/@1mcp-app/agent)](https://smithery.ai/server/@1mcp-app/agent)
+
 ## Overview
 
 1MCP (One MCP) is designed to simplify the way you work with AI assistants. Instead of configuring multiple MCP servers for different clients (Claude Desktop, Cherry Studio, Cursor, Roo Code, Claude, etc.), 1MCP provides a single, unified server that:
@@ -61,6 +65,57 @@ Available options:
 - `--host, -H`: Change SSE host (default: localhost)
 - `--tags, -g`: Filter servers by tags (see Tags section below)
 - `--help, -h`: Show help
+
+Example with environment variables:
+```bash
+# Using environment variables
+ONE_MCP_PORT=3051 ONE_MCP_TAGS=network,filesystem npx -y @1mcp/agent
+
+# Or in your shell configuration
+export ONE_MCP_PORT=3051
+export ONE_MCP_TAGS=network,filesystem
+npx -y @1mcp/agent
+```
+
+## Docker
+
+You can also run 1MCP using Docker:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/1mcp-app/agent:latest
+
+# Run with SSE transport (default)
+docker run -p 3050:3050 ghcr.io/1mcp-app/agent
+
+# Run with a custom config file
+docker run -p 3050:3050 -v /path/to/config.json:/config.json ghcr.io/1mcp-app/agent --config /config.json
+
+# Run with stdio transport
+docker run -i ghcr.io/1mcp-app/agent --transport stdio
+```
+
+Available image tags:
+- `latest`: Latest stable release
+- `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
+- `sha-<commit>`: Specific commit
+
+### Environment Variables
+
+You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
+- `ONE_MCP_TRANSPORT`: Transport type ("stdio" or "sse", default: "sse")
+- `ONE_MCP_PORT`: SSE port (default: 3050)
+- `ONE_MCP_HOST`: SSE host (default: "localhost")
+- `ONE_MCP_CONFIG`: Path to config file
+- `ONE_MCP_TAGS`: Comma-separated list of tags to filter servers
+
+Example with environment variables:
+```bash
+docker run -p 3051:3051 \
+  -e ONE_MCP_PORT=3051 \
+  -e ONE_MCP_TAGS=network,filesystem \
+  ghcr.io/1mcp-app/agent
+```
 
 ### Understanding Tags
 
