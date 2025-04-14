@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2025-04-14
+
+### 🚀 Features
+
+- *(client)* Integrate client capabilities into createClient function and define server/client capabilities in constants
+- *(index)* Enable environment variable parsing with ONE_MCP prefix
+- *(config)* Add Smithery.ai configuration file with command and schema definitions
+
+### 🐛 Bug Fixes
+
+- *(logger)* Enhance logging capabilities with console transport and MCP transport integration
+
+### 🚜 Refactor
+
+- *(server)* Enhance MCP transport integration and logging setup
+
+### 📚 Documentation
+
+- *(README)* Add badges, Docker instructions, and environment variable configuration examples
+
+### ⚙️ Miscellaneous Tasks
+
+- Update changelog and version to 0.7.0 [skip ci]
+- *(workflow)* Consolidate release process by removing old release.yml and integrating steps into main.yml
+- Add Dockerfile and .dockerignore for containerization
+- *(ci)* Add GitHub Actions workflow for building and pushing Docker images
+- *(ci)* Update Docker build workflow to trigger on successful completion of the "Publish Package" workflow and enhance image metadata
+
 ## [0.7.0] - 2025-03-27
 
 ### ⚙️ Miscellaneous Tasks
