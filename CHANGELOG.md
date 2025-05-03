@@ -8,15 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - *(loggingMiddleware)* Update RequestHandlerExtra type to support generic parameters
 
-### ⚙️ Miscellaneous Tasks
-
-- Update changelog and version to 0.8.1 [skip ci]
-
 ## [0.8.1] - 2025-05-03
 
 ### ⚙️ Miscellaneous Tasks
 
-- Update changelog and version to 0.8.0 [skip ci]
 - *(ci)* Remove branch restriction from Docker build workflow for improved flexibility
 
 ## [0.8.0] - 2025-04-14
@@ -41,7 +36,6 @@ All notable changes to this project will be documented in this file.
 
 ### ⚙️ Miscellaneous Tasks
 
-- Update changelog and version to 0.7.0 [skip ci]
 - *(workflow)* Consolidate release process by removing old release.yml and integrating steps into main.yml
 - Add Dockerfile and .dockerignore for containerization
 - *(ci)* Add GitHub Actions workflow for building and pushing Docker images
