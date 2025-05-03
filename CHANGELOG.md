@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2025-05-03
+
+### ⚙️ Miscellaneous Tasks
+
+- Update changelog and version to 0.8.0 [skip ci]
+- *(ci)* Remove branch restriction from Docker build workflow for improved flexibility
+
 ## [0.8.0] - 2025-04-14
 
 ### 🚀 Features
