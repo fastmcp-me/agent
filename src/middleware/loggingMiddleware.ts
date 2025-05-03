@@ -2,6 +2,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../logger/logger.js';
 import { z } from 'zod';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 interface LogContext {
   requestId: string;
@@ -19,16 +20,11 @@ type NotificationSchema = z.ZodObject<{
   params?: z.ZodObject<any>;
 }>;
 
-interface RequestHandlerExtra {
-  progressToken?: string | number;
-  signal: AbortSignal;
-}
-
 type ServerResult = { [key: string]: unknown; _meta?: { [key: string]: unknown } };
 
 type RequestHandler<T extends RequestSchema> = (
   request: z.TypeOf<T>,
-  extra: RequestHandlerExtra,
+  extra: RequestHandlerExtra<any, any>,
 ) => Promise<ServerResult>;
 
 type NotificationHandler<T extends NotificationSchema> = (notification: z.TypeOf<T>) => Promise<void>;
