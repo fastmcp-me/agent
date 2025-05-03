@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2025-05-03
+
+### 🐛 Bug Fixes
+
+- *(loggingMiddleware)* Update RequestHandlerExtra type to support generic parameters
+
+### ⚙️ Miscellaneous Tasks
+
+- Update changelog and version to 0.8.1 [skip ci]
+
 ## [0.8.1] - 2025-05-03
 
 ### ⚙️ Miscellaneous Tasks
