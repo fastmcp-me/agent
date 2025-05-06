@@ -13,8 +13,15 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # Only run if the triggering workflow succeeded
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: |
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        (
+          github.event.workflow_run.head_branch == 'main' ||
+          startsWith(github.event.workflow_run.head_branch, 'v') ||
+          github.event.workflow_run.event == 'workflow_dispatch'
+        )
+      }}
     permissions:
       contents: read
       packages: write
