@@ -1,8 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import express from 'express';
+import bodyParser from 'body-parser';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ServerManager } from '../serverManager.js';
 import logger from '../logger/logger.js';
-import { SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES } from '../constants.js';
+import { SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES, STREAMABLE_HTTP_ENDPOINT } from '../constants.js';
+import tagsExtractor from './tagsExtractor.js';
+import errorHandler from './errorHandler.js';
 
 export class ExpressServer {
   private app: express.Application;
@@ -12,43 +17,111 @@ export class ExpressServer {
     this.app = express();
     this.serverManager = serverManager;
     this.setupMiddleware();
-    this.setupRoutes();
+    this.setupStreamableHttpRoutes();
+    this.setupSseRoutes();
   }
 
   private setupMiddleware(): void {
+    this.app.use(bodyParser.json());
+
     // Add error handling middleware
-    this.app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
-      logger.error('Express error:', err);
-      res.status(500).json({
-        error: {
-          code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-          message: 'Internal server error',
-        },
-      });
-    });
+    this.app.use(errorHandler);
   }
 
-  private setupRoutes(): void {
-    this.app.get(SSE_ENDPOINT, async (req: express.Request, res: express.Response) => {
+  private setupStreamableHttpRoutes(): void {
+    this.app.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, async (req: express.Request, res: express.Response) => {
       try {
-        logger.info('sse', { query: req.query, headers: req.headers });
-        const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
+        logger.info('[POST] streamable-http', { query: req.query, body: req.body, headers: req.headers });
 
-        // Extract and validate tags from query parameters
-        let tags: string[] | undefined;
-        if (req.query.tags) {
-          const tagsStr = req.query.tags as string;
-          if (typeof tagsStr !== 'string') {
+        let transport: StreamableHTTPServerTransport;
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId) {
+          const id = randomUUID();
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => id,
+          });
+
+          // Use tags from middleware
+          const tags = res.locals.tags;
+
+          await this.serverManager.connectTransport(transport, id, tags);
+
+          transport.onclose = () => {
+            this.serverManager.disconnectTransport(id);
+            logger.info('transport closed', transport.sessionId);
+          };
+        } else {
+          const existingTransport = this.serverManager.getTransport(sessionId);
+          if (existingTransport instanceof StreamableHTTPServerTransport) {
+            transport = existingTransport;
+          } else {
             res.status(400).json({
               error: {
                 code: ERROR_CODES.INVALID_PARAMS,
-                message: 'Invalid params: tags must be a string',
+                message: 'Session already exists but uses a different transport protocol',
               },
             });
             return;
           }
-          tags = tagsStr.split(',').filter((tag) => tag.trim().length > 0);
         }
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        logger.error('Streamable HTTP error:', error);
+        res.status(500).end();
+      }
+    });
+
+    this.app.get(STREAMABLE_HTTP_ENDPOINT, async (req: express.Request, res: express.Response) => {
+      try {
+        logger.info('[GET] streamable-http', { query: req.query, headers: req.headers });
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId) {
+          res.status(400).json({
+            error: {
+              code: ERROR_CODES.INVALID_PARAMS,
+              message: 'Invalid params: sessionId is required',
+            },
+          });
+          return;
+        }
+        const transport = this.serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        logger.error('Streamable HTTP error:', error);
+        res.status(500).end();
+      }
+    });
+
+    this.app.delete(STREAMABLE_HTTP_ENDPOINT, async (req: express.Request, res: express.Response) => {
+      try {
+        logger.info('[DELETE] streamable-http', { query: req.query, headers: req.headers });
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId) {
+          res.status(400).json({
+            error: {
+              code: ERROR_CODES.INVALID_PARAMS,
+              message: 'Invalid params: sessionId is required',
+            },
+          });
+          return;
+        }
+        const transport = this.serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+        await transport.handleRequest(req, res);
+      } catch (error) {
+        logger.error('Streamable HTTP error:', error);
+        res.status(500).end();
+      }
+    });
+  }
+
+  private setupSseRoutes(): void {
+    this.app.get(SSE_ENDPOINT, tagsExtractor, async (req: express.Request, res: express.Response) => {
+      try {
+        logger.info('[GET] sse', { query: req.query, headers: req.headers });
+        const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
+
+        // Use tags from middleware
+        const tags = res.locals.tags;
 
         // Connect the transport using the server manager
         await this.serverManager.connectTransport(transport, transport.sessionId, tags);
@@ -79,7 +152,7 @@ export class ExpressServer {
         logger.info('message', { body: req.body, sessionId });
         const transport = this.serverManager.getTransport(sessionId);
         if (transport instanceof SSEServerTransport) {
-          await transport.handlePostMessage(req, res);
+          await transport.handlePostMessage(req, res, req.body);
           return;
         }
         res.status(404).json({
@@ -102,7 +175,7 @@ export class ExpressServer {
 
   public start(port: number, host: string): void {
     this.app.listen(port, host, () => {
-      logger.info(`Server is running on port ${port} with HTTP/SSE transport`);
+      logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport`);
     });
   }
 }

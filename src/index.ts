@@ -19,20 +19,20 @@ const argv = yargs(hideBin(process.argv))
   .options({
     transport: {
       alias: 't',
-      describe: 'Transport type to use (stdio or sse)',
+      describe: 'Transport type to use (stdio or http)',
       type: 'string',
-      choices: ['stdio', 'sse'],
-      default: 'sse',
+      choices: ['stdio', 'http', 'sse'],
+      default: 'http',
     },
     port: {
       alias: 'P',
-      describe: 'SSE port to listen on, applicable when transport is sse',
+      describe: 'HTTP port to listen on, applicable when transport is http',
       type: 'number',
       default: PORT,
     },
     host: {
       alias: 'H',
-      describe: 'SSE host to listen on, applicable when transport is sse',
+      describe: 'HTTP host to listen on, applicable when transport is http',
       type: 'string',
       default: HOST,
     },
@@ -88,7 +88,7 @@ function setupGracefulShutdown(serverManager: ServerManager): void {
  */
 async function main() {
   try {
-    if (argv.transport === 'sse') {
+    if (argv.transport !== 'stdio') {
       enableConsoleTransport();
     }
 
@@ -100,24 +100,36 @@ async function main() {
     // Set up graceful shutdown handling
     setupGracefulShutdown(serverManager);
 
-    if (argv.transport === 'stdio') {
-      // Use stdio transport
-      const transport = new StdioServerTransport();
-      // Parse and validate tags from CLI if provided
-      let tags: string[] | undefined;
-      if (argv.tags) {
-        tags = argv.tags.split(',').filter((tag) => tag.trim().length > 0);
-        if (tags.length === 0) {
-          logger.warn('No valid tags provided, ignoring tags parameter');
-          tags = undefined;
+    switch (argv.transport) {
+      case 'stdio': {
+        // Use stdio transport
+        const transport = new StdioServerTransport();
+        // Parse and validate tags from CLI if provided
+        let tags: string[] | undefined;
+        if (argv.tags) {
+          tags = argv.tags.split(',').filter((tag) => tag.trim().length > 0);
+          if (tags.length === 0) {
+            logger.warn('No valid tags provided, ignoring tags parameter');
+            tags = undefined;
+          }
         }
+        await serverManager.connectTransport(transport, 'stdio', tags);
+        logger.info('Server started with stdio transport');
+        break;
       }
-      await serverManager.connectTransport(transport, 'stdio', tags);
-      logger.info('Server started with stdio transport');
-    } else {
-      // Use HTTP/SSE transport
-      const expressServer = new ExpressServer(serverManager);
-      expressServer.start(argv.port, argv.host);
+      case 'sse': {
+        logger.warning('sse option is deprecated, use http instead');
+      }
+      // eslint-disable-next-line no-fallthrough
+      case 'http': {
+        // Use HTTP/SSE transport
+        const expressServer = new ExpressServer(serverManager);
+        expressServer.start(argv.port, argv.host);
+        break;
+      }
+      default:
+        logger.error(`Invalid transport: ${argv.transport}`);
+        process.exit(1);
     }
   } catch (error) {
     logger.error('Server error:', error);
