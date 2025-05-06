@@ -30,7 +30,7 @@ export const ERROR_CODES = {
 // MCP constants
 export const MCP_CONFIG_FILE = 'mcp.json';
 export const MCP_SERVER_NAME = '1mcp';
-export const MCP_SERVER_VERSION = '0.8.2';
+export const MCP_SERVER_VERSION = '0.9.0';
 
 export const MCP_URI_SEPARATOR = '_1mcp_';
 

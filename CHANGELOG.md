@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2025-05-06
+
+### ⚙️ Miscellaneous Tasks
+
+- *(ci)* Update Docker build workflow conditions to include branch checks
+
 ## [0.8.2] - 2025-05-03
 
 ### 🐛 Bug Fixes
