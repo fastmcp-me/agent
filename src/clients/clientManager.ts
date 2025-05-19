@@ -1,8 +1,9 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
-import { CONNECTION_RETRY, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
+import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError } from '../utils/errorTypes.js';
 import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo } from '../types.js';
 
@@ -128,7 +129,7 @@ export async function executeOperation<T>(
     throw lastError;
   }
 
-  const mcpError = new MCPError(`Error executing operation on ${contextName}`, ERROR_CODES.INTERNAL_SERVER_ERROR, {
+  const mcpError = new MCPError(`Error executing operation on ${contextName}`, ErrorCode.InternalError, {
     originalError: lastError,
   });
   throw mcpError;

@@ -3,9 +3,10 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { ServerManager } from '../serverManager.js';
 import logger from '../logger/logger.js';
-import { SSE_ENDPOINT, MESSAGES_ENDPOINT, ERROR_CODES, STREAMABLE_HTTP_ENDPOINT } from '../constants.js';
+import { SSE_ENDPOINT, MESSAGES_ENDPOINT, STREAMABLE_HTTP_ENDPOINT } from '../constants.js';
 import tagsExtractor from './tagsExtractor.js';
 import errorHandler from './errorHandler.js';
 
@@ -57,7 +58,7 @@ export class ExpressServer {
           } else {
             res.status(400).json({
               error: {
-                code: ERROR_CODES.INVALID_PARAMS,
+                code: ErrorCode.InvalidParams,
                 message: 'Session already exists but uses a different transport protocol',
               },
             });
@@ -78,7 +79,7 @@ export class ExpressServer {
         if (!sessionId) {
           res.status(400).json({
             error: {
-              code: ERROR_CODES.INVALID_PARAMS,
+              code: ErrorCode.InvalidParams,
               message: 'Invalid params: sessionId is required',
             },
           });
@@ -99,7 +100,7 @@ export class ExpressServer {
         if (!sessionId) {
           res.status(400).json({
             error: {
-              code: ERROR_CODES.INVALID_PARAMS,
+              code: ErrorCode.InvalidParams,
               message: 'Invalid params: sessionId is required',
             },
           });
@@ -142,7 +143,7 @@ export class ExpressServer {
         if (!sessionId) {
           res.status(400).json({
             error: {
-              code: ERROR_CODES.INVALID_PARAMS,
+              code: ErrorCode.InvalidParams,
               message: 'Invalid params: sessionId is required',
             },
           });
@@ -157,7 +158,7 @@ export class ExpressServer {
         }
         res.status(404).json({
           error: {
-            code: ERROR_CODES.TRANSPORT_NOT_FOUND,
+            code: ErrorCode.InvalidParams,
             message: 'Transport not found',
           },
         });
@@ -165,7 +166,7 @@ export class ExpressServer {
         logger.error('Message handling error:', error);
         res.status(500).json({
           error: {
-            code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+            code: ErrorCode.InternalError,
             message: 'Internal server error',
           },
         });

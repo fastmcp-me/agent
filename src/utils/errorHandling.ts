@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '../constants.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { MCPError, MCPErrorType, InvalidRequestError } from './errorTypes.js';
 
@@ -24,7 +24,7 @@ export function withErrorHandling<T, Args extends any[]>(
       }
 
       // Convert other errors to MCPError
-      throw new MCPError(errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR, {
+      throw new MCPError(errorMessage, ErrorCode.InternalError, {
         originalError: error instanceof Error ? error : new Error(String(error)),
       });
     }
@@ -43,10 +43,10 @@ export function normalizeError(error: unknown, errorMessage: string): MCPErrorTy
   }
 
   if (error instanceof Error) {
-    return new MCPError(error.message || errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR);
+    return new MCPError(error.message || errorMessage, ErrorCode.InternalError);
   }
 
-  return new MCPError(errorMessage, ERROR_CODES.INTERNAL_SERVER_ERROR);
+  return new MCPError(errorMessage, ErrorCode.InternalError);
 }
 
 /**
@@ -68,7 +68,7 @@ export function getErrorCode(error: unknown): number {
   if (error instanceof MCPError) {
     return error.code;
   }
-  return ERROR_CODES.INTERNAL_SERVER_ERROR;
+  return ErrorCode.InternalError;
 }
 
 /**
@@ -110,7 +110,7 @@ export function formatErrorResponse(error: any): { code: number; message: string
   }
 
   return {
-    code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+    code: ErrorCode.InternalError,
     message: error instanceof Error ? error.message : String(error),
   };
 }

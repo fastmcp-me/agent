@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ERROR_CODES } from '../constants.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Middleware to extract and validate 'tags' from query parameters.
@@ -12,7 +12,7 @@ export default function tagsExtractor(req: Request, res: Response, next: NextFun
     if (typeof tagsStr !== 'string') {
       res.status(400).json({
         error: {
-          code: ERROR_CODES.INVALID_PARAMS,
+          code: ErrorCode.InvalidParams,
           message: 'Invalid params: tags must be a string',
         },
       });

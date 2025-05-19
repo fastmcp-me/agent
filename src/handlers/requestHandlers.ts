@@ -18,9 +18,10 @@ import {
   ListRootsRequestSchema,
   CreateMessageRequest,
   ListRootsRequest,
+  ErrorCode,
 } from '@modelcontextprotocol/sdk/types.js';
 import logger, { setLogLevel } from '../logger/logger.js';
-import { MCP_URI_SEPARATOR, MCP_SERVER_NAME, ERROR_CODES } from '../constants.js';
+import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
 import { executeClientOperation, executeServerOperation } from '../clients/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
 import { MCPError } from '../utils/errorTypes.js';
@@ -150,7 +151,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
 
       // If all capable clients failed, throw an error
       if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
-        throw new MCPError('Failed to list resources from all capable clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        throw new MCPError('Failed to list resources from all capable clients', ErrorCode.InternalError, {
           failedClients,
         });
       }
@@ -194,7 +195,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list resource templates from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        throw new MCPError('Failed to list resource templates from all clients', ErrorCode.InternalError, {
           failedClients,
         });
       }
@@ -292,7 +293,7 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list tools from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        throw new MCPError('Failed to list tools from all clients', ErrorCode.InternalError, {
           failedClients,
         });
       }
@@ -353,7 +354,7 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
 
       // If all clients failed, throw an error
       if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list prompts from all clients', ERROR_CODES.INTERNAL_SERVER_ERROR, {
+        throw new MCPError('Failed to list prompts from all clients', ErrorCode.InternalError, {
           failedClients,
         });
       }

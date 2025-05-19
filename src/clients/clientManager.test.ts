@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
+import { vi, describe, it, expect, beforeEach, MockInstance, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {

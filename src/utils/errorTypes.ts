@@ -1,4 +1,4 @@
-import { ERROR_CODES } from '../constants.js';
+import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 export class MCPError extends Error {
   code: number;
@@ -14,46 +14,45 @@ export class MCPError extends Error {
 
 export class ClientConnectionError extends MCPError {
   constructor(clientName: string, cause: Error) {
-    super(`Failed to connect to client ${clientName}: ${cause.message}`, ERROR_CODES.TRANSPORT_NOT_FOUND, { cause });
+    super(`Failed to connect to client ${clientName}: ${cause.message}`, ErrorCode.InvalidParams, { cause });
     this.name = 'ClientConnectionError';
   }
 }
 
 export class ClientNotFoundError extends MCPError {
   constructor(clientName: string) {
-    super(`Client not found: ${clientName}`, ERROR_CODES.TRANSPORT_NOT_FOUND);
+    super(`Client not found: ${clientName}`, ErrorCode.InvalidParams);
     this.name = 'ClientNotFoundError';
   }
 }
 
 export class ClientOperationError extends MCPError {
   constructor(clientName: string, operation: string, cause: Error, context?: Record<string, unknown>) {
-    super(
-      `Operation ${operation} failed on client ${clientName}: ${cause.message}`,
-      ERROR_CODES.INTERNAL_SERVER_ERROR,
-      { cause, context },
-    );
+    super(`Operation ${operation} failed on client ${clientName}: ${cause.message}`, ErrorCode.InternalError, {
+      cause,
+      context,
+    });
     this.name = 'ClientOperationError';
   }
 }
 
 export class ValidationError extends MCPError {
   constructor(message: string, validationErrors: any) {
-    super(message, ERROR_CODES.INVALID_PARAMS, { validationErrors });
+    super(message, ErrorCode.InvalidParams, { validationErrors });
     this.name = 'ValidationError';
   }
 }
 
 export class TransportError extends MCPError {
   constructor(transportName: string, cause: Error) {
-    super(`Transport error for ${transportName}: ${cause.message}`, ERROR_CODES.CLIENT_CONNECTION_ERROR, { cause });
+    super(`Transport error for ${transportName}: ${cause.message}`, ErrorCode.InvalidParams, { cause });
     this.name = 'TransportError';
   }
 }
 
 export class InvalidRequestError extends MCPError {
   constructor(message: string, data?: any) {
-    super(message, ERROR_CODES.INVALID_PARAMS, data);
+    super(message, ErrorCode.InvalidParams, data);
     this.name = 'InvalidRequestError';
   }
 }
