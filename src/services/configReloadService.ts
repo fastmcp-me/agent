@@ -41,6 +41,12 @@ export class ConfigReloadService {
 
     const configManager = ConfigManager.getInstance();
 
+    // Remove any existing listeners to prevent duplicates
+    configManager.removeAllListeners(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED);
+
+    // Increase max listeners limit to prevent warnings
+    configManager.setMaxListeners(20);
+
     // Set up configuration change listener
     configManager.on(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED, this.handleConfigChange.bind(this));
 
