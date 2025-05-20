@@ -4,7 +4,7 @@ import logger from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { setupCapabilities } from './capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
-import { Clients, ServerInfo } from './types.js';
+import { Clients, ServerInfo, ServerInfoExtra } from './types.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -39,7 +39,7 @@ export class ServerManager {
     return ServerManager.instance;
   }
 
-  public async connectTransport(transport: Transport, sessionId: string, tags?: string[]): Promise<void> {
+  public async connectTransport(transport: Transport, sessionId: string, opts: ServerInfoExtra): Promise<void> {
     try {
       // Create a new server instance for this transport
       const server = new Server(this.serverConfig, this.serverCapabilities);
@@ -47,7 +47,7 @@ export class ServerManager {
       // Create server info object first
       const serverInfo: ServerInfo = {
         server,
-        tags,
+        ...opts,
       };
 
       // Enhance server with logging middleware

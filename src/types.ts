@@ -73,12 +73,16 @@ export type TransportConfig = HTTPBasedTransportConfig | StdioTransportConfig;
  */
 export type MCPServerParams = z.infer<typeof transportConfigSchema>;
 
+export interface ServerInfoExtra {
+  readonly tags?: string[];
+  readonly enablePagination?: boolean;
+}
+
 /**
  * Server information including tags
  */
-export interface ServerInfo {
+export interface ServerInfo extends ServerInfoExtra {
   readonly server: Server;
-  readonly tags?: string[];
 }
 
 /**

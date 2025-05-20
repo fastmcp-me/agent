@@ -94,7 +94,7 @@ describe('ServerManager', () => {
     });
 
     it('should successfully connect a transport', async () => {
-      await serverManager.connectTransport(mockTransport, sessionId, tags);
+      await serverManager.connectTransport(mockTransport, sessionId, { tags, enablePagination: false });
 
       expect(Server).toHaveBeenCalledWith(mockConfig, mockCapabilities);
       expect(enhanceServerWithLogging).toHaveBeenCalledWith(mockServer);
@@ -108,7 +108,9 @@ describe('ServerManager', () => {
       const error = new Error('Connection failed');
       (mockServer.connect as unknown as MockInstance).mockRejectedValueOnce(error);
 
-      await expect(serverManager.connectTransport(mockTransport, sessionId, tags)).rejects.toThrow('Connection failed');
+      await expect(
+        serverManager.connectTransport(mockTransport, sessionId, { tags, enablePagination: false }),
+      ).rejects.toThrow('Connection failed');
       expect(logger.error).toHaveBeenCalled();
     });
   });
@@ -122,7 +124,7 @@ describe('ServerManager', () => {
     });
 
     it('should successfully disconnect a transport', async () => {
-      await serverManager.connectTransport(mockTransport, sessionId);
+      await serverManager.connectTransport(mockTransport, sessionId, { enablePagination: false });
       vi.clearAllMocks(); // Clear the logs from connectTransport
       serverManager.disconnectTransport(sessionId);
       expect(logger.info).toHaveBeenCalledWith(`Disconnected transport for session ${sessionId}`);
@@ -140,7 +142,7 @@ describe('ServerManager', () => {
 
     beforeEach(async () => {
       serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
-      await serverManager.connectTransport(mockTransport, sessionId);
+      await serverManager.connectTransport(mockTransport, sessionId, { enablePagination: false });
     });
 
     it('should get transport by session id', () => {
@@ -176,7 +178,7 @@ describe('ServerManager', () => {
 
     beforeEach(async () => {
       serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
-      await serverManager.connectTransport(mockTransport, sessionId, tags);
+      await serverManager.connectTransport(mockTransport, sessionId, { tags, enablePagination: false });
     });
 
     it('should return server info for existing session', () => {

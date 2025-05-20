@@ -48,6 +48,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       default: undefined,
     },
+    pagination: {
+      alias: 'p',
+      describe: 'Enable pagination',
+      type: 'boolean',
+      default: false,
+    },
   })
   .help()
   .alias('help', 'h')
@@ -113,7 +119,7 @@ async function main() {
             tags = undefined;
           }
         }
-        await serverManager.connectTransport(transport, 'stdio', tags);
+        await serverManager.connectTransport(transport, 'stdio', { tags, enablePagination: argv.pagination });
         logger.info('Server started with stdio transport');
         break;
       }

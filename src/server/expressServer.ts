@@ -45,7 +45,10 @@ export class ExpressServer {
           // Use tags from middleware
           const tags = res.locals.tags;
 
-          await this.serverManager.connectTransport(transport, id, tags);
+          await this.serverManager.connectTransport(transport, id, {
+            tags,
+            enablePagination: req.query.pagination === 'true',
+          });
 
           transport.onclose = () => {
             this.serverManager.disconnectTransport(id);
@@ -125,7 +128,10 @@ export class ExpressServer {
         const tags = res.locals.tags;
 
         // Connect the transport using the server manager
-        await this.serverManager.connectTransport(transport, transport.sessionId, tags);
+        await this.serverManager.connectTransport(transport, transport.sessionId, {
+          tags,
+          enablePagination: req.query.pagination === 'true',
+        });
 
         transport.onclose = () => {
           this.serverManager.disconnectTransport(transport.sessionId);

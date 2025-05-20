@@ -108,6 +108,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
             description: resource.description,
             mimeType: resource.mimeType,
           })) ?? [],
+        serverInfo.enablePagination ?? false,
       );
 
       return {
@@ -134,6 +135,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
             description: template.description,
             mimeType: template.mimeType,
           })) ?? [],
+        serverInfo.enablePagination ?? false,
       );
 
       return {
@@ -214,6 +216,7 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
             description: tool.description,
             inputSchema: tool.inputSchema,
           })) ?? [],
+        serverInfo.enablePagination ?? false,
       );
 
       return {
@@ -259,6 +262,7 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
             description: prompt.description,
             arguments: prompt.arguments,
           })) ?? [],
+        serverInfo.enablePagination ?? false,
       );
 
       return {
