@@ -18,43 +18,14 @@ import {
   ListRootsRequestSchema,
   CreateMessageRequest,
   ListRootsRequest,
-  ErrorCode,
 } from '@modelcontextprotocol/sdk/types.js';
-import logger, { setLogLevel } from '../logger/logger.js';
-import { MCP_URI_SEPARATOR, MCP_SERVER_NAME } from '../constants.js';
+import { setLogLevel } from '../logger/logger.js';
+import { MCP_URI_SEPARATOR } from '../constants.js';
 import { executeClientOperation, executeServerOperation } from '../clients/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
-import { MCPError } from '../utils/errorTypes.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
 import { Clients, ServerInfo } from '../types.js';
-
-/**
- * Sends a partial failure notification to inform clients about backend failures
- * @param server The MCP server instance
- * @param operation The operation that partially failed
- * @param failedClients Array of failed clients with error details
- */
-function sendPartialFailureNotification(
-  serverInfo: ServerInfo,
-  operation: string,
-  failedClients: Array<{ name: string; error: string }>,
-): void {
-  if (failedClients.length === 0) return;
-
-  serverInfo.server.notification({
-    method: 'notifications/message',
-    params: {
-      level: 'warning',
-      message: `Partial failure during ${operation}`,
-      logger: MCP_SERVER_NAME,
-      data: {
-        operation,
-        failedClients,
-        timestamp: new Date().toISOString(),
-      },
-    },
-  });
-}
+import { handlePagination } from '../utils/pagination.js';
 
 /**
  * Registers server-specific request handlers
@@ -124,44 +95,25 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
   serverInfo.server.setRequestHandler(
     ListResourcesRequestSchema,
     withErrorHandling(async (request: ListResourcesRequest) => {
-      const resources = [];
-      const failedClients = [];
-
       const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(filteredClients)) {
-        logger.info(`Listing resources for ${name}`);
-        try {
-          const result = await clientInfo.client.listResources(request.params, {
-            timeout: clientInfo.transport.timeout,
-          });
-          resources.push(
-            ...result.resources.map((resource) => ({
-              uri: `${name}${MCP_URI_SEPARATOR}${resource.uri}`,
-              name: resource.name,
-              description: resource.description,
-              mimeType: resource.mimeType,
-            })),
-          );
-        } catch (error) {
-          logger.error(`Error listing resources for ${name}: ${error}`);
-          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-        }
-      }
+      const result = await handlePagination(
+        filteredClients,
+        request.params || {},
+        (client, params, opts) => client.listResources(params as ListResourcesRequest['params'], opts),
+        (clientInfo, result) =>
+          result.resources?.map((resource) => ({
+            uri: `${clientInfo.name}${MCP_URI_SEPARATOR}${resource.uri}`,
+            name: resource.name,
+            description: resource.description,
+            mimeType: resource.mimeType,
+          })) ?? [],
+      );
 
-      // If all capable clients failed, throw an error
-      if (failedClients.length === Object.keys(filteredClients).length && Object.keys(filteredClients).length > 0) {
-        throw new MCPError('Failed to list resources from all capable clients', ErrorCode.InternalError, {
-          failedClients,
-        });
-      }
-
-      // Send notification about partial failures
-      if (failedClients.length > 0) {
-        sendPartialFailureNotification(serverInfo, 'listResources', failedClients);
-      }
-
-      return { resources };
+      return {
+        resources: result.items,
+        nextCursor: result.nextCursor,
+      };
     }, 'Error listing resources'),
   );
 
@@ -169,43 +121,25 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
   serverInfo.server.setRequestHandler(
     ListResourceTemplatesRequestSchema,
     withErrorHandling(async (request: ListResourceTemplatesRequest) => {
-      const resourceTemplates = [];
-      const failedClients = [];
-      const capableClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(capableClients)) {
-        logger.info(`Listing resource templates for ${name}`);
-        try {
-          const result = await clientInfo.client.listResourceTemplates(request.params, {
-            timeout: clientInfo.transport.timeout,
-          });
-          resourceTemplates.push(
-            ...result.resourceTemplates.map((template) => ({
-              uriTemplate: `${name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
-              name: template.name,
-              description: template.description,
-              mimeType: template.mimeType,
-            })),
-          );
-        } catch (error) {
-          logger.error(`Error listing resource templates for ${name}: ${error}`);
-          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-        }
-      }
+      const result = await handlePagination(
+        filteredClients,
+        request.params || {},
+        (client, params, opts) => client.listResourceTemplates(params as ListResourceTemplatesRequest['params'], opts),
+        (clientInfo, result) =>
+          result.resourceTemplates?.map((template) => ({
+            uriTemplate: `${clientInfo.name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
+            name: template.name,
+            description: template.description,
+            mimeType: template.mimeType,
+          })) ?? [],
+      );
 
-      // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list resource templates from all clients', ErrorCode.InternalError, {
-          failedClients,
-        });
-      }
-
-      // Send notification about partial failures
-      if (failedClients.length > 0) {
-        sendPartialFailureNotification(serverInfo, 'listResourceTemplates', failedClients);
-      }
-
-      return { resourceTemplates };
+      return {
+        resourceTemplates: result.items,
+        nextCursor: result.nextCursor,
+      };
     }, 'Error listing resource templates'),
   );
 
@@ -268,42 +202,24 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
   serverInfo.server.setRequestHandler(
     ListToolsRequestSchema,
     withErrorHandling(async (request: ListToolsRequest) => {
-      const tools = [];
-      const failedClients = [];
-      const capableClients = filterClients(byCapabilities({ tools: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(capableClients)) {
-        logger.info(`Listing tools for ${name}`);
-        try {
-          const result = await clientInfo.client.listTools(request.params, {
-            timeout: clientInfo.transport.timeout,
-          });
-          tools.push(
-            ...result.tools.map((tool) => ({
-              name: `${name}${MCP_URI_SEPARATOR}${tool.name}`,
-              description: tool.description,
-              inputSchema: tool.inputSchema,
-            })),
-          );
-        } catch (error) {
-          logger.error(`Error listing tools for ${name}: ${error}`);
-          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-        }
-      }
+      const result = await handlePagination(
+        filteredClients,
+        request.params || {},
+        (client, params, opts) => client.listTools(params as ListToolsRequest['params'], opts),
+        (clientInfo, result) =>
+          result.tools?.map((tool) => ({
+            name: `${clientInfo.name}${MCP_URI_SEPARATOR}${tool.name}`,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+          })) ?? [],
+      );
 
-      // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list tools from all clients', ErrorCode.InternalError, {
-          failedClients,
-        });
-      }
-
-      // Send notification about partial failures
-      if (failedClients.length > 0) {
-        sendPartialFailureNotification(serverInfo, 'listTools', failedClients);
-      }
-
-      return { tools };
+      return {
+        tools: result.items,
+        nextCursor: result.nextCursor,
+      };
     }, 'Error listing tools'),
   );
 
@@ -331,40 +247,24 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
   serverInfo.server.setRequestHandler(
     ListPromptsRequestSchema,
     withErrorHandling(async (request: ListPromptsRequest) => {
-      const prompts = [];
-      const failedClients = [];
-      const capableClients = filterClients(byCapabilities({ prompts: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ prompts: {} }), byTags(serverInfo.tags))(clients);
 
-      for (const [name, clientInfo] of Object.entries(capableClients)) {
-        logger.info(`Listing prompts for ${name}`);
-        try {
-          const result = await clientInfo.client.listPrompts(request.params);
-          prompts.push(
-            ...result.prompts.map((prompt) => ({
-              name: `${name}${MCP_URI_SEPARATOR}${prompt.name}`,
-              description: prompt.description,
-              arguments: prompt.arguments,
-            })),
-          );
-        } catch (error) {
-          logger.error(`Error listing prompts for ${name}: ${error}`);
-          failedClients.push({ name, error: error instanceof Error ? error.message : String(error) });
-        }
-      }
+      const result = await handlePagination(
+        filteredClients,
+        request.params || {},
+        (client, params, opts) => client.listPrompts(params as ListPromptsRequest['params'], opts),
+        (clientInfo, result) =>
+          result.prompts?.map((prompt) => ({
+            name: `${clientInfo.name}${MCP_URI_SEPARATOR}${prompt.name}`,
+            description: prompt.description,
+            arguments: prompt.arguments,
+          })) ?? [],
+      );
 
-      // If all clients failed, throw an error
-      if (failedClients.length === Object.keys(capableClients).length && Object.keys(capableClients).length > 0) {
-        throw new MCPError('Failed to list prompts from all clients', ErrorCode.InternalError, {
-          failedClients,
-        });
-      }
-
-      // Send notification about partial failures
-      if (failedClients.length > 0) {
-        sendPartialFailureNotification(serverInfo, 'listPrompts', failedClients);
-      }
-
-      return { prompts };
+      return {
+        prompts: result.items,
+        nextCursor: result.nextCursor,
+      };
     }, 'Error listing prompts'),
   );
 
