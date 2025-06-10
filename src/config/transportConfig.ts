@@ -25,8 +25,21 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
       continue;
     }
 
+    // Infer type if missing
+    let inferredParams = { ...params };
+    if (!inferredParams.type) {
+      logger.warn(`Transport type is missing for ${name}, inferring type...`);
+      if (inferredParams.command) {
+        inferredParams.type = 'stdio';
+        logger.info(`Inferred transport type for ${name} as stdio`);
+      } else if (inferredParams.url) {
+        inferredParams.type = 'http';
+        logger.info(`Inferred transport type for ${name} as http/streamableHttp`);
+      }
+    }
+
     try {
-      const validatedTransport = transportConfigSchema.parse(params);
+      const validatedTransport = transportConfigSchema.parse(inferredParams);
       let transport: EnhancedTransport;
 
       switch (validatedTransport.type) {
@@ -42,7 +55,7 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
           assignTransport(name, transport, validatedTransport);
           break;
         }
-        case 'http':
+        case 'http': // Since sse is deprecated, we can use http as a alias for streamableHttp
         case 'streamableHttp': {
           if (!validatedTransport.url) {
             throw new Error(`URL is required for streamableHttp transport: ${name}`);
