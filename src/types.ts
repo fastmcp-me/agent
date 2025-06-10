@@ -46,7 +46,7 @@ export interface StdioTransportConfig extends BaseTransportConfig {
  * Zod schema for transport configuration
  */
 export const transportConfigSchema = z.object({
-  type: z.enum(['stdio', 'sse', 'http']).optional(),
+  type: z.enum(['stdio', 'sse', 'http', 'streamableHttp']).optional(),
   disabled: z.boolean().optional(),
   timeout: z.number().optional(),
   tags: z.array(z.string()).optional(),

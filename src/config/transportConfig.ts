@@ -1,5 +1,6 @@
 import { StdioClientTransport, StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { transportConfigSchema } from '../types.js';
@@ -12,6 +13,12 @@ import { MCPServerParams, EnhancedTransport } from '../types.js';
 export function createTransports(config: Record<string, MCPServerParams>): Record<string, EnhancedTransport> {
   const transports: Record<string, EnhancedTransport> = {};
 
+  const assignTransport = (name: string, transport: EnhancedTransport, validatedTransport: any) => {
+    transport.timeout = validatedTransport.timeout;
+    transport.tags = validatedTransport.tags;
+    transports[name] = transport;
+  };
+
   for (const [name, params] of Object.entries(config)) {
     if (params.disabled) {
       logger.debug(`Skipping disabled transport: ${name}`);
@@ -20,27 +27,44 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
 
     try {
       const validatedTransport = transportConfigSchema.parse(params);
+      let transport: EnhancedTransport;
 
-      if (validatedTransport.type === 'sse' || validatedTransport.type === 'http') {
-        if (!validatedTransport.url) {
-          throw new Error(`URL is required for SSE transport: ${name}`);
+      switch (validatedTransport.type) {
+        case 'sse': {
+          if (!validatedTransport.url) {
+            throw new Error(`URL is required for ${validatedTransport.type} transport: ${name}`);
+          }
+          transport = new SSEClientTransport(new URL(validatedTransport.url), {
+            requestInit: {
+              headers: validatedTransport.headers,
+            },
+          }) as EnhancedTransport;
+          assignTransport(name, transport, validatedTransport);
+          break;
         }
-        const transport = new SSEClientTransport(new URL(validatedTransport.url), {
-          requestInit: {
-            headers: validatedTransport.headers,
-          },
-        }) as EnhancedTransport;
-        transport.timeout = validatedTransport.timeout;
-        transport.tags = validatedTransport.tags;
-        transports[name] = transport;
-      } else {
-        if (!validatedTransport.command) {
-          throw new Error(`Command is required for stdio transport: ${name}`);
+        case 'http':
+        case 'streamableHttp': {
+          if (!validatedTransport.url) {
+            throw new Error(`URL is required for streamableHttp transport: ${name}`);
+          }
+          transport = new StreamableHTTPClientTransport(new URL(validatedTransport.url), {
+            requestInit: {
+              headers: validatedTransport.headers,
+            },
+          }) as EnhancedTransport;
+          assignTransport(name, transport, validatedTransport);
+          break;
         }
-        const transport = new StdioClientTransport(validatedTransport as StdioServerParameters) as EnhancedTransport;
-        transport.timeout = validatedTransport.timeout;
-        transport.tags = validatedTransport.tags;
-        transports[name] = transport;
+        case 'stdio': {
+          if (!validatedTransport.command) {
+            throw new Error(`Command is required for stdio transport: ${name}`);
+          }
+          transport = new StdioClientTransport(validatedTransport as StdioServerParameters) as EnhancedTransport;
+          assignTransport(name, transport, validatedTransport);
+          break;
+        }
+        default:
+          throw new Error(`Invalid transport type: ${validatedTransport.type}`);
       }
 
       logger.debug(`Created transport: ${name}`);
