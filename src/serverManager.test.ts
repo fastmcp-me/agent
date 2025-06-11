@@ -77,8 +77,8 @@ describe('ServerManager', () => {
 
   describe('getInstance', () => {
     it('should create a singleton instance', () => {
-      const instance1 = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
-      const instance2 = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      const instance1 = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      const instance2 = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
 
       expect(instance1).toBe(instance2);
     });
@@ -90,7 +90,7 @@ describe('ServerManager', () => {
     const tags = ['tag1', 'tag2'];
 
     beforeEach(() => {
-      serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
     });
 
     it('should successfully connect a transport', async () => {
@@ -120,7 +120,7 @@ describe('ServerManager', () => {
     const sessionId = 'test-session';
 
     beforeEach(() => {
-      serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
     });
 
     it('should successfully disconnect a transport', async () => {
@@ -141,7 +141,7 @@ describe('ServerManager', () => {
     const sessionId = 'test-session';
 
     beforeEach(async () => {
-      serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
       await serverManager.connectTransport(mockTransport, sessionId, { enablePagination: false });
     });
 
@@ -177,7 +177,7 @@ describe('ServerManager', () => {
     const tags = ['tag1', 'tag2'];
 
     beforeEach(async () => {
-      serverManager = ServerManager.getInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
       await serverManager.connectTransport(mockTransport, sessionId, { tags, enablePagination: false });
     });
 
