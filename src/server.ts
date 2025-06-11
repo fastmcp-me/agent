@@ -19,7 +19,7 @@ async function setupServer(): Promise<ServerManager> {
     const clients = await createClients(transports);
     logger.info(`Created ${Object.keys(clients).length} clients`);
 
-    const serverManager = ServerManager.getInstance(
+    const serverManager = ServerManager.getOrCreateInstance(
       { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
       { capabilities: MCP_SERVER_CAPABILITIES },
       clients,

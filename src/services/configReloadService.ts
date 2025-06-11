@@ -4,6 +4,7 @@ import { MCPServerParams, ServerInfo, EnhancedTransport } from '../types.js';
 import { createClients } from '../clients/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { createTransports } from '../config/transportConfig.js';
+import { ServerManager } from '../serverManager.js';
 
 /**
  * Service to handle dynamic configuration reloading
@@ -87,6 +88,10 @@ export class ConfigReloadService {
 
       // Create clients for the new transports
       const newClients = await createClients(newTransports);
+
+      // Update ServerManager with new clients and transports
+      const serverManager = ServerManager.current;
+      serverManager.updateClientsAndTransports(newClients, newTransports);
 
       // Register new capabilities with the server
       await setupCapabilities(newClients, this.serverInfo);

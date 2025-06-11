@@ -27,7 +27,7 @@ export class ServerManager {
     this.transports = transports;
   }
 
-  public static getInstance(
+  public static getOrCreateInstance(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
     clients: Clients,
@@ -36,6 +36,10 @@ export class ServerManager {
     if (!ServerManager.instance) {
       ServerManager.instance = new ServerManager(config, capabilities, clients, transports);
     }
+    return ServerManager.instance;
+  }
+
+  public static get current(): ServerManager {
     return ServerManager.instance;
   }
 
@@ -104,5 +108,10 @@ export class ServerManager {
 
   public getServer(sessionId: string): ServerInfo | undefined {
     return this.servers.get(sessionId);
+  }
+
+  public updateClientsAndTransports(newClients: Clients, newTransports: Record<string, Transport>): void {
+    this.clients = newClients;
+    this.transports = newTransports;
   }
 }
