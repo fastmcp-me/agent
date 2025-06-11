@@ -104,9 +104,9 @@ export interface ClientInfo {
   readonly name: string;
   readonly transport: EnhancedTransport;
   readonly client: Client;
-  readonly status: ClientStatus;
   readonly lastError?: Error;
   readonly lastConnected?: Date;
+  status: ClientStatus;
   capabilities?: ServerCapabilities;
 }
 

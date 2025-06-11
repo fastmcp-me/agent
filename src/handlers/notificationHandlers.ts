@@ -11,7 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
-import { Clients, ServerInfo } from '../types.js';
+import { Clients, ServerInfo, ClientStatus } from '../types.js';
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
@@ -66,6 +66,11 @@ export function setupServerToClientNotifications(clients: Clients, serverInfo: S
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
+          if (clientInfo.status !== ClientStatus.Connected) {
+            logger.warn(`Client ${name} is not connected. Notification not sent.`);
+            return;
+          }
+
           clientInfo.client.notification({
             ...notification,
             params: {

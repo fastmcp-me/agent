@@ -31,6 +31,11 @@ export async function createClients(transports: Record<string, Transport>): Prom
         lastConnected: new Date(),
       };
       logger.info(`Client created for ${name}`);
+
+      client.onclose = () => {
+        clients[name].status = ClientStatus.Disconnected;
+        logger.info(`Client ${name} disconnected`);
+      };
     } catch (error) {
       logger.error(`Failed to create client for ${name}: ${error}`);
       clients[name] = {
