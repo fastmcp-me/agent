@@ -16,7 +16,7 @@ export const STREAMABLE_HTTP_ENDPOINT = '/mcp';
 // MCP constants
 export const MCP_CONFIG_FILE = 'mcp.json';
 export const MCP_SERVER_NAME = '1mcp';
-export const MCP_SERVER_VERSION = '0.10.1';
+export const MCP_SERVER_VERSION = '0.10.3';
 
 export const MCP_URI_SEPARATOR = '_1mcp_';
 
