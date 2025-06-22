@@ -21,6 +21,8 @@ import {
   ElicitRequestSchema,
   ElicitRequest,
   PingRequestSchema,
+  CompleteRequest,
+  CompleteRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR } from '../constants.js';
@@ -101,6 +103,9 @@ export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo
 
   // Register prompt-related handlers
   registerPromptHandlers(clients, serverInfo);
+
+  // Register completion-related handlers
+  registerCompletionHandlers(clients, serverInfo);
 
   // Register server-specific request handlers
   registerServerRequestHandlers(clients, serverInfo);
@@ -302,5 +307,47 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
         clientInfo.client.getPrompt({ ...request.params, name: promptName }),
       );
     }, 'Error getting prompt'),
+  );
+}
+
+/**
+ * Registers completion-related request handlers
+ * @param clients Record of client instances
+ * @param serverInfo The MCP server instance
+ */
+function registerCompletionHandlers(clients: Clients, serverInfo: ServerInfo): void {
+  serverInfo.server.setRequestHandler(
+    CompleteRequestSchema,
+    withErrorHandling(async (request: CompleteRequest) => {
+      const { ref } = request.params;
+      let clientName: string;
+      let updatedRef: typeof ref;
+
+      if (ref.type === 'ref/prompt') {
+        const { clientName: cn, resourceName } = parseUri(ref.name, MCP_URI_SEPARATOR);
+        clientName = cn;
+        updatedRef = { ...ref, name: resourceName };
+      } else if (ref.type === 'ref/resource') {
+        const { clientName: cn, resourceName } = parseUri(ref.uri, MCP_URI_SEPARATOR);
+        clientName = cn;
+        updatedRef = { ...ref, uri: resourceName };
+      } else {
+        // This should be caught by the schema validation, but as a safeguard:
+        throw new Error(`Unsupported completion reference type: ${(ref as any).type}`);
+      }
+
+      const params = { ...request.params, ref: updatedRef };
+
+      return executeClientOperation(
+        clients,
+        clientName,
+        (clientInfo) =>
+          clientInfo.client.complete(params, {
+            timeout: clientInfo.transport.timeout,
+          }),
+        {},
+        'completions',
+      );
+    }, 'Error handling completion'),
   );
 }

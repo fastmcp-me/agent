@@ -21,7 +21,7 @@ export class ClientConnectionError extends MCPError {
 
 export class ClientNotFoundError extends MCPError {
   constructor(clientName: string) {
-    super(`Client not found: ${clientName}`, ErrorCode.InvalidParams);
+    super(`Client '${clientName}' not found`, ErrorCode.InvalidParams, { clientName });
     this.name = 'ClientNotFoundError';
   }
 }
@@ -57,10 +57,20 @@ export class InvalidRequestError extends MCPError {
   }
 }
 
+export class CapabilityError extends MCPError {
+  constructor(clientName: string, capability: string) {
+    super(`Client '${clientName}' does not support the '${capability}' capability`, ErrorCode.MethodNotFound, {
+      clientName,
+      capability,
+    });
+  }
+}
+
 export type MCPErrorType =
   | ClientConnectionError
   | ClientNotFoundError
   | ClientOperationError
   | ValidationError
   | TransportError
-  | InvalidRequestError;
+  | InvalidRequestError
+  | CapabilityError;

@@ -57,7 +57,7 @@ export const CONNECTION_RETRY = {
 };
 
 export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
-  logging: {},
+  completions: {},
   resources: {
     listChanged: false,
   },

@@ -4,8 +4,8 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import createClient from '../client.js';
 import logger from '../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
-import { ClientConnectionError, ClientNotFoundError, MCPError } from '../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo } from '../types.js';
+import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../utils/errorTypes.js';
+import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -146,14 +146,21 @@ export async function executeOperation<T>(
  * @param clientName The name of the client to use
  * @param operation The operation to execute
  * @param options Operation options including timeout and retry settings
+ * @param requiredCapability The capability required for this operation
  */
 export async function executeClientOperation<T>(
   clients: Clients,
   clientName: string,
   operation: (clientInfo: ClientInfo) => Promise<T>,
   options: OperationOptions = {},
+  requiredCapability?: ServerCapability,
 ): Promise<T> {
   const clientInfo = getClient(clients, clientName);
+
+  if (requiredCapability && !clientInfo.capabilities?.[requiredCapability]) {
+    throw new CapabilityError(clientName, String(requiredCapability));
+  }
+
   return executeOperation(() => operation(clientInfo), `client ${clientName}`, options);
 }
 

@@ -122,3 +122,5 @@ export interface OperationOptions {
   readonly retryCount?: number;
   readonly retryDelay?: number;
 }
+
+export type ServerCapability = keyof ServerCapabilities;
