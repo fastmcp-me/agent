@@ -18,6 +18,9 @@ import {
   ListRootsRequestSchema,
   CreateMessageRequest,
   ListRootsRequest,
+  ElicitRequestSchema,
+  ElicitRequest,
+  PingRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR } from '../constants.js';
@@ -35,6 +38,13 @@ import { handlePagination } from '../utils/pagination.js';
 function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
   Object.entries(clients).forEach(([_, clientInfo]) => {
     clientInfo.client.setRequestHandler(
+      PingRequestSchema,
+      withErrorHandling(async () => {
+        return executeServerOperation(serverInfo, (_server: ServerInfo) => _server.server.ping());
+      }, 'Error pinging'),
+    );
+
+    clientInfo.client.setRequestHandler(
       CreateMessageRequestSchema,
       withErrorHandling(async (request: CreateMessageRequest) => {
         return executeServerOperation(serverInfo, (_server: ServerInfo) =>
@@ -43,6 +53,17 @@ function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo)
           }),
         );
       }, 'Error creating message'),
+    );
+
+    clientInfo.client.setRequestHandler(
+      ElicitRequestSchema,
+      withErrorHandling(async (request: ElicitRequest) => {
+        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+          _server.server.elicitInput(request.params, {
+            timeout: clientInfo.transport.timeout,
+          }),
+        );
+      }, 'Error eliciting input'),
     );
 
     clientInfo.client.setRequestHandler(

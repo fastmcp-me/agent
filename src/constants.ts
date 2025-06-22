@@ -76,4 +76,7 @@ export const MCP_CLIENT_CAPABILITIES: ClientCapabilities = {
   sampling: {
     listChanged: false,
   },
+  elicitation: {
+    listChanged: false,
+  },
 };
