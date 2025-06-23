@@ -241,6 +241,8 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
             name: `${clientInfo.name}${MCP_URI_SEPARATOR}${tool.name}`,
             description: tool.description,
             inputSchema: tool.inputSchema,
+            outputSchema: tool.outputSchema,
+            annotations: tool.annotations,
           })) ?? [],
         serverInfo.enablePagination ?? false,
       );
