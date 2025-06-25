@@ -56,6 +56,17 @@ export const CONNECTION_RETRY = {
   INITIAL_DELAY_MS: 1000,
 };
 
+// Authentication and session settings
+export const AUTH_CONFIG = {
+  DEFAULT_ENABLED: false,
+  DEFAULT_SESSION_TTL_MINUTES: 24 * 60, // 24 hours
+  DEFAULT_OAUTH_CODE_TTL_MS: 60 * 1000, // 1 minute
+  DEFAULT_OAUTH_TOKEN_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
+  SESSION_STORAGE_DIR: 'sessions',
+  SESSION_FILE_PREFIX: 'session_',
+  SESSION_FILE_EXTENSION: '.json',
+};
+
 export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
   completions: {},
   resources: {

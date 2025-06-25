@@ -10,6 +10,7 @@ import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';
 import { ExpressServer } from './server/expressServer.js';
+import { ServerConfigManager } from './server/config/serverConfig.js';
 import { PORT, HOST } from './constants.js';
 
 // Parse command line arguments
@@ -54,6 +55,21 @@ const argv = yargs(hideBin(process.argv))
       type: 'boolean',
       default: false,
     },
+    'auth-enabled': {
+      describe: 'Enable authentication (OAuth 2.1)',
+      type: 'boolean',
+      default: false,
+    },
+    'session-ttl': {
+      describe: 'Session expiry time in minutes',
+      type: 'number',
+      default: 24 * 60, // 24 hours
+    },
+    'session-storage-path': {
+      describe: 'Custom session storage directory path',
+      type: 'string',
+      default: undefined,
+    },
   })
   .help()
   .alias('help', 'h')
@@ -62,12 +78,22 @@ const argv = yargs(hideBin(process.argv))
 /**
  * Set up graceful shutdown handling
  */
-function setupGracefulShutdown(serverManager: ServerManager): void {
+function setupGracefulShutdown(serverManager: ServerManager, expressServer?: ExpressServer): void {
   const shutdown = async () => {
     logger.info('Shutting down server...');
 
     // Stop the configuration reload service
     configReloadService.stop();
+
+    // Shutdown ExpressServer if it exists
+    if (expressServer) {
+      try {
+        expressServer.shutdown();
+        logger.info('ExpressServer shutdown complete');
+      } catch (error) {
+        logger.error(`Error shutting down ExpressServer: ${error}`);
+      }
+    }
 
     // Close all transports
     for (const [sessionId, transport] of serverManager.getTransports().entries()) {
@@ -100,11 +126,22 @@ async function main() {
 
     ConfigManager.getInstance(argv.config);
 
+    // Configure server settings from CLI arguments
+    const serverConfigManager = ServerConfigManager.getInstance();
+    serverConfigManager.updateConfig({
+      auth: {
+        enabled: argv['auth-enabled'],
+        sessionTtlMinutes: argv['session-ttl'],
+        sessionStoragePath: argv['session-storage-path'],
+        oauthCodeTtlMs: 60 * 1000, // 1 minute
+        oauthTokenTtlMs: argv['session-ttl'] * 60 * 1000, // Convert minutes to milliseconds
+      },
+    });
+
     // Initialize server and get server manager with custom config path if provided
     const serverManager = await setupServer();
 
-    // Set up graceful shutdown handling
-    setupGracefulShutdown(serverManager);
+    let expressServer: ExpressServer | undefined;
 
     switch (argv.transport) {
       case 'stdio': {
@@ -129,7 +166,7 @@ async function main() {
       // eslint-disable-next-line no-fallthrough
       case 'http': {
         // Use HTTP/SSE transport
-        const expressServer = new ExpressServer(serverManager);
+        expressServer = new ExpressServer(serverManager);
         expressServer.start(argv.port, argv.host);
         break;
       }
@@ -137,6 +174,9 @@ async function main() {
         logger.error(`Invalid transport: ${argv.transport}`);
         process.exit(1);
     }
+
+    // Set up graceful shutdown handling
+    setupGracefulShutdown(serverManager, expressServer);
   } catch (error) {
     logger.error('Server error:', error);
     process.exit(1);
