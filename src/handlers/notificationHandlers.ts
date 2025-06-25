@@ -34,13 +34,23 @@ export function setupClientToServerNotifications(clients: Clients, serverInfo: S
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
-          serverInfo.server.notification({
-            ...notification,
-            params: {
-              ...notification.params,
-              server: name,
-            },
-          });
+
+          // Try to send notification, catch connection errors gracefully
+          try {
+            serverInfo.server.notification({
+              ...notification,
+              params: {
+                ...notification.params,
+                server: name,
+              },
+            });
+          } catch (error) {
+            if (error instanceof Error && error.message.includes('Not connected')) {
+              logger.warn(`Server transport not connected. Dropping notification from ${name}`);
+            } else {
+              logger.error(`Failed to send notification from ${name}: ${error}`);
+            }
+          }
         }, `Error handling client notification from ${name}`),
       );
     });
@@ -71,13 +81,22 @@ export function setupServerToClientNotifications(clients: Clients, serverInfo: S
             return;
           }
 
-          clientInfo.client.notification({
-            ...notification,
-            params: {
-              ...notification.params,
-              client: name,
-            },
-          });
+          // Try to send notification, catch connection errors gracefully
+          try {
+            clientInfo.client.notification({
+              ...notification,
+              params: {
+                ...notification.params,
+                client: name,
+              },
+            });
+          } catch (error) {
+            if (error instanceof Error && error.message.includes('Not connected')) {
+              logger.warn(`Client ${name} transport not connected. Dropping notification.`);
+            } else {
+              logger.error(`Failed to send notification to ${name}: ${error}`);
+            }
+          }
         }, `Error handling server notification to ${name}`),
       );
     });

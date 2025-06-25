@@ -67,6 +67,7 @@ export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
   prompts: {
     listChanged: false,
   },
+  logging: {},
 };
 
 export const MCP_CLIENT_CAPABILITIES: ClientCapabilities = {
