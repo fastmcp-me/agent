@@ -4,7 +4,18 @@ import { randomUUID } from 'node:crypto';
 import logger from '../../logger/logger.js';
 import { AuthManager } from '../auth/authManager.js';
 import { ServerConfigManager } from '../config/serverConfig.js';
+import { AUTH_CONFIG } from '../../constants.js';
 
+/**
+ * Sets up OAuth 2.1 and related endpoints on the Express app.
+ *
+ * This function registers all OAuth 2.1 endpoints (authorization, token, metadata, registration)
+ * and MCP resource metadata endpoints on the provided Express application. It uses the provided
+ * AuthManager for all authentication and token operations.
+ *
+ * @param app - The Express application instance
+ * @param authManager - The AuthManager instance for OAuth/session logic
+ */
 export function setupOAuthRoutes(app: express.Application, authManager: AuthManager): void {
   const configManager = ServerConfigManager.getInstance();
   const DEFAULT_REDIRECT_PATH = '/oauth/callback';
@@ -128,7 +139,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
     logger.info('[OAuth] client registration request', { body: req.body });
 
     // Accept any registration, auto-approve
-    const clientId = randomUUID();
+    const clientId = AUTH_CONFIG.PREFIXES.CLIENT_ID + randomUUID();
 
     logger.info('[OAuth] client registration success', { clientId });
     res.status(201).json({

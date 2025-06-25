@@ -55,7 +55,7 @@ const argv = yargs(hideBin(process.argv))
       type: 'boolean',
       default: false,
     },
-    'auth-enabled': {
+    auth: {
       describe: 'Enable authentication (OAuth 2.1)',
       type: 'boolean',
       default: false,
@@ -130,7 +130,7 @@ async function main() {
     const serverConfigManager = ServerConfigManager.getInstance();
     serverConfigManager.updateConfig({
       auth: {
-        enabled: argv['auth-enabled'],
+        enabled: argv['auth'],
         sessionTtlMinutes: argv['session-ttl'],
         sessionStoragePath: argv['session-storage-path'],
         oauthCodeTtlMs: 60 * 1000, // 1 minute

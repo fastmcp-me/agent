@@ -65,6 +65,13 @@ export const AUTH_CONFIG = {
   SESSION_STORAGE_DIR: 'sessions',
   SESSION_FILE_PREFIX: 'session_',
   SESSION_FILE_EXTENSION: '.json',
+  // Identifier prefixes for easy distinction
+  PREFIXES: {
+    SESSION_ID: 'sess-',
+    ACCESS_TOKEN: 'tk-',
+    AUTH_CODE: 'code-',
+    CLIENT_ID: 'client-',
+  },
 };
 
 export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {

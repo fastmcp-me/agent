@@ -11,12 +11,33 @@ import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import { ServerConfigManager } from './config/serverConfig.js';
 
+/**
+ * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.
+ *
+ * This class manages the Express application, authentication, and route setup.
+ * It provides both HTTP and SSE transport options with optional OAuth 2.1 authentication.
+ *
+ * @example
+ * ```typescript
+ * const serverManager = await setupServer();
+ * const expressServer = new ExpressServer(serverManager);
+ * expressServer.start(3050, 'localhost');
+ * ```
+ */
 export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
   private authManager: AuthManager;
   private configManager: ServerConfigManager;
 
+  /**
+   * Creates a new ExpressServer instance.
+   *
+   * Initializes the Express application, sets up middleware, authentication,
+   * and configures all routes for MCP transport and OAuth endpoints.
+   *
+   * @param serverManager - The server manager instance for handling MCP operations
+   */
   constructor(serverManager: ServerManager) {
     this.app = express();
     this.serverManager = serverManager;
@@ -30,6 +51,14 @@ export class ExpressServer {
     this.setupRoutes();
   }
 
+  /**
+   * Sets up Express middleware including CORS, body parsing, and error handling.
+   *
+   * Configures the basic middleware stack required for the MCP server:
+   * - CORS for cross-origin requests
+   * - JSON body parsing
+   * - Global error handling
+   */
   private setupMiddleware(): void {
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());
@@ -38,6 +67,16 @@ export class ExpressServer {
     this.app.use(errorHandler);
   }
 
+  /**
+   * Sets up all application routes including OAuth and MCP transport endpoints.
+   *
+   * Configures the following route groups:
+   * - OAuth 2.1 endpoints (always available, auth can be disabled)
+   * - Streamable HTTP transport routes with authentication middleware
+   * - SSE transport routes with authentication middleware
+   *
+   * Logs the authentication status for debugging purposes.
+   */
   private setupRoutes(): void {
     // Create auth middleware
     const authMiddleware = createAuthMiddleware(this.authManager);
@@ -57,6 +96,15 @@ export class ExpressServer {
     }
   }
 
+  /**
+   * Starts the Express server on the specified port and host.
+   *
+   * Binds the Express application to the network interface and logs
+   * the server status including authentication configuration.
+   *
+   * @param port - The port number to listen on
+   * @param host - The host address to bind to
+   */
   public start(port: number, host: string): void {
     this.app.listen(port, host, () => {
       const authStatus = this.authManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
@@ -64,6 +112,14 @@ export class ExpressServer {
     });
   }
 
+  /**
+   * Performs graceful shutdown of the Express server.
+   *
+   * Cleans up resources including:
+   * - Authentication manager shutdown
+   * - Session cleanup
+   * - Timer cleanup
+   */
   public shutdown(): void {
     this.authManager.shutdown();
   }

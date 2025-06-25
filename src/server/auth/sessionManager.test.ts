@@ -63,6 +63,7 @@ describe('SessionManager', () => {
 
     expect(sessionId).toBeDefined();
     expect(typeof sessionId).toBe('string');
+    expect(sessionId).toMatch(/^sess-/);
     expect(fs.writeFileSync).toHaveBeenCalled();
   });
 
@@ -109,6 +110,7 @@ describe('SessionManager', () => {
 
     expect(code).toBeDefined();
     expect(typeof code).toBe('string');
+    expect(code).toMatch(/^code-/);
     expect(fs.writeFileSync).toHaveBeenCalled();
   });
 
