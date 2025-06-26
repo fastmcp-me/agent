@@ -291,3 +291,9 @@ pnpm inspector
 ```
 
 The Inspector will provide a URL to access debugging tools in your browser.
+
+## Debugging & Source Maps
+
+This project uses [source-map-support](https://www.npmjs.com/package/source-map-support) to enhance stack traces. When you run the server, stack traces will reference the original TypeScript source files instead of the compiled JavaScript. This makes debugging much easier, as error locations and line numbers will match your source code.
+
+No extra setup is required—this is enabled by default. If you see a stack trace, it will point to `.ts` files and the correct line numbers. 🗺️
