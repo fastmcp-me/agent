@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import 'source-map-support/register.js';
+
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
