@@ -105,10 +105,14 @@ export class SessionManager {
    * @returns Full file path for the session file
    */
   private getSessionFilePath(sessionId: string): string {
-    return path.join(
+    const filePath = path.resolve(
       this.sessionStoragePath,
       `${AUTH_CONFIG.SESSION_FILE_PREFIX}${sessionId}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`,
     );
+    if (!filePath.startsWith(this.sessionStoragePath)) {
+      throw new Error('Invalid session file path');
+    }
+    return filePath;
   }
 
   /**
@@ -118,12 +122,20 @@ export class SessionManager {
    * @returns Full file path for the auth code file
    */
   private getAuthCodeFilePath(code: string): string {
-    const unsafePath = path.join(this.sessionStoragePath, `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`);
-    const normalizedPath = fs.realpathSync(path.resolve(unsafePath));
-    if (!normalizedPath.startsWith(this.sessionStoragePath)) {
+    const filePath = path.resolve(this.sessionStoragePath, `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`);
+    if (!filePath.startsWith(this.sessionStoragePath)) {
       throw new Error('Invalid authorization code path');
     }
-    return normalizedPath;
+    return filePath;
+  }
+
+  /**
+   * Utility to validate session IDs and auth codes for safe characters (alphanumeric and dashes only).
+   * @param id - The session ID or auth code to validate
+   * @returns true if valid, false otherwise
+   */
+  private isValidId(id: string): boolean {
+    return /^[a-zA-Z0-9-]+$/.test(id);
   }
 
   /**
@@ -168,6 +180,10 @@ export class SessionManager {
    * @returns Session data if valid and not expired, null otherwise
    */
   public getSession(sessionId: string): SessionData | null {
+    if (!this.isValidId(sessionId)) {
+      logger.warn(`Rejected getSession with invalid sessionId: ${sessionId}`);
+      return null;
+    }
     try {
       const filePath = this.getSessionFilePath(sessionId);
       if (!fs.existsSync(filePath)) {
@@ -198,6 +214,10 @@ export class SessionManager {
    * @returns True if session was deleted, false if it didn't exist
    */
   public deleteSession(sessionId: string): boolean {
+    if (!this.isValidId(sessionId)) {
+      logger.warn(`Rejected deleteSession with invalid sessionId: ${sessionId}`);
+      return false;
+    }
     try {
       const filePath = this.getSessionFilePath(sessionId);
       if (fs.existsSync(filePath)) {
@@ -256,6 +276,10 @@ export class SessionManager {
    * @returns Auth code data if valid and not expired, null otherwise
    */
   public getAuthCode(code: string): AuthCodeData | null {
+    if (!this.isValidId(code)) {
+      logger.warn(`Rejected getAuthCode with invalid code: ${code}`);
+      return null;
+    }
     try {
       const filePath = this.getAuthCodeFilePath(code);
       if (!fs.existsSync(filePath)) {
@@ -286,6 +310,10 @@ export class SessionManager {
    * @returns True if code was deleted, false if it didn't exist
    */
   public deleteAuthCode(code: string): boolean {
+    if (!this.isValidId(code)) {
+      logger.warn(`Rejected deleteAuthCode with invalid code: ${code}`);
+      return false;
+    }
     try {
       const filePath = this.getAuthCodeFilePath(code);
       if (fs.existsSync(filePath)) {

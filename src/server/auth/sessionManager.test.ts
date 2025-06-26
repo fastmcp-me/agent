@@ -43,6 +43,9 @@ describe('SessionManager', () => {
     // Mock path.join
     vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
 
+    // Mock path.resolve
+    vi.mocked(path.resolve).mockImplementation((...args) => args.join('/'));
+
     sessionManager = new SessionManager(mockStoragePath);
   });
 
@@ -135,5 +138,33 @@ describe('SessionManager', () => {
 
     expect(result).toBe(true);
     expect(fs.unlinkSync).toHaveBeenCalled();
+  });
+
+  it('should reject session IDs with path traversal attempts', () => {
+    const invalidIds = [
+      '../evil',
+      'sess-../../etc/passwd',
+      'sess-..\\windows',
+      'sess-..//etc/shadow',
+      'sess-..%2Fetc%2Fpasswd',
+    ];
+    for (const id of invalidIds) {
+      expect(sessionManager.getSession(id)).toBeNull();
+      expect(sessionManager.deleteSession(id)).toBe(false);
+    }
+  });
+
+  it('should reject auth codes with path traversal attempts', () => {
+    const invalidCodes = [
+      '../evil',
+      'code-../../etc/passwd',
+      'code-..\\windows',
+      'code-..//etc/shadow',
+      'code-..%2Fetc%2Fpasswd',
+    ];
+    for (const code of invalidCodes) {
+      expect(sessionManager.getAuthCode(code)).toBeNull();
+      expect(sessionManager.deleteAuthCode(code)).toBe(false);
+    }
   });
 });
