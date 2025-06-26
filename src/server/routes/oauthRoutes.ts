@@ -20,6 +20,17 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   const configManager = ServerConfigManager.getInstance();
   const DEFAULT_REDIRECT_PATH = '/oauth/callback';
 
+  /**
+   * Helper to build the OAuth issuer URL from the incoming request.
+   * Uses protocol and host headers for correct environment support.
+   */
+  function getIssuer(req: express.Request): string {
+    // X-Forwarded-Proto/Host for proxies, fallback to req.protocol/host
+    const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
+    const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
+    return `${proto}://${host}`;
+  }
+
   // /authorize endpoint (auto-approve)
   app.get('/authorize', (req, res) => {
     logger.info('[OAuth] /authorize request', { query: req.query, headers: req.headers });
@@ -42,8 +53,8 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
 
     // Accept S256 or plain for code_challenge_method (not enforced for local dev)
     // Use default redirect URI if not provided
-    const port = (req.socket.localPort || 80).toString();
-    const defaultRedirect = `http://localhost:${port}${DEFAULT_REDIRECT_PATH}`;
+    const issuer = getIssuer(req);
+    const defaultRedirect = `${issuer}${DEFAULT_REDIRECT_PATH}`;
     const redirect = typeof redirect_uri === 'string' ? redirect_uri : defaultRedirect;
 
     const code = authManager.createAuthCode(
@@ -95,8 +106,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   // OAuth 2.0 Authorization Server Metadata (RFC8414)
   app.get('/.well-known/oauth-authorization-server', (req, res) => {
     logger.info('[OAuth] metadata request', { url: req.url });
-    const port = (req.socket.localPort || 80).toString();
-    const issuer = `http://localhost:${port}`;
+    const issuer = getIssuer(req);
 
     res.json({
       issuer,
@@ -113,8 +123,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   // MCP Resource Metadata (RFC9728)
   app.get('/mcp-resource-metadata', (req, res) => {
     logger.info('[OAuth] resource metadata request', { url: req.url });
-    const port = (req.socket.localPort || 80).toString();
-    const issuer = `http://localhost:${port}`;
+    const issuer = getIssuer(req);
 
     res.json({
       authorization_servers: [`${issuer}/.well-known/oauth-authorization-server`],
@@ -125,8 +134,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   // OAuth 2.0 Protected Resource Metadata (RFC9728) well-known endpoint
   app.get('/.well-known/oauth-protected-resource', (req, res) => {
     logger.info('[OAuth] protected resource metadata request', { url: req.url });
-    const port = (req.socket.localPort || 80).toString();
-    const issuer = `http://localhost:${port}`;
+    const issuer = getIssuer(req);
 
     res.json({
       authorization_servers: [`${issuer}/.well-known/oauth-authorization-server`],
