@@ -64,6 +64,10 @@ Available options:
 - `--port, -P`: Change HTTP port (default: 3050)
 - `--host, -H`: Change HTTP host (default: localhost)
 - `--tags, -g`: Filter servers by tags (see Tags section below)
+- `--pagination, -p`: Enable pagination for client/server lists (boolean, default: false)
+- `--auth`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `--session-ttl`: Session expiry time in minutes (number, default: 1440)
+- `--session-storage-path`: Custom session storage directory path (string, default: undefined)
 - `--help, -h`: Show help
 
 Example with environment variables:
@@ -108,6 +112,10 @@ You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
 - `ONE_MCP_HOST`: HTTP host (default: "localhost")
 - `ONE_MCP_CONFIG`: Path to config file
 - `ONE_MCP_TAGS`: Comma-separated list of tags to filter servers
+- `ONE_MCP_PAGINATION`: Enable pagination for client/server lists (boolean, default: false)
+- `ONE_MCP_AUTH`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `ONE_MCP_SESSION_TTL`: Session expiry time in minutes (number, default: 1440)
+- `ONE_MCP_SESSION_STORAGE_PATH`: Custom session storage directory path (string, default: undefined)
 
 Example with environment variables:
 ```bash
