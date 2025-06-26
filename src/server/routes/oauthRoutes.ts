@@ -4,7 +4,8 @@ import { randomUUID } from 'node:crypto';
 import logger from '../../logger/logger.js';
 import { AuthManager } from '../auth/authManager.js';
 import { ServerConfigManager } from '../config/serverConfig.js';
-import { AUTH_CONFIG } from '../../constants.js';
+import { AUTH_CONFIG, RATE_LIMIT_CONFIG } from '../../constants.js';
+import rateLimit from 'express-rate-limit';
 
 /**
  * Sets up OAuth 2.1 and related endpoints on the Express app.
@@ -20,6 +21,15 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   const configManager = ServerConfigManager.getInstance();
   const DEFAULT_REDIRECT_PATH = '/oauth/callback';
 
+  // Rate limiter: 10 requests per minute per IP for sensitive endpoints
+  const oauthLimiter = rateLimit({
+    windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
+    max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+  });
+
   /**
    * Helper to build the OAuth issuer URL from the incoming request.
    * Uses protocol and host headers for correct environment support.
@@ -32,7 +42,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   }
 
   // /authorize endpoint (auto-approve)
-  app.get('/authorize', (req, res) => {
+  app.get('/authorize', oauthLimiter, (req, res) => {
     logger.info('[OAuth] /authorize request', { query: req.query, headers: req.headers });
 
     const {
@@ -73,7 +83,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   });
 
   // /token endpoint
-  app.post('/token', bodyParser.urlencoded({ extended: false }), (req, res) => {
+  app.post('/token', oauthLimiter, bodyParser.urlencoded({ extended: false }), (req, res) => {
     logger.info('[OAuth] /token request', { body: req.body, headers: req.headers });
 
     const { grant_type, code, client_id, redirect_uri, resource } = req.body;
@@ -143,7 +153,7 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
   });
 
   // OAuth 2.0 Dynamic Client Registration (RFC7591)
-  app.post('/register', bodyParser.json(), (req, res) => {
+  app.post('/register', oauthLimiter, bodyParser.json(), (req, res) => {
     logger.info('[OAuth] client registration request', { body: req.body });
 
     // Accept any registration, auto-approve

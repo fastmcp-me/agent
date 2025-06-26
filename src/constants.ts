@@ -74,6 +74,15 @@ export const AUTH_CONFIG = {
   },
 };
 
+// Rate limiting configuration for OAuth endpoints
+export const RATE_LIMIT_CONFIG = {
+  OAUTH: {
+    WINDOW_MS: 60 * 1000, // 1 minute
+    MAX: 10, // max requests per window per IP
+    MESSAGE: { error: 'Too many requests, please try again later.' },
+  },
+};
+
 export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
   completions: {},
   resources: {
