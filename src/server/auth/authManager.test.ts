@@ -68,7 +68,7 @@ describe('AuthManager', () => {
       const mockSession = { clientId: 'test', resource: '', expires: Date.now() + 60000, createdAt: Date.now() };
       mockSessionManager.getSession.mockReturnValue(mockSession);
 
-      const token = AUTH_CONFIG.PREFIXES.ACCESS_TOKEN + 'sess-12345';
+      const token = AUTH_CONFIG.PREFIXES.ACCESS_TOKEN + '12345';
       const result = authManager.validateAccessToken(token);
 
       expect(mockSessionManager.getSession).toHaveBeenCalledWith('sess-12345');
@@ -80,7 +80,7 @@ describe('AuthManager', () => {
       const mockSession = { clientId: 'test', resource: '', expires: Date.now() + 60000, createdAt: Date.now() };
       mockSessionManager.getSession.mockReturnValue(mockSession);
 
-      const token = 'sess-12345';
+      const token = '12345';
       const result = authManager.validateAccessToken(token);
 
       expect(mockSessionManager.getSession).toHaveBeenCalledWith('sess-12345');
@@ -97,11 +97,11 @@ describe('AuthManager', () => {
         expires: Date.now() + 60000,
         createdAt: Date.now(),
       };
-      const mockSessionId = 'sess-67890';
       const mockTokenTtl = 3600000; // 1 hour
 
       mockSessionManager.getAuthCode.mockReturnValue(mockAuthCode);
-      mockSessionManager.createSession.mockReturnValue(mockSessionId);
+      mockSessionManager.createSessionWithId = vi.fn();
+      mockSessionManager.deleteAuthCode.mockReturnValue(true);
       mockConfigManager.getOAuthTokenTtlMs.mockReturnValue(mockTokenTtl);
 
       const code = 'code-12345';
@@ -110,8 +110,9 @@ describe('AuthManager', () => {
 
       expect(mockSessionManager.getAuthCode).toHaveBeenCalledWith(code);
       expect(mockSessionManager.deleteAuthCode).toHaveBeenCalledWith(code);
-      expect(mockSessionManager.createSession).toHaveBeenCalledWith(clientId, 'test-resource', mockTokenTtl);
-      expect(result).toBe(AUTH_CONFIG.PREFIXES.ACCESS_TOKEN + mockSessionId);
+      expect(mockSessionManager.createSessionWithId).toHaveBeenCalled();
+      expect(result).toMatch(/^tk-[a-f0-9-]+$/);
+      expect(result).not.toContain('tk-sess-');
     });
 
     it('should return null for invalid auth code', () => {
@@ -140,6 +141,30 @@ describe('AuthManager', () => {
       expect(result).toBeNull();
       expect(mockSessionManager.deleteAuthCode).not.toHaveBeenCalled();
       expect(mockSessionManager.createSession).not.toHaveBeenCalled();
+    });
+
+    it('should never generate an access token with the prefix "tk-sess-"', () => {
+      const mockAuthCode = {
+        clientId: 'client-123',
+        redirectUri: 'http://localhost:3000/callback',
+        resource: 'test-resource',
+        expires: Date.now() + 60000,
+        createdAt: Date.now(),
+      };
+      const mockTokenTtl = 3600000; // 1 hour
+      mockSessionManager.getAuthCode.mockReturnValue(mockAuthCode);
+      mockSessionManager.createSessionWithId = vi.fn();
+      mockSessionManager.deleteAuthCode.mockReturnValue(true);
+      mockConfigManager.getOAuthTokenTtlMs.mockReturnValue(mockTokenTtl);
+
+      const code = 'code-12345';
+      const clientId = 'client-123';
+      // Generate multiple tokens to check for any prefix stacking
+      for (let i = 0; i < 10; i++) {
+        const result = authManager.exchangeCodeForToken(code, clientId);
+        expect(result).not.toContain('tk-sess-');
+        expect(result).toMatch(/^tk-[a-f0-9-]+$/);
+      }
     });
   });
 

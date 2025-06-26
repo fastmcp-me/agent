@@ -400,4 +400,35 @@ export class SessionManager {
       this.cleanupInterval = null;
     }
   }
+
+  /**
+   * Creates a new session with a custom ID (no prefix).
+   * Used for access tokens where the token ID is generated separately.
+   *
+   * @param tokenId - The raw UUID to use for the session (no prefix)
+   * @param clientId - The client identifier
+   * @param resource - The resource this session can access
+   * @param ttlMs - Time-to-live in milliseconds
+   * @returns The generated session ID with prefix
+   * @throws Error if session creation fails
+   */
+  public createSessionWithId(tokenId: string, clientId: string, resource: string, ttlMs: number): string {
+    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + tokenId;
+    const sessionData: SessionData = {
+      clientId,
+      resource,
+      expires: Date.now() + ttlMs,
+      createdAt: Date.now(),
+    };
+
+    try {
+      const filePath = this.getSessionFilePath(sessionId);
+      fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+      logger.info(`Created session: ${sessionId} for client: ${clientId}`);
+      return sessionId;
+    } catch (error) {
+      logger.error(`Failed to create session: ${error}`);
+      throw error;
+    }
+  }
 }

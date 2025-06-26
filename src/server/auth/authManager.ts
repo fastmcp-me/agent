@@ -2,6 +2,7 @@ import logger from '../../logger/logger.js';
 import { SessionManager, SessionData } from './sessionManager.js';
 import { ServerConfigManager } from '../config/serverConfig.js';
 import { AUTH_CONFIG } from '../../constants.js';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * AuthManager handles OAuth 2.1 authentication flow and token validation.
@@ -70,10 +71,12 @@ export class AuthManager {
     }
 
     // Strip token prefix if present
-    const sessionId = token.startsWith(AUTH_CONFIG.PREFIXES.ACCESS_TOKEN)
+    const tokenId = token.startsWith(AUTH_CONFIG.PREFIXES.ACCESS_TOKEN)
       ? token.slice(AUTH_CONFIG.PREFIXES.ACCESS_TOKEN.length)
       : token;
 
+    // Session is stored with 'sess-' + tokenId
+    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + tokenId;
     return this.sessionManager.getSession(sessionId);
   }
 
@@ -131,10 +134,12 @@ export class AuthManager {
     // Delete the auth code after successful exchange
     this.sessionManager.deleteAuthCode(code);
 
-    // Create access token with prefix
+    // Create access token with prefix and a new UUID
+    const rawTokenId = uuidv4();
+    const accessToken = AUTH_CONFIG.PREFIXES.ACCESS_TOKEN + rawTokenId;
     const ttlMs = this.configManager.getOAuthTokenTtlMs();
-    const sessionId = this.sessionManager.createSession(clientId, codeData.resource, ttlMs);
-    const accessToken = AUTH_CONFIG.PREFIXES.ACCESS_TOKEN + sessionId;
+    // Store the session using the rawTokenId (not prefixed)
+    this.sessionManager.createSessionWithId(rawTokenId, clientId, codeData.resource, ttlMs);
 
     logger.info(`Exchanged code ${code} for token ${accessToken} for client ${clientId}`);
     return accessToken;
