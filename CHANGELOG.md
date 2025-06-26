@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2025-06-26
+
+### 🚀 Features
+- Add source-map-support for improved error stack traces by @xizhibei
+- Add rate limiting for OAuth endpoints and update package dependencies by @xizhibei
+- Enhance session management by adding path traversal validation for session IDs and auth codes by @xizhibei
+- Add helper function to dynamically build OAuth issuer URL for improved environment support by @xizhibei
+- Enhance OAuth 2.1 implementation with session ID prefixes, improved token validation, and comprehensive documentation by @xizhibei
+- Implement OAuth 2.1 authentication with session management and middleware integration by @xizhibei
+- Enhance error handling for notifications in client-server communication by @xizhibei
+- Add CORS support and implement OAuth 2.1 endpoints for authorization and token management by @xizhibei
+- Include outputSchema and annotations in tool registration for enhanced tool metadata by @xizhibei
+- Implement completion request handlers and enhance capability checks in client operations by @xizhibei
+- Add ElicitRequest and PingRequest handlers to improve client-server interaction by @xizhibei
+
+### 🐛 Bug Fixes
+- For code scanning alert no. 4: Uncontrolled data used in path expression by @xizhibei in [#62](https://github.com/1mcp-app/agent/pull/62)
+
+### 🚜 Refactor
+- Update access token generation to use UUIDs and improve session management by @xizhibei
+
+### 📚 Documentation
+- Update README to include new options for pagination, authentication, and session management by @xizhibei
+- Add section on debugging and source maps to README by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Remove deprecated Docker build workflow and integrate into main workflow by @xizhibei
+
+
 ## [0.10.3] - 2025-06-11
 
 ### 🚜 Refactor
@@ -233,6 +262,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.11.0]: https://github.com/1mcp-app/agent/compare/v0.10.3..v0.11.0
 [0.10.3]: https://github.com/1mcp-app/agent/compare/v0.10.2..v0.10.3
 [0.10.2]: https://github.com/1mcp-app/agent/compare/v0.10.1..v0.10.2
 [0.10.1]: https://github.com/1mcp-app/agent/compare/v0.10.0..v0.10.1
