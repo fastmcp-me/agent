@@ -117,20 +117,51 @@ export function formatErrorResponse(error: any): { code: number; message: string
 
 /**
  * Extracts client name and resource name from a URI
+ * Uses robust parsing to handle edge cases where separator might appear in resource names.
  * @param uri The URI to parse
  * @param separator The separator used in the URI
  * @returns An object with clientName and resourceName
  * @throws InvalidRequestError if the URI is invalid
  */
 export function parseUri(uri: string, separator: string): { clientName: string; resourceName: string } {
-  const parts = uri.split(separator);
+  // Validate inputs
+  if (!uri || typeof uri !== 'string') {
+    throw new InvalidRequestError('URI must be a non-empty string');
+  }
 
-  if (parts.length !== 2) {
-    throw new InvalidRequestError(`Invalid URI format: ${uri}`);
+  if (!separator || typeof separator !== 'string') {
+    throw new InvalidRequestError('Separator must be a non-empty string');
+  }
+
+  // Find the first occurrence of the separator
+  const separatorIndex = uri.indexOf(separator);
+
+  if (separatorIndex === -1) {
+    throw new InvalidRequestError(`Invalid URI format: missing separator '${separator}' in '${uri}'`);
+  }
+
+  if (separatorIndex === 0) {
+    throw new InvalidRequestError(`Invalid URI format: URI cannot start with separator '${separator}'`);
+  }
+
+  if (separatorIndex === uri.length - separator.length) {
+    throw new InvalidRequestError(`Invalid URI format: URI cannot end with separator '${separator}'`);
+  }
+
+  const clientName = uri.substring(0, separatorIndex);
+  const resourceName = uri.substring(separatorIndex + separator.length);
+
+  // Validate extracted parts
+  if (!clientName.trim()) {
+    throw new InvalidRequestError('Client name cannot be empty');
+  }
+
+  if (!resourceName.trim()) {
+    throw new InvalidRequestError('Resource name cannot be empty');
   }
 
   return {
-    clientName: parts[0],
-    resourceName: parts[1],
+    clientName,
+    resourceName,
   };
 }
