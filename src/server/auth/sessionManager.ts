@@ -105,13 +105,22 @@ export class SessionManager {
    * @returns Full file path for the session file
    */
   private getSessionFilePath(sessionId: string): string {
-    const filePath = path.resolve(
-      this.sessionStoragePath,
-      `${AUTH_CONFIG.SESSION_FILE_PREFIX}${sessionId}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`,
-    );
-    if (!filePath.startsWith(this.sessionStoragePath)) {
-      throw new Error('Invalid session file path');
+    // Validate session ID format first
+    if (!this.isValidId(sessionId)) {
+      throw new Error('Invalid session ID format');
     }
+
+    const fileName = `${AUTH_CONFIG.SESSION_FILE_PREFIX}${sessionId}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const filePath = path.resolve(this.sessionStoragePath, fileName);
+
+    // Additional security check: ensure resolved path is within session storage
+    const normalizedStoragePath = path.resolve(this.sessionStoragePath);
+    const normalizedFilePath = path.resolve(filePath);
+
+    if (!normalizedFilePath.startsWith(normalizedStoragePath + path.sep)) {
+      throw new Error('Invalid session file path: outside storage directory');
+    }
+
     return filePath;
   }
 
@@ -122,20 +131,53 @@ export class SessionManager {
    * @returns Full file path for the auth code file
    */
   private getAuthCodeFilePath(code: string): string {
-    const filePath = path.resolve(this.sessionStoragePath, `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`);
-    if (!filePath.startsWith(this.sessionStoragePath)) {
-      throw new Error('Invalid authorization code path');
+    // Validate auth code format first
+    if (!this.isValidId(code)) {
+      throw new Error('Invalid authorization code format');
     }
+
+    const fileName = `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const filePath = path.resolve(this.sessionStoragePath, fileName);
+
+    // Additional security check: ensure resolved path is within session storage
+    const normalizedStoragePath = path.resolve(this.sessionStoragePath);
+    const normalizedFilePath = path.resolve(filePath);
+
+    if (!normalizedFilePath.startsWith(normalizedStoragePath + path.sep)) {
+      throw new Error('Invalid authorization code path: outside storage directory');
+    }
+
     return filePath;
   }
 
   /**
-   * Utility to validate session IDs and auth codes for safe characters (alphanumeric and dashes only).
+   * Utility to validate session IDs and auth codes for proper format and security.
+   * Ensures proper format with prefix and UUID structure for security.
    * @param id - The session ID or auth code to validate
    * @returns true if valid, false otherwise
    */
   private isValidId(id: string): boolean {
-    return /^[a-zA-Z0-9-]+$/.test(id);
+    // Check minimum length (prefix + UUID)
+    if (!id || id.length < 40) {
+      return false;
+    }
+
+    // Check for valid prefix
+    const hasValidPrefix =
+      id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.PREFIXES.AUTH_CODE);
+
+    if (!hasValidPrefix) {
+      return false;
+    }
+
+    // Validate the UUID portion (after prefix)
+    const uuidPart = id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID)
+      ? id.substring(AUTH_CONFIG.PREFIXES.SESSION_ID.length)
+      : id.substring(AUTH_CONFIG.PREFIXES.AUTH_CODE.length);
+
+    // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuidPart);
   }
 
   /**
