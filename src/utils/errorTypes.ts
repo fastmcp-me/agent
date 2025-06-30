@@ -14,14 +14,14 @@ export class MCPError extends Error {
 
 export class ClientConnectionError extends MCPError {
   constructor(clientName: string, cause: Error) {
-    super(`Failed to connect to client ${clientName}: ${cause.message}`, ErrorCode.InvalidParams, { cause });
+    super(`Failed to connect to client ${clientName}: ${cause.message}`, ErrorCode.ConnectionClosed, { cause });
     this.name = 'ClientConnectionError';
   }
 }
 
 export class ClientNotFoundError extends MCPError {
   constructor(clientName: string) {
-    super(`Client '${clientName}' not found`, ErrorCode.InvalidParams, { clientName });
+    super(`Client '${clientName}' not found`, ErrorCode.MethodNotFound, { clientName });
     this.name = 'ClientNotFoundError';
   }
 }
@@ -45,14 +45,14 @@ export class ValidationError extends MCPError {
 
 export class TransportError extends MCPError {
   constructor(transportName: string, cause: Error) {
-    super(`Transport error for ${transportName}: ${cause.message}`, ErrorCode.InvalidParams, { cause });
+    super(`Transport error for ${transportName}: ${cause.message}`, ErrorCode.InternalError, { cause });
     this.name = 'TransportError';
   }
 }
 
 export class InvalidRequestError extends MCPError {
   constructor(message: string, data?: any) {
-    super(message, ErrorCode.InvalidParams, data);
+    super(message, ErrorCode.InvalidRequest, data);
     this.name = 'InvalidRequestError';
   }
 }

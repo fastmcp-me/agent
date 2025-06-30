@@ -27,7 +27,7 @@ export function setupSseRoutes(
 
       transport.onclose = () => {
         serverManager.disconnectTransport(transport.sessionId);
-        logger.info('transport closed', transport.sessionId);
+        // Note: ServerManager already logs the disconnection
       };
     } catch (error) {
       logger.error('SSE connection error:', error);

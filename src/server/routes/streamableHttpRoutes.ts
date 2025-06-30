@@ -39,7 +39,7 @@ export function setupStreamableHttpRoutes(
 
           transport.onclose = () => {
             serverManager.disconnectTransport(id);
-            logger.info('transport closed', transport.sessionId);
+            // Note: ServerManager already logs the disconnection
           };
         } else {
           const existingTransport = serverManager.getTransport(sessionId);

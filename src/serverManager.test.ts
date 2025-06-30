@@ -21,6 +21,7 @@ vi.mock('./logger/logger.js', () => {
   const mockLogger = {
     info: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   };
   return {
     __esModule: true,
@@ -55,6 +56,9 @@ describe('ServerManager', () => {
     // Reset all mocks
     vi.clearAllMocks();
 
+    // Reset singleton state for test isolation
+    ServerManager.resetInstance();
+
     // Setup test data
     mockConfig = { name: 'test-server', version: '1.0.0' };
     mockCapabilities = { capabilities: { test: true } };
@@ -64,8 +68,11 @@ describe('ServerManager', () => {
       // Add any required Transport properties here
     } as Transport;
     mockServer = {
-      connect: vi.fn().mockResolvedValue(undefined),
-      transport: mockTransport,
+      connect: vi.fn().mockImplementation(async (transport: Transport) => {
+        // Simulate setting transport property on connection
+        (mockServer as any).transport = transport;
+      }),
+      transport: undefined,
     } as unknown as Server;
 
     // Setup mocks
