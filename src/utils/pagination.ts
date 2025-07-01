@@ -29,15 +29,85 @@ interface PaginationResponse {
 }
 
 export function parseCursor(cursor?: string): { clientName: string; actualCursor?: string } {
-  if (!cursor) {
+  if (!cursor || typeof cursor !== 'string') {
     return { clientName: '' };
   }
-  const [clientName, actualCursor] = Buffer.from(cursor, 'base64').toString('utf-8').split(':');
-  return { clientName, actualCursor };
+
+  // Validate base64 format
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(cursor)) {
+    logger.warn(`Invalid cursor format: not valid base64`);
+    return { clientName: '' };
+  }
+
+  try {
+    // Decode the base64 cursor
+    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
+
+    // Validate decoded content (should be clientName:actualCursor format)
+    if (!decoded || decoded.length > 1000) {
+      // Reasonable length limit
+      logger.warn(`Invalid cursor: decoded content too long or empty`);
+      return { clientName: '' };
+    }
+
+    // Split on first colon only to handle cursors that might contain colons
+    const colonIndex = decoded.indexOf(':');
+    let clientName: string;
+    let actualCursor: string | undefined;
+
+    if (colonIndex === -1) {
+      // No colon found, treat entire string as client name
+      clientName = decoded;
+      actualCursor = undefined;
+    } else {
+      clientName = decoded.substring(0, colonIndex);
+      actualCursor = decoded.substring(colonIndex + 1);
+    }
+
+    // Validate client name (basic alphanumeric and common symbols)
+    if (!/^[a-zA-Z0-9_-]+$/.test(clientName) || clientName.length > 100) {
+      logger.warn(`Invalid cursor: invalid client name format`);
+      return { clientName: '' };
+    }
+
+    return { clientName, actualCursor: actualCursor || undefined };
+  } catch (error) {
+    logger.warn(`Failed to parse cursor: ${error}`);
+    return { clientName: '' };
+  }
 }
 
 export function encodeCursor(clientName: string, nextCursor: string = ''): string | undefined {
-  return Buffer.from(`${clientName}:${nextCursor}`).toString('base64');
+  // Validate inputs
+  if (!clientName || typeof clientName !== 'string') {
+    logger.warn('Cannot encode cursor: invalid client name');
+    return undefined;
+  }
+
+  if (typeof nextCursor !== 'string') {
+    logger.warn('Cannot encode cursor: invalid next cursor');
+    return undefined;
+  }
+
+  // Validate client name format
+  if (!/^[a-zA-Z0-9_-]+$/.test(clientName) || clientName.length > 100) {
+    logger.warn('Cannot encode cursor: client name contains invalid characters or is too long');
+    return undefined;
+  }
+
+  // Reasonable length limit for the full cursor
+  const fullCursor = `${clientName}:${nextCursor}`;
+  if (fullCursor.length > 1000) {
+    logger.warn('Cannot encode cursor: combined cursor length exceeds limit');
+    return undefined;
+  }
+
+  try {
+    return Buffer.from(fullCursor).toString('base64');
+  } catch (error) {
+    logger.warn(`Failed to encode cursor: ${error}`);
+    return undefined;
+  }
 }
 
 async function fetchAllItemsForClient<T>(
@@ -91,11 +161,36 @@ export async function handlePagination<T>(
   }
 
   const { clientName, actualCursor } = parseCursor(cursor);
-  const targetClientName = clientName || clientNames[0];
-  const clientInfo = clients[targetClientName];
 
+  // If cursor parsing failed or clientName is empty, start from first client
+  const targetClientName = clientName || clientNames[0];
+
+  // Validate that the target client exists
+  const clientInfo = clients[targetClientName];
   if (!clientInfo) {
-    return { items: [] };
+    logger.warn(`Client '${targetClientName}' not found, falling back to first available client`);
+    // Fallback to first available client if the target doesn't exist
+    const fallbackClientName = clientNames[0];
+    const fallbackClient = fallbackClientName ? clients[fallbackClientName] : null;
+
+    if (!fallbackClient) {
+      logger.warn('No clients available for pagination');
+      return { items: [] };
+    }
+
+    // Use fallback client and reset cursor since the original target was invalid
+    const result = await callClientMethod(
+      fallbackClient.client,
+      clientParams, // Don't pass the invalid cursor
+      { timeout: fallbackClient.transport.timeout },
+    );
+
+    const transformedItems = transformResult(fallbackClient, result);
+    const nextCursor = result.nextCursor
+      ? encodeCursor(fallbackClientName, result.nextCursor)
+      : getNextClientCursor(fallbackClientName, clientNames);
+
+    return { items: transformedItems, nextCursor };
   }
 
   const result = await callClientMethod(
