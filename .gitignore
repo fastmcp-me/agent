@@ -1,3 +1,4 @@
+coverage
 node_modules/
 build/
 logs/
@@ -6,5 +7,10 @@ logs/
 .cursorrules
 .cursorignore
 .cursor/
+.vscode/
+.claude/
 mcp.json
-todo.md
+
+/.ai
+/docs
+/xnotes

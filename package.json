@@ -45,6 +45,9 @@
     "*.{js,ts}": [
       "eslint --fix",
       "prettier --write"
+    ],
+    "*.{md,json,yml,yaml}": [
+      "prettier --write"
     ]
   },
   "scripts": {
@@ -55,6 +58,7 @@
     "inspector": "npx -y @modelcontextprotocol/inspector",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.{js,ts}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

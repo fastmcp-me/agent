@@ -22,19 +22,21 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 To enable Cursor to use existing MCP servers already configured in Claude Desktop, follow these steps:
 
 1. Run the 1MCP server with the Claude Desktop config file:
+
 ```bash
 npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
 2. Add the 1MCP server to your Cursor config file (`~/.cursor/mcp.json`):
+
 ```json
 {
-    "mcpServers": {
-        "1mcp": {
-            "type": "http",
-            "url": "http://localhost:3050/sse"
-        }
+  "mcpServers": {
+    "1mcp": {
+      "type": "http",
+      "url": "http://localhost:3050/sse"
     }
+  }
 }
 ```
 
@@ -59,6 +61,7 @@ npx -y @1mcp/agent --help
 ```
 
 Available options:
+
 - `--transport, -t`: Choose transport type ("stdio" or "http", default: "http")
 - `--config, -c`: Use a specific config file
 - `--port, -P`: Change HTTP port (default: 3050)
@@ -71,6 +74,7 @@ Available options:
 - `--help, -h`: Show help
 
 Example with environment variables:
+
 ```bash
 # Using environment variables
 ONE_MCP_PORT=3051 ONE_MCP_TAGS=network,filesystem npx -y @1mcp/agent
@@ -100,6 +104,7 @@ docker run -i ghcr.io/1mcp-app/agent --transport stdio
 ```
 
 Available image tags:
+
 - `latest`: Latest stable release
 - `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
 - `sha-<commit>`: Specific commit
@@ -107,6 +112,7 @@ Available image tags:
 ### Environment Variables
 
 You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
+
 - `ONE_MCP_TRANSPORT`: Transport type ("stdio" or "http", default: "http")
 - `ONE_MCP_PORT`: HTTP port (default: 3050)
 - `ONE_MCP_HOST`: HTTP host (default: "localhost")
@@ -118,6 +124,7 @@ You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
 - `ONE_MCP_SESSION_STORAGE_PATH`: Custom session storage directory path (string, default: undefined)
 
 Example with environment variables:
+
 ```bash
 docker run -p 3051:3051 \
   -e ONE_MCP_PORT=3051 \
@@ -132,6 +139,7 @@ Tags help you control which MCP servers are available to different clients. Thin
 #### How to Use Tags
 
 1. **In your server config**: Add tags to each server to describe its capabilities
+
 ```json
 {
   "mcpServers": {
@@ -152,6 +160,7 @@ Tags help you control which MCP servers are available to different clients. Thin
 ```
 
 2. **When starting 1MCP in stdio mode**: You can filter servers by tags
+
 ```bash
 # Only start servers with the "network" tag
 npx -y @1mcp/agent --transport stdio --tags "network"
@@ -161,18 +170,20 @@ npx -y @1mcp/agent --transport stdio --tags "network,filesystem"
 ```
 
 3. **When using SSE transport**: Clients can request servers with specific tags
+
 ```json
 {
-    "mcpServers": {
-        "1mcp": {
-            "type": "http",
-            "url": "http://localhost:3050/sse?tags=network"  // Only connect to network-capable servers
-        }
+  "mcpServers": {
+    "1mcp": {
+      "type": "http",
+      "url": "http://localhost:3050/sse?tags=network" // Only connect to network-capable servers
     }
+  }
 }
 ```
 
 Example tags:
+
 - `network`: For servers that make web requests
 - `filesystem`: For servers that handle file operations
 - `memory`: For servers that provide memory/storage
@@ -195,17 +206,12 @@ The server automatically manages configuration in a global location:
   "mcpServers": {
     "mcp-server-fetch": {
       "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ],
+      "args": ["mcp-server-fetch"],
       "disabled": false
     },
     "server-memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
       "disabled": false
     }
   }
@@ -271,21 +277,25 @@ sequenceDiagram
 ## Development
 
 Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 Build the server:
+
 ```bash
 pnpm build
 ```
 
 For development with auto-rebuild:
+
 ```bash
 pnpm watch
 ```
 
 Run the server:
+
 ```bash
 pnpm dev
 ```
