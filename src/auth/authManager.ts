@@ -1,7 +1,7 @@
-import logger from '../../logger/logger.js';
+import logger from '../logger/logger.js';
 import { SessionManager, SessionData } from './sessionManager.js';
-import { ServerConfigManager } from '../config/serverConfig.js';
-import { AUTH_CONFIG } from '../../constants.js';
+import { ServerConfigManager } from '../core/server/serverConfig.js';
+import { AUTH_CONFIG } from '../constants.js';
 import { v4 as uuidv4 } from 'uuid';
 
 /**

@@ -9,10 +9,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { setupServer } from './server.js';
 import logger, { enableConsoleTransport } from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
-import { ServerManager } from './serverManager.js';
+import { ServerManager } from './core/server/serverManager.js';
 import { ConfigManager } from './config/configManager.js';
-import { ExpressServer } from './server/expressServer.js';
-import { ServerConfigManager } from './server/config/serverConfig.js';
+import { ExpressServer } from './transport/http/server.js';
+import { ServerConfigManager } from './core/server/serverConfig.js';
 import { PORT, HOST } from './constants.js';
 
 // Parse command line arguments

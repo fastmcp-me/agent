@@ -5,7 +5,7 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { Clients, ServerInfo } from '../types.js';
+import { Clients, ServerInfo } from '../core/types/index.js';
 
 /**
  * Collects capabilities from all clients and registers them with the server

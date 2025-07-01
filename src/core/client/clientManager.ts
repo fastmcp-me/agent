@@ -1,11 +1,11 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import createClient from '../client.js';
-import logger from '../logger/logger.js';
-import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../constants.js';
-import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types.js';
+import createClient from './clientFactory.js';
+import logger from '../../logger/logger.js';
+import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
+import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
+import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types/index.js';
 
 /**
  * Creates client instances for all transports with retry logic

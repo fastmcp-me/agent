@@ -1,10 +1,10 @@
 import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 import { ConfigReloadService } from './configReloadService.js';
 import { ConfigManager, ConfigChangeEvent } from '../config/configManager.js';
-import { createClients } from '../clients/clientManager.js';
-import { createTransports } from '../config/transportConfig.js';
+import { createClients } from '../core/client/clientManager.js';
+import { createTransports } from '../transport/config.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
-import { ServerManager } from '../serverManager.js';
+import { ServerManager } from '../core/server/serverManager.js';
 import logger from '../logger/logger.js';
 
 // Mock dependencies
@@ -17,11 +17,11 @@ vi.mock('../config/configManager.js', () => ({
   },
 }));
 
-vi.mock('../clients/clientManager.js', () => ({
+vi.mock('../core/client/clientManager.js', () => ({
   createClients: vi.fn(),
 }));
 
-vi.mock('../config/transportConfig.js', () => ({
+vi.mock('../transport/config.js', () => ({
   createTransports: vi.fn(),
 }));
 
@@ -29,7 +29,7 @@ vi.mock('../capabilities/capabilityManager.js', () => ({
   setupCapabilities: vi.fn(),
 }));
 
-vi.mock('../serverManager.js', () => ({
+vi.mock('../core/server/serverManager.js', () => ({
   ServerManager: {
     current: {
       updateClientsAndTransports: vi.fn(),

@@ -1,10 +1,10 @@
 import express from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../../logger/logger.js';
-import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../constants.js';
-import { ServerManager } from '../../serverManager.js';
-import tagsExtractor from '../tagsExtractor.js';
+import logger from '../../../logger/logger.js';
+import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
+import { ServerManager } from '../../../core/server/serverManager.js';
+import tagsExtractor from '../../../utils/tagsExtractor.js';
 
 export function setupSseRoutes(
   app: express.Application,

@@ -2,11 +2,11 @@ import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ServerManager } from './serverManager.js';
-import logger from './logger/logger.js';
-import configReloadService from './services/configReloadService.js';
-import { setupCapabilities } from './capabilities/capabilityManager.js';
-import { enhanceServerWithLogging } from './middleware/loggingMiddleware.js';
-import { Clients } from './types.js';
+import logger from '../../logger/logger.js';
+import configReloadService from '../../services/configReloadService.js';
+import { setupCapabilities } from '../../capabilities/capabilityManager.js';
+import { enhanceServerWithLogging } from '../../transport/http/middleware/loggingMiddleware.js';
+import { Clients } from '../types/index.js';
 
 // Mock dependencies
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
@@ -17,7 +17,7 @@ vi.mock('@modelcontextprotocol/sdk/shared/transport.js', () => ({
   Transport: vi.fn(),
 }));
 
-vi.mock('./logger/logger.js', () => {
+vi.mock('../../logger/logger.js', () => {
   const mockLogger = {
     info: vi.fn(),
     error: vi.fn(),
@@ -29,7 +29,7 @@ vi.mock('./logger/logger.js', () => {
   };
 });
 
-vi.mock('./services/configReloadService.js', () => ({
+vi.mock('../../services/configReloadService.js', () => ({
   __esModule: true,
   default: {
     updateServerInfo: vi.fn(),
@@ -37,11 +37,11 @@ vi.mock('./services/configReloadService.js', () => ({
   },
 }));
 
-vi.mock('./capabilities/capabilityManager.js', () => ({
+vi.mock('../../capabilities/capabilityManager.js', () => ({
   setupCapabilities: vi.fn(),
 }));
 
-vi.mock('./middleware/loggingMiddleware.js', () => ({
+vi.mock('../../transport/http/middleware/loggingMiddleware.js', () => ({
   enhanceServerWithLogging: vi.fn(),
 }));
 

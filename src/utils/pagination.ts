@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { Resource, ResourceTemplate, Tool, Prompt } from '@modelcontextprotocol/sdk/types.js';
-import { ClientInfo, Clients } from '../types.js';
+import { ClientInfo, Clients } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 interface PaginationParams {

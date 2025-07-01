@@ -1,5 +1,5 @@
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { Clients } from '../types.js';
+import { Clients } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 /**

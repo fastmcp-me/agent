@@ -1,15 +1,15 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { ServerManager } from '../serverManager.js';
-import logger from '../logger/logger.js';
+import { ServerManager } from '../../core/server/serverManager.js';
+import logger from '../../logger/logger.js';
 import errorHandler from './errorHandler.js';
-import { AuthManager } from './auth/authManager.js';
-import { createAuthMiddleware } from './auth/authMiddleware.js';
+import { AuthManager } from '../../auth/authManager.js';
+import { createAuthMiddleware } from '../../auth/authMiddleware.js';
 import { setupOAuthRoutes } from './routes/oauthRoutes.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
-import { ServerConfigManager } from './config/serverConfig.js';
+import { ServerConfigManager } from '../../core/server/serverConfig.js';
 
 /**
  * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.

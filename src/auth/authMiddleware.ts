@@ -1,5 +1,5 @@
 import express from 'express';
-import logger from '../../logger/logger.js';
+import logger from '../logger/logger.js';
 import { AuthManager } from './authManager.js';
 
 export function createAuthMiddleware(authManager: AuthManager) {

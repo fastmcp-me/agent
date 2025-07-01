@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthManager } from './authManager.js';
 import { SessionManager } from './sessionManager.js';
-import { ServerConfigManager } from '../config/serverConfig.js';
-import { AUTH_CONFIG } from '../../constants.js';
+import { ServerConfigManager } from '../core/server/serverConfig.js';
+import { AUTH_CONFIG } from '../constants.js';
 
 // Mock dependencies
 vi.mock('./sessionManager.js');
-vi.mock('../config/serverConfig.js');
+vi.mock('../core/server/serverConfig.js');
 
 describe('AuthManager', () => {
   let authManager: AuthManager;

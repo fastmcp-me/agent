@@ -2,10 +2,10 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import logger from '../../logger/logger.js';
-import { STREAMABLE_HTTP_ENDPOINT } from '../../constants.js';
-import { ServerManager } from '../../serverManager.js';
-import tagsExtractor from '../tagsExtractor.js';
+import logger from '../../../logger/logger.js';
+import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
+import { ServerManager } from '../../../core/server/serverManager.js';
+import tagsExtractor from '../../../utils/tagsExtractor.js';
 
 export function setupStreamableHttpRoutes(
   app: express.Application,

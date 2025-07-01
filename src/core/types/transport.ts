@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Enhanced transport interface that includes MCP-specific properties
@@ -72,55 +69,3 @@ export type TransportConfig = HTTPBasedTransportConfig | StdioTransportConfig;
  * Type for MCP server parameters derived from transport config schema
  */
 export type MCPServerParams = z.infer<typeof transportConfigSchema>;
-
-export interface ServerInfoExtra {
-  readonly tags?: string[];
-  readonly enablePagination?: boolean;
-}
-
-/**
- * Server information including tags
- */
-export interface ServerInfo extends ServerInfoExtra {
-  readonly server: Server;
-}
-
-/**
- * Enum representing possible client connection states
- */
-export enum ClientStatus {
-  /** Client is successfully connected */
-  Connected = 'connected',
-  /** Client is disconnected */
-  Disconnected = 'disconnected',
-  /** Client encountered an error */
-  Error = 'error',
-}
-
-/**
- * Complete client information including transport, status and history
- */
-export interface ClientInfo {
-  readonly name: string;
-  readonly transport: EnhancedTransport;
-  readonly client: Client;
-  readonly lastError?: Error;
-  readonly lastConnected?: Date;
-  status: ClientStatus;
-  capabilities?: ServerCapabilities;
-}
-
-/**
- * Map of client information indexed by client name
- */
-export type Clients = Record<string, ClientInfo>;
-
-/**
- * Options for client operations
- */
-export interface OperationOptions {
-  readonly retryCount?: number;
-  readonly retryDelay?: number;
-}
-
-export type ServerCapability = keyof ServerCapabilities;

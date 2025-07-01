@@ -1,8 +1,8 @@
 import { MCP_SERVER_CAPABILITIES, MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
 import logger from './logger/logger.js';
-import { createTransports } from './config/transportConfig.js';
-import { createClients } from './clients/clientManager.js';
-import { ServerManager } from './serverManager.js';
+import { createTransports } from './transport/config.js';
+import { createClients } from './core/client/clientManager.js';
+import { ServerManager } from './core/server/serverManager.js';
 import { ConfigManager } from './config/configManager.js';
 import configReloadService from './services/configReloadService.js';
 

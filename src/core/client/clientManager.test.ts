@@ -8,23 +8,23 @@ import {
   executeClientOperation,
   executeServerOperation,
 } from './clientManager.js';
-import createClientFn from '../client.js';
-import logger from '../logger/logger.js';
-import { ClientStatus, ClientInfo, ServerInfo } from '../types.js';
-import { ClientConnectionError, ClientNotFoundError, MCPError } from '../utils/errorTypes.js';
-import { MCP_SERVER_NAME, CONNECTION_RETRY } from '../constants.js';
+import createClientFn from './clientFactory.js';
+import logger from '../../logger/logger.js';
+import { ClientStatus, ClientInfo, ServerInfo } from '../types/index.js';
+import { ClientConnectionError, ClientNotFoundError, MCPError } from '../../utils/errorTypes.js';
+import { MCP_SERVER_NAME, CONNECTION_RETRY } from '../../constants.js';
 
 // Mock dependencies
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: vi.fn(),
 }));
 
-vi.mock('../client.js', () => ({
+vi.mock('./clientFactory.js', () => ({
   __esModule: true,
   default: vi.fn(),
 }));
 
-vi.mock('../logger/logger.js', () => ({
+vi.mock('../../logger/logger.js', () => ({
   __esModule: true,
   default: {
     info: vi.fn(),

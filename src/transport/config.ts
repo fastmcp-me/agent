@@ -3,8 +3,8 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
-import { transportConfigSchema } from '../types.js';
-import { MCPServerParams, EnhancedTransport } from '../types.js';
+import { transportConfigSchema } from '../core/types/index.js';
+import { MCPServerParams, EnhancedTransport } from '../core/types/index.js';
 
 /**
  * Creates transport instances from configuration

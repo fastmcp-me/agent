@@ -8,7 +8,7 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { Clients, ServerInfo, ClientInfo, ClientStatus } from '../types.js';
+import { Clients, ServerInfo, ClientInfo, ClientStatus } from '../core/types/index.js';
 
 // Mock dependencies
 vi.mock('../logger/logger.js', () => ({

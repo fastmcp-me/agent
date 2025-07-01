@@ -1,10 +1,10 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import { randomUUID } from 'node:crypto';
-import logger from '../../logger/logger.js';
-import { AuthManager } from '../auth/authManager.js';
-import { ServerConfigManager } from '../config/serverConfig.js';
-import { AUTH_CONFIG, RATE_LIMIT_CONFIG } from '../../constants.js';
+import logger from '../../../logger/logger.js';
+import { AuthManager } from '../../../auth/authManager.js';
+import { ServerConfigManager } from '../../../core/server/serverConfig.js';
+import { AUTH_CONFIG, RATE_LIMIT_CONFIG } from '../../../constants.js';
 import rateLimit from 'express-rate-limit';
 
 /**

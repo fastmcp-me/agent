@@ -3,7 +3,7 @@ import path from 'path';
 import { EventEmitter } from 'events';
 import { getGlobalConfigPath, getGlobalConfigDir, DEFAULT_CONFIG } from '../constants.js';
 import logger from '../logger/logger.js';
-import { MCPServerParams } from '../types.js';
+import { MCPServerParams } from '../core/types/index.js';
 
 /**
  * Configuration change event types

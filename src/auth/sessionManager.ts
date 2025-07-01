@@ -1,8 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { randomUUID } from 'node:crypto';
-import logger from '../../logger/logger.js';
-import { AUTH_CONFIG, getGlobalConfigDir } from '../../constants.js';
+import logger from '../logger/logger.js';
+import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
 
 /**
  * Represents session data stored for access tokens.

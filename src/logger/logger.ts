@@ -32,7 +32,7 @@ const consoleFormat = winston.format.combine(
 
 // Create the logger without the MCP transport initially
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.LOG_LEVEL || 'info',
   format: customFormat,
   transports: [
     // Add a silent transport by default to prevent "no transports" warnings
