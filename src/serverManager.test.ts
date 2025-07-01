@@ -32,7 +32,8 @@ vi.mock('./logger/logger.js', () => {
 vi.mock('./services/configReloadService.js', () => ({
   __esModule: true,
   default: {
-    initialize: vi.fn(),
+    updateServerInfo: vi.fn(),
+    removeServerInfo: vi.fn(),
   },
 }));
 
@@ -79,7 +80,8 @@ describe('ServerManager', () => {
     (Server as unknown as MockInstance).mockImplementation(() => mockServer);
     (setupCapabilities as unknown as MockInstance).mockResolvedValue(undefined);
     (enhanceServerWithLogging as unknown as MockInstance).mockReturnValue(undefined);
-    (configReloadService.initialize as unknown as MockInstance).mockImplementation(() => undefined);
+    (configReloadService.updateServerInfo as unknown as MockInstance).mockImplementation(() => undefined);
+    (configReloadService.removeServerInfo as unknown as MockInstance).mockImplementation(() => undefined);
   });
 
   describe('getInstance', () => {
@@ -106,7 +108,7 @@ describe('ServerManager', () => {
       expect(Server).toHaveBeenCalledWith(mockConfig, mockCapabilities);
       expect(enhanceServerWithLogging).toHaveBeenCalledWith(mockServer);
       expect(setupCapabilities).toHaveBeenCalled();
-      expect(configReloadService.initialize).toHaveBeenCalled();
+      expect(configReloadService.updateServerInfo).toHaveBeenCalledWith(sessionId, expect.any(Object));
       expect(mockServer.connect).toHaveBeenCalledWith(mockTransport);
       expect(logger.info).toHaveBeenCalledWith(`Connected transport for session ${sessionId}`);
     });
@@ -134,6 +136,7 @@ describe('ServerManager', () => {
       await serverManager.connectTransport(mockTransport, sessionId, { enablePagination: false });
       vi.clearAllMocks(); // Clear the logs from connectTransport
       serverManager.disconnectTransport(sessionId);
+      expect(configReloadService.removeServerInfo).toHaveBeenCalledWith(sessionId);
       expect(logger.info).toHaveBeenCalledWith(`Disconnected transport for session ${sessionId}`);
     });
 

@@ -4,6 +4,7 @@ import { createTransports } from './config/transportConfig.js';
 import { createClients } from './clients/clientManager.js';
 import { ServerManager } from './serverManager.js';
 import { ConfigManager } from './config/configManager.js';
+import configReloadService from './services/configReloadService.js';
 
 /**
  * Main function to set up the MCP server
@@ -25,6 +26,9 @@ async function setupServer(): Promise<ServerManager> {
       clients,
       transports,
     );
+
+    // Initialize config reload service at server startup
+    configReloadService.initialize(transports);
 
     logger.info('Server setup completed successfully');
     return serverManager;

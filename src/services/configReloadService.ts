@@ -11,7 +11,7 @@ import { ServerManager } from '../serverManager.js';
  */
 export class ConfigReloadService {
   private static instance: ConfigReloadService;
-  private serverInfo: ServerInfo | null = null;
+  private serverInstances: Map<string, ServerInfo> = new Map();
   private currentTransports: Record<string, EnhancedTransport> = {};
   private isReloading = false;
 
@@ -32,12 +32,10 @@ export class ConfigReloadService {
   }
 
   /**
-   * Initialize the service with the server instance
-   * @param serverInfo The MCP server instance
+   * Initialize the service with initial transports
    * @param initialTransports The initial transports
    */
-  public initialize(serverInfo: ServerInfo, initialTransports: Record<string, EnhancedTransport>): void {
-    this.serverInfo = serverInfo;
+  public initialize(initialTransports: Record<string, EnhancedTransport>): void {
     this.currentTransports = initialTransports;
 
     const configManager = ConfigManager.getInstance();
@@ -62,7 +60,7 @@ export class ConfigReloadService {
    * @param newConfig The new transport configuration
    */
   private async handleConfigChange(newConfig: Record<string, MCPServerParams>): Promise<void> {
-    if (!this.serverInfo || this.isReloading) {
+    if (this.isReloading) {
       return;
     }
 
@@ -93,8 +91,10 @@ export class ConfigReloadService {
       const serverManager = ServerManager.current;
       serverManager.updateClientsAndTransports(newClients, newTransports);
 
-      // Register new capabilities with the server
-      await setupCapabilities(newClients, this.serverInfo);
+      // Register new capabilities with the server if serverInfo is available
+      for (const serverInfo of this.serverInstances.values()) {
+        await setupCapabilities(newClients, serverInfo);
+      }
 
       // Update current transports
       this.currentTransports = newTransports;
@@ -105,6 +105,25 @@ export class ConfigReloadService {
     } finally {
       this.isReloading = false;
     }
+  }
+
+  /**
+   * Update the server info when a client connects
+   * @param sessionId The session ID for this server instance
+   * @param serverInfo The MCP server instance
+   */
+  public updateServerInfo(sessionId: string, serverInfo: ServerInfo): void {
+    this.serverInstances.set(sessionId, serverInfo);
+    logger.debug(`Updated server info for session ${sessionId} in config reload service`);
+  }
+
+  /**
+   * Remove server info when a client disconnects
+   * @param sessionId The session ID to remove
+   */
+  public removeServerInfo(sessionId: string): void {
+    this.serverInstances.delete(sessionId);
+    logger.debug(`Removed server info for session ${sessionId} from config reload service`);
   }
 
   /**

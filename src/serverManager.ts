@@ -122,8 +122,8 @@ export class ServerManager {
     // Set up capabilities for this server instance
     await setupCapabilities(this.clients, serverInfo);
 
-    // Initialize the configuration reload service
-    configReloadService.initialize(serverInfo, this.transports);
+    // Update the configuration reload service with server info
+    configReloadService.updateServerInfo(sessionId, serverInfo);
 
     // Store the server instance
     this.servers.set(sessionId, serverInfo);
@@ -156,6 +156,7 @@ export class ServerManager {
         }
 
         this.servers.delete(sessionId);
+        configReloadService.removeServerInfo(sessionId);
         logger.info(`Disconnected transport for session ${sessionId}`);
       } finally {
         this.disconnectingIds.delete(sessionId);
