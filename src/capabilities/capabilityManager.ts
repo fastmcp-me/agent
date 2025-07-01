@@ -44,16 +44,72 @@ function collectCapabilities(clients: Clients): ServerCapabilities {
       // Store capabilities per client
       clientInfo.capabilities = serverCapabilities;
 
-      // Aggregate capabilities
-      capabilities.resources = { ...capabilities.resources, ...serverCapabilities.resources };
-      capabilities.tools = { ...capabilities.tools, ...serverCapabilities.tools };
-      capabilities.prompts = { ...capabilities.prompts, ...serverCapabilities.prompts };
-      capabilities.experimental = { ...capabilities.experimental, ...serverCapabilities.experimental };
-      capabilities.logging = { ...capabilities.logging, ...serverCapabilities.logging };
+      // Aggregate capabilities with conflict handling
+      capabilities.resources = mergeCapabilities(
+        capabilities.resources,
+        serverCapabilities.resources,
+        'resources',
+        name,
+      );
+      capabilities.tools = mergeCapabilities(capabilities.tools, serverCapabilities.tools, 'tools', name);
+      capabilities.prompts = mergeCapabilities(capabilities.prompts, serverCapabilities.prompts, 'prompts', name);
+      capabilities.experimental = mergeCapabilities(
+        capabilities.experimental,
+        serverCapabilities.experimental,
+        'experimental',
+        name,
+      );
+      capabilities.logging = mergeCapabilities(capabilities.logging, serverCapabilities.logging, 'logging', name);
     } catch (error) {
       logger.error(`Failed to get capabilities from ${name}: ${error}`);
     }
   }
 
   return capabilities;
+}
+
+/**
+ * Merges capability objects with conflict detection and resolution
+ * @param existing The existing capability object
+ * @param incoming The incoming capability object
+ * @param capabilityType The type of capability being merged
+ * @param clientName The name of the client providing the incoming capability
+ * @returns The merged capability object
+ */
+function mergeCapabilities<T extends Record<string, unknown>>(
+  existing: T | undefined,
+  incoming: T | undefined,
+  capabilityType: string,
+  clientName: string,
+): T | undefined {
+  if (!incoming) {
+    return existing;
+  }
+
+  if (!existing) {
+    return incoming;
+  }
+
+  const merged = { ...existing };
+  const conflicts: string[] = [];
+
+  for (const [key, value] of Object.entries(incoming)) {
+    if (key in existing) {
+      // Check if values are different (potential conflict)
+      if (JSON.stringify(existing[key]) !== JSON.stringify(value)) {
+        conflicts.push(key);
+        logger.warn(`Capability conflict in ${capabilityType}.${key}: client ${clientName} overriding existing value`);
+        logger.debug(`Existing: ${JSON.stringify(existing[key])}, New: ${JSON.stringify(value)}`);
+      }
+    }
+    (merged as any)[key] = value;
+  }
+
+  if (conflicts.length > 0) {
+    logger.info(
+      `Client ${clientName} has ${conflicts.length} ${capabilityType} capability conflicts: ${conflicts.join(', ')}`,
+    );
+  }
+
+  return merged;
 }
