@@ -92,6 +92,9 @@ describe('ConfigManager', () => {
     });
 
     it('should reload config on file change', () => {
+      // Use fake timers to control debouncing
+      vi.useFakeTimers();
+
       const instance = ConfigManager.getInstance(testConfigPath);
       const mockWatcher = { close: vi.fn() };
       let watchCallback: Function = () => {};
@@ -112,7 +115,13 @@ describe('ConfigManager', () => {
       // Simulate file change
       watchCallback('change', path.basename(testConfigPath));
 
+      // Fast-forward timers to trigger debounced reload
+      vi.advanceTimersByTime(500);
+
       expect(emitSpy).toHaveBeenCalledWith(ConfigChangeEvent.TRANSPORT_CONFIG_CHANGED, testConfig.mcpServers);
+
+      // Restore real timers
+      vi.useRealTimers();
     });
   });
 

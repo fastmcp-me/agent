@@ -20,6 +20,8 @@ export class ConfigManager extends EventEmitter {
   private configWatcher: fs.FSWatcher | null = null;
   private transportConfig: Record<string, MCPServerParams> = {};
   private configFilePath: string;
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly debounceDelayMs: number = 500; // 500ms debounce delay
 
   /**
    * Private constructor to enforce singleton pattern
@@ -89,8 +91,8 @@ export class ConfigManager extends EventEmitter {
     try {
       this.configWatcher = fs.watch(this.configFilePath, (eventType: fs.WatchEventType, filename: string | null) => {
         if (filename === path.basename(this.configFilePath) && eventType === 'change') {
-          logger.info(`Configuration file ${filename} changed, reloading...`);
-          this.reloadConfig();
+          logger.debug(`Configuration file ${filename} changed, debouncing reload...`);
+          this.debouncedReloadConfig();
         }
       });
       logger.info(`Started watching configuration file: ${this.configFilePath}`);
@@ -108,6 +110,29 @@ export class ConfigManager extends EventEmitter {
       this.configWatcher = null;
       logger.info('Stopped watching configuration file');
     }
+
+    // Clear any pending debounce timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+  }
+
+  /**
+   * Debounced configuration reload to prevent excessive reloading
+   */
+  private debouncedReloadConfig(): void {
+    // Clear existing timer
+    if (this.debounceTimer) {
+      clearTimeout(this.debounceTimer);
+    }
+
+    // Set new timer
+    this.debounceTimer = setTimeout(() => {
+      logger.info('Debounce period completed, reloading configuration...');
+      this.reloadConfig();
+      this.debounceTimer = null;
+    }, this.debounceDelayMs);
   }
 
   /**
