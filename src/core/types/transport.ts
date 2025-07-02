@@ -10,12 +10,24 @@ export interface EnhancedTransport extends Transport {
 }
 
 /**
+ * OAuth client configuration for connecting to downstream MCP servers
+ */
+export interface OAuthConfig {
+  readonly clientId?: string;
+  readonly clientSecret?: string;
+  readonly scopes?: string[];
+  readonly autoRegister?: boolean;
+  readonly redirectUrl?: string;
+}
+
+/**
  * Base interface for common transport properties
  */
 export interface BaseTransportConfig {
   readonly timeout?: number;
   readonly disabled?: boolean;
   readonly tags?: string[];
+  readonly oauth?: OAuthConfig;
 }
 
 /**
@@ -40,6 +52,17 @@ export interface StdioTransportConfig extends BaseTransportConfig {
 }
 
 /**
+ * Zod schema for OAuth configuration
+ */
+export const oAuthConfigSchema = z.object({
+  clientId: z.string().optional(),
+  clientSecret: z.string().optional(),
+  scopes: z.array(z.string()).optional(),
+  autoRegister: z.boolean().optional(),
+  redirectUrl: z.string().url().optional(),
+});
+
+/**
  * Zod schema for transport configuration
  */
 export const transportConfigSchema = z.object({
@@ -47,6 +70,7 @@ export const transportConfigSchema = z.object({
   disabled: z.boolean().optional(),
   timeout: z.number().optional(),
   tags: z.array(z.string()).optional(),
+  oauth: oAuthConfigSchema.optional(),
 
   // HTTP/SSE Parameters
   url: z.string().url().optional(),

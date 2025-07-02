@@ -19,6 +19,8 @@ export interface SessionData {
   expires: number;
   /** Unix timestamp when this session was created */
   createdAt: number;
+  /** Optional custom data for the session */
+  data?: string;
 }
 
 /**
@@ -470,6 +472,36 @@ export class SessionManager {
       return sessionId;
     } catch (error) {
       logger.error(`Failed to create session: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a new session with custom data.
+   * Used for OAuth client data storage where arbitrary data needs to be stored.
+   *
+   * @param sessionId - The session ID to use
+   * @param data - The custom data to store
+   * @param ttlMs - Time-to-live in milliseconds
+   * @returns The session ID
+   * @throws Error if session creation fails
+   */
+  public createSessionWithData(sessionId: string, data: string, ttlMs: number): string {
+    const sessionData: SessionData = {
+      clientId: 'oauth-client-data',
+      resource: 'internal',
+      expires: Date.now() + ttlMs,
+      createdAt: Date.now(),
+      data,
+    };
+
+    try {
+      const filePath = this.getSessionFilePath(sessionId);
+      fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+      logger.info(`Created data session: ${sessionId}`);
+      return sessionId;
+    } catch (error) {
+      logger.error(`Failed to create data session: ${error}`);
       throw error;
     }
   }

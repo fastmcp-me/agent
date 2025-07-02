@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { transportConfigSchema } from '../core/types/index.js';
 import { MCPServerParams, EnhancedTransport } from '../core/types/index.js';
+import { MCPOAuthClientProvider } from '../auth/mcpOAuthClientProvider.js';
 
 /**
  * Creates transport instances from configuration
@@ -47,11 +48,20 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
           if (!validatedTransport.url) {
             throw new Error(`URL is required for ${validatedTransport.type} transport: ${name}`);
           }
-          transport = new SSEClientTransport(new URL(validatedTransport.url), {
+
+          // Create transport with OAuth provider if configured
+          const sseOptions: any = {
             requestInit: {
               headers: validatedTransport.headers,
             },
-          }) as EnhancedTransport;
+          };
+
+          if (validatedTransport.oauth) {
+            logger.info(`Creating OAuth client provider for SSE transport: ${name}`);
+            sseOptions.authProvider = new MCPOAuthClientProvider(name, validatedTransport.oauth);
+          }
+
+          transport = new SSEClientTransport(new URL(validatedTransport.url), sseOptions) as EnhancedTransport;
           assignTransport(name, transport, validatedTransport);
           break;
         }
@@ -60,11 +70,23 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
           if (!validatedTransport.url) {
             throw new Error(`URL is required for streamableHttp transport: ${name}`);
           }
-          transport = new StreamableHTTPClientTransport(new URL(validatedTransport.url), {
+
+          // Create transport with OAuth provider if configured
+          const httpOptions: any = {
             requestInit: {
               headers: validatedTransport.headers,
             },
-          }) as EnhancedTransport;
+          };
+
+          if (validatedTransport.oauth) {
+            logger.info(`Creating OAuth client provider for HTTP transport: ${name}`);
+            httpOptions.authProvider = new MCPOAuthClientProvider(name, validatedTransport.oauth);
+          }
+
+          transport = new StreamableHTTPClientTransport(
+            new URL(validatedTransport.url),
+            httpOptions,
+          ) as EnhancedTransport;
           assignTransport(name, transport, validatedTransport);
           break;
         }

@@ -6,6 +6,7 @@ import { AuthManager } from '../../../auth/authManager.js';
 import { ServerConfigManager } from '../../../core/server/serverConfig.js';
 import { AUTH_CONFIG, RATE_LIMIT_CONFIG } from '../../../constants.js';
 import rateLimit from 'express-rate-limit';
+import { OAuthCallbackRegistry } from '../../../auth/mcpOAuthClientProvider.js';
 
 /**
  * Sets up OAuth 2.1 and related endpoints on the Express app.
@@ -166,5 +167,102 @@ export function setupOAuthRoutes(app: express.Application, authManager: AuthMana
       token_endpoint_auth_method: 'none',
       ...req.body,
     });
+  });
+
+  // OAuth callback endpoint for client-side OAuth flows
+  // This handles the callback from authorization servers when this agent acts as an OAuth client
+  app.get('/oauth/callback', async (req, res) => {
+    logger.info('[OAuth] OAuth callback received', { query: req.query });
+    const { code, state, error, error_description } = req.query;
+
+    if (error) {
+      logger.error('[OAuth] Authorization error', { error, error_description });
+      res.status(400).send(`
+        <html>
+          <head><title>Authorization Error</title></head>
+          <body>
+            <h1>Authorization Error</h1>
+            <p><strong>Error:</strong> ${error}</p>
+            <p><strong>Description:</strong> ${error_description || 'No description provided'}</p>
+            <p>You can close this window and check the console for more details.</p>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    if (!code) {
+      logger.error('[OAuth] No authorization code received');
+      res.status(400).send(`
+        <html>
+          <head><title>Authorization Error</title></head>
+          <body>
+            <h1>Authorization Error</h1>
+            <p>No authorization code received from the authorization server.</p>
+            <p>You can close this window and try the authorization flow again.</p>
+          </body>
+        </html>
+      `);
+      return;
+    }
+
+    try {
+      // Notify the OAuth client provider about the authorization code
+      const handled = await OAuthCallbackRegistry.handleCallback(code as string, state as string | undefined);
+
+      if (handled) {
+        logger.info('[OAuth] Authorization code processed successfully', {
+          code: code.toString().substring(0, 10) + '...',
+          state: state?.toString().substring(0, 10) + '...',
+        });
+
+        res.send(`
+          <html>
+            <head><title>Authorization Successful</title></head>
+            <body>
+              <h1>Authorization Successful</h1>
+              <p>Your authorization was successful! The application will now connect to the MCP server.</p>
+              <p>You can close this window.</p>
+              <script>
+                // Auto-close after 3 seconds
+                setTimeout(() => {
+                  window.close();
+                }, 3000);
+              </script>
+            </body>
+          </html>
+        `);
+      } else {
+        logger.warn('[OAuth] No OAuth provider could handle the callback');
+        res.status(400).send(`
+          <html>
+            <head><title>Authorization Error</title></head>
+            <body>
+              <h1>Authorization Error</h1>
+              <p>The authorization code could not be processed. This might happen if:</p>
+              <ul>
+                <li>The authorization request has expired</li>
+                <li>The state parameter doesn't match</li>
+                <li>No OAuth client is waiting for this callback</li>
+              </ul>
+              <p>You can close this window and try the authorization flow again.</p>
+            </body>
+          </html>
+        `);
+      }
+    } catch (error) {
+      logger.error('[OAuth] Error processing authorization callback:', error);
+      res.status(500).send(`
+        <html>
+          <head><title>Authorization Error</title></head>
+          <body>
+            <h1>Internal Error</h1>
+            <p>An internal error occurred while processing the authorization callback.</p>
+            <p>Please check the console logs and try again.</p>
+            <p>You can close this window.</p>
+          </body>
+        </html>
+      `);
+    }
   });
 }
