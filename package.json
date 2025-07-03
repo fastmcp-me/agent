@@ -53,6 +53,7 @@
   "scripts": {
     "dev": "tsc-watch --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --auth\"",
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "typecheck": "tsc --noEmit --project tsconfig.test.json",
     "prepare": "husky || true",
     "watch": "tsc --watch",
     "inspector": "npx -y @modelcontextprotocol/inspector",
