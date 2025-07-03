@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { transportConfigSchema } from '../core/types/index.js';
 import { MCPServerParams, EnhancedTransport } from '../core/types/index.js';
-import { MCPOAuthClientProvider } from '../auth/mcpOAuthClientProvider.js';
+import { SDKOAuthClientProvider } from '../auth/sdkOAuthClientProvider.js';
 
 /**
  * Creates transport instances from configuration
@@ -58,7 +58,7 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
 
           if (validatedTransport.oauth) {
             logger.info(`Creating OAuth client provider for SSE transport: ${name}`);
-            sseOptions.authProvider = new MCPOAuthClientProvider(name, validatedTransport.oauth);
+            sseOptions.authProvider = new SDKOAuthClientProvider(name, validatedTransport.oauth);
           }
 
           transport = new SSEClientTransport(new URL(validatedTransport.url), sseOptions) as EnhancedTransport;
@@ -80,7 +80,7 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
 
           if (validatedTransport.oauth) {
             logger.info(`Creating OAuth client provider for HTTP transport: ${name}`);
-            httpOptions.authProvider = new MCPOAuthClientProvider(name, validatedTransport.oauth);
+            httpOptions.authProvider = new SDKOAuthClientProvider(name, validatedTransport.oauth);
           }
 
           transport = new StreamableHTTPClientTransport(

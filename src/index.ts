@@ -131,6 +131,8 @@ async function main() {
     // Configure server settings from CLI arguments
     const serverConfigManager = ServerConfigManager.getInstance();
     serverConfigManager.updateConfig({
+      host: argv.host,
+      port: argv.port,
       auth: {
         enabled: argv['auth'],
         sessionTtlMinutes: argv['session-ttl'],
@@ -169,7 +171,7 @@ async function main() {
       case 'http': {
         // Use HTTP/SSE transport
         expressServer = new ExpressServer(serverManager);
-        expressServer.start(argv.port, argv.host);
+        expressServer.start();
         break;
       }
       default:

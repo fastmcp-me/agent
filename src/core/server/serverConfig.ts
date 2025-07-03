@@ -1,4 +1,4 @@
-import { AUTH_CONFIG } from '../../constants.js';
+import { AUTH_CONFIG, HOST, PORT } from '../../constants.js';
 
 /**
  * Configuration interface for server-specific settings.
@@ -7,6 +7,8 @@ import { AUTH_CONFIG } from '../../constants.js';
  * that can be customized via CLI arguments or environment variables.
  */
 export interface ServerConfig {
+  host: string;
+  port: number;
   auth: {
     enabled: boolean;
     sessionTtlMinutes: number;
@@ -44,11 +46,13 @@ export class ServerConfigManager {
    */
   private constructor() {
     this.config = {
+      host: HOST,
+      port: PORT,
       auth: {
-        enabled: AUTH_CONFIG.DEFAULT_ENABLED,
-        sessionTtlMinutes: AUTH_CONFIG.DEFAULT_SESSION_TTL_MINUTES,
-        oauthCodeTtlMs: AUTH_CONFIG.DEFAULT_OAUTH_CODE_TTL_MS,
-        oauthTokenTtlMs: AUTH_CONFIG.DEFAULT_OAUTH_TOKEN_TTL_MS,
+        enabled: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
+        sessionTtlMinutes: AUTH_CONFIG.SERVER.SESSION.TTL_MINUTES,
+        oauthCodeTtlMs: AUTH_CONFIG.SERVER.OAUTH.CODE_TTL_MS,
+        oauthTokenTtlMs: AUTH_CONFIG.SERVER.OAUTH.TOKEN_TTL_MS,
       },
     };
   }

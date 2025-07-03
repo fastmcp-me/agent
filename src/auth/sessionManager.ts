@@ -75,9 +75,19 @@ export class SessionManager {
    * @param sessionStoragePath - Optional custom path for session storage
    */
   constructor(sessionStoragePath?: string) {
-    this.sessionStoragePath = sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SESSION_STORAGE_DIR);
+    this.sessionStoragePath =
+      sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SERVER.SESSION.STORAGE_DIR);
     this.ensureSessionDirectory();
     this.startCleanupInterval();
+  }
+
+  /**
+   * Gets the session storage path.
+   *
+   * @returns The absolute path to the session storage directory
+   */
+  public getSessionStoragePath(): string {
+    return this.sessionStoragePath;
   }
 
   /**
@@ -112,7 +122,7 @@ export class SessionManager {
       throw new Error('Invalid session ID format');
     }
 
-    const fileName = `${AUTH_CONFIG.SESSION_FILE_PREFIX}${sessionId}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const fileName = `${AUTH_CONFIG.SERVER.SESSION.FILE_PREFIX}${sessionId}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -138,7 +148,7 @@ export class SessionManager {
       throw new Error('Invalid authorization code format');
     }
 
-    const fileName = `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const fileName = `auth_code_${code}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -166,16 +176,16 @@ export class SessionManager {
 
     // Check for valid prefix
     const hasValidPrefix =
-      id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.PREFIXES.AUTH_CODE);
+      id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE);
 
     if (!hasValidPrefix) {
       return false;
     }
 
     // Validate the UUID portion (after prefix)
-    const uuidPart = id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID)
-      ? id.substring(AUTH_CONFIG.PREFIXES.SESSION_ID.length)
-      : id.substring(AUTH_CONFIG.PREFIXES.AUTH_CODE.length);
+    const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID)
+      ? id.substring(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID.length)
+      : id.substring(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE.length);
 
     // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -195,7 +205,7 @@ export class SessionManager {
    * @throws Error if session creation fails
    */
   public createSession(clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + randomUUID();
+    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + randomUUID();
     const sessionData: SessionData = {
       clientId,
       resource,
@@ -290,7 +300,7 @@ export class SessionManager {
    * @throws Error if code creation fails
    */
   public createAuthCode(clientId: string, redirectUri: string, resource: string, ttlMs: number): string {
-    const code = AUTH_CONFIG.PREFIXES.AUTH_CODE + randomUUID();
+    const code = AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE + randomUUID();
     const authCodeData: AuthCodeData = {
       clientId,
       redirectUri,
@@ -401,7 +411,7 @@ export class SessionManager {
       let cleanedCount = 0;
 
       for (const file of files) {
-        if (file.endsWith(AUTH_CONFIG.SESSION_FILE_EXTENSION)) {
+        if (file.endsWith(AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION)) {
           const filePath = path.join(this.sessionStoragePath, file);
           try {
             const data = fs.readFileSync(filePath, 'utf8');
@@ -457,7 +467,7 @@ export class SessionManager {
    * @throws Error if session creation fails
    */
   public createSessionWithId(tokenId: string, clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + tokenId;
+    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
     const sessionData: SessionData = {
       clientId,
       resource,

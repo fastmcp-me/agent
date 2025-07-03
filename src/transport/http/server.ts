@@ -1,12 +1,12 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { ServerManager } from '../../core/server/serverManager.js';
+import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../logger/logger.js';
 import errorHandler from './errorHandler.js';
-import { AuthManager } from '../../auth/authManager.js';
-import { createAuthMiddleware } from '../../auth/authMiddleware.js';
-import { setupOAuthRoutes } from './routes/oauthRoutes.js';
+import { ServerManager } from '../../core/server/serverManager.js';
+import { SDKOAuthProvider } from '../../auth/sdkOAuthProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import { ServerConfigManager } from '../../core/server/serverConfig.js';
@@ -27,7 +27,7 @@ import { ServerConfigManager } from '../../core/server/serverConfig.js';
 export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
-  private authManager: AuthManager;
+  private oauthProvider: SDKOAuthProvider;
   private configManager: ServerConfigManager;
 
   /**
@@ -43,9 +43,9 @@ export class ExpressServer {
     this.serverManager = serverManager;
     this.configManager = ServerConfigManager.getInstance();
 
-    // Initialize auth manager with custom session storage path if configured
+    // Initialize OAuth provider with custom session storage path if configured
     const sessionStoragePath = this.configManager.getSessionStoragePath();
-    this.authManager = new AuthManager(sessionStoragePath);
+    this.oauthProvider = new SDKOAuthProvider(sessionStoragePath);
 
     this.setupMiddleware();
     this.setupRoutes();
@@ -62,6 +62,7 @@ export class ExpressServer {
   private setupMiddleware(): void {
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({ extended: true }));
 
     // Add error handling middleware
     this.app.use(errorHandler);
@@ -78,19 +79,27 @@ export class ExpressServer {
    * Logs the authentication status for debugging purposes.
    */
   private setupRoutes(): void {
-    // Create auth middleware
-    const authMiddleware = createAuthMiddleware(this.authManager);
+    // Setup OAuth routes using SDK's mcpAuthRouter
+    const { host, port } = this.configManager.getConfig();
+    const issuerUrl = new URL(`http://${host}:${port}`);
+    const authRouter = mcpAuthRouter({
+      provider: this.oauthProvider,
+      issuerUrl,
+    });
+    this.app.use(authRouter);
 
-    // Setup OAuth routes (always available, but auth can be disabled)
-    setupOAuthRoutes(this.app, this.authManager);
+    // Create auth middleware using SDK's requireBearerAuth
+    const authMiddleware = this.configManager.isAuthEnabled()
+      ? requireBearerAuth({ verifier: this.oauthProvider })
+      : (req: express.Request, res: express.Response, next: express.NextFunction) => next();
 
     // Setup MCP transport routes with auth middleware
     setupStreamableHttpRoutes(this.app, this.serverManager, authMiddleware);
     setupSseRoutes(this.app, this.serverManager, authMiddleware);
 
     // Log authentication status
-    if (this.authManager.isAuthEnabled()) {
-      logger.info('Authentication enabled - OAuth 2.1 endpoints available');
+    if (this.configManager.isAuthEnabled()) {
+      logger.info('Authentication enabled - OAuth 2.1 endpoints available via SDK');
     } else {
       logger.info('Authentication disabled - all endpoints accessible without auth');
     }
@@ -105,9 +114,10 @@ export class ExpressServer {
    * @param port - The port number to listen on
    * @param host - The host address to bind to
    */
-  public start(port: number, host: string): void {
+  public start(): void {
+    const { port, host } = this.configManager.getConfig();
     this.app.listen(port, host, () => {
-      const authStatus = this.authManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
+      const authStatus = this.configManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
       logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport ${authStatus}`);
     });
   }
@@ -121,6 +131,6 @@ export class ExpressServer {
    * - Timer cleanup
    */
   public shutdown(): void {
-    this.authManager.shutdown();
+    this.oauthProvider.shutdown();
   }
 }

@@ -7,7 +7,6 @@ import logger from '../../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
 import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types/index.js';
-import { OAuthCallbackRegistry } from '../../auth/mcpOAuthClientProvider.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -74,28 +73,19 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
       logger.info(`Successfully connected to ${name} with server ${sv?.name} version ${sv?.version}`);
       return;
     } catch (error) {
-      // Handle OAuth authorization flow
+      // Handle OAuth authorization flow (managed by SDK)
       if (error instanceof UnauthorizedError) {
-        logger.info(`OAuth authorization required for ${name}. Waiting for user authorization...`);
+        logger.info(`OAuth authorization required for ${name}. The SDK will handle the OAuth flow automatically.`);
 
-        try {
-          // Wait for authorization code from the callback system
-          const authCode = await waitForAuthorizationCode(name, 300000); // 5 minute timeout
-
-          // Complete the OAuth flow using the transport's finishAuth method
-          if ('finishAuth' in transport && typeof transport.finishAuth === 'function') {
-            logger.info(`Completing OAuth flow for ${name} with authorization code`);
-            await transport.finishAuth(authCode);
-
-            // Retry the connection immediately after successful OAuth
-            logger.info(`Retrying connection for ${name} after OAuth completion`);
-            continue; // Skip the normal retry delay
-          } else {
-            throw new Error('Transport does not support OAuth finishAuth method');
-          }
-        } catch (authError) {
-          logger.error(`OAuth authorization failed for ${name}:`, authError);
-          throw new ClientConnectionError(name, new Error(`OAuth authorization failed: ${authError}`));
+        // The SDK's OAuth implementation will handle the authorization flow
+        // We just need to wait and retry the connection after user authorization
+        if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
+          logger.info(`Waiting for OAuth authorization to complete for ${name}...`);
+          // Wait longer for OAuth flow (30 seconds)
+          await new Promise((resolve) => setTimeout(resolve, 30000));
+          continue; // Skip the normal retry logic
+        } else {
+          throw new ClientConnectionError(name, new Error(`OAuth authorization required but max retries exceeded`));
         }
       }
       // Handle other connection errors
@@ -115,41 +105,7 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
   }
 }
 
-/**
- * Waits for an authorization code from the OAuth callback system
- * @param serverName The name of the server waiting for authorization
- * @param timeoutMs Timeout in milliseconds
- * @returns Promise that resolves with the authorization code
- */
-async function waitForAuthorizationCode(serverName: string, timeoutMs: number): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error(`OAuth authorization timeout after ${timeoutMs}ms for ${serverName}`));
-    }, timeoutMs);
-
-    // Poll the callback registry for the authorization code
-    const pollInterval = setInterval(async () => {
-      try {
-        // Check if we have a registered provider for this server
-        const providers = OAuthCallbackRegistry.getRegisteredProviders();
-        if (providers.includes(serverName)) {
-          // The provider is registered, which means redirectToAuthorization was called
-          // Now we need to get the authorization code promise from the provider
-          const authCode = await OAuthCallbackRegistry.getAuthorizationCode(serverName);
-          if (authCode) {
-            clearTimeout(timeout);
-            clearInterval(pollInterval);
-            resolve(authCode);
-          }
-        }
-      } catch (error) {
-        clearTimeout(timeout);
-        clearInterval(pollInterval);
-        reject(error);
-      }
-    }, 1000); // Poll every second
-  });
-}
+// OAuth authorization flow is now handled by the SDK's built-in implementation
 
 /**
  * Gets a client by name with error handling
