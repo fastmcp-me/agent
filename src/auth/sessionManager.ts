@@ -169,27 +169,39 @@ export class SessionManager {
    * @returns true if valid, false otherwise
    */
   private isValidId(id: string): boolean {
-    // Check minimum length (prefix + UUID)
-    if (!id || id.length < 40) {
+    // Check minimum length (prefix + content)
+    if (!id || id.length < 8) {
       return false;
     }
 
-    // Check for valid prefix
-    const hasValidPrefix =
+    // Check for valid server-side prefix
+    const hasServerPrefix =
       id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE);
 
-    if (!hasValidPrefix) {
-      return false;
+    if (hasServerPrefix) {
+      // Validate the UUID portion (after prefix)
+      const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID)
+        ? id.substring(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID.length)
+        : id.substring(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE.length);
+
+      // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(uuidPart);
     }
 
-    // Validate the UUID portion (after prefix)
-    const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID)
-      ? id.substring(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID.length)
-      : id.substring(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE.length);
+    // Check for valid client-side OAuth prefix
+    const hasClientPrefix =
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.CLIENT) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.TOKENS) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.STATE);
 
-    // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuidPart);
+    if (hasClientPrefix) {
+      const contentPart = id.substring(4); // All client prefixes are 4 characters
+      return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
+    }
+
+    return false;
   }
 
   /**

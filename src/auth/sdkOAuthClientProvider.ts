@@ -18,6 +18,8 @@ export interface OAuthClientConfig {
   scopes?: string[];
   autoRegister?: boolean;
   redirectUrl?: string;
+  callbackPort?: number;
+  callbackPath?: string;
 }
 
 /**
@@ -43,17 +45,17 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
     this.config = config;
     this.sessionManager = new SessionManager(sessionStoragePath);
 
-    // Set up redirect URL - use provided URL or default to local callback
-    this._redirectUrl = config.redirectUrl || AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_REDIRECT_URL;
+    // Set up redirect URL with better defaults
+    this._redirectUrl = this.buildRedirectUrl(config);
 
-    // Set up client metadata for registration
+    // Set up client metadata for registration with better defaults
     this._clientMetadata = {
-      redirect_uris: [this._redirectUrl],
       client_name: `1MCP Agent - ${serverName}`,
-      token_endpoint_auth_method: config.clientSecret ? 'client_secret_basic' : 'none',
-      grant_types: ['authorization_code'],
+      redirect_uris: [this._redirectUrl],
+      grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
-      scope: config.scopes?.join(' ') || 'openid',
+      token_endpoint_auth_method: config.clientSecret ? 'client_secret_post' : 'none',
+      scope: config.scopes?.join(' ') || AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_SCOPES.join(' '),
     };
 
     // Load existing client info and tokens if available
@@ -253,6 +255,64 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
     // This is a simple check - in practice, you might want to store the issued_at time
     // For now, we'll rely on the session storage TTL for expiration
     return false;
+  }
+
+  /**
+   * Build redirect URL with dynamic port support
+   */
+  private buildRedirectUrl(config: OAuthClientConfig): string {
+    if (config.redirectUrl) {
+      return config.redirectUrl;
+    }
+
+    const port = config.callbackPort || AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PORT;
+    const path = config.callbackPath || AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH;
+    return `http://localhost:${port}${path}`;
+  }
+
+  /**
+   * Get available port for OAuth callback
+   */
+  async getAvailableCallbackPort(
+    preferredPort: number = AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PORT,
+  ): Promise<number> {
+    const net = await import('net');
+
+    return new Promise((resolve, reject) => {
+      const server = net.createServer();
+
+      server.listen(preferredPort, () => {
+        const port = (server.address() as any)?.port;
+        server.close(() => resolve(port));
+      });
+
+      server.on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          // Try next port within range
+          if (preferredPort < AUTH_CONFIG.CLIENT.OAUTH.PORT_RANGE_END) {
+            this.getAvailableCallbackPort(preferredPort + 1)
+              .then(resolve)
+              .catch(reject);
+          } else {
+            reject(
+              new Error(
+                `No available ports in range ${AUTH_CONFIG.CLIENT.OAUTH.PORT_RANGE_START}-${AUTH_CONFIG.CLIENT.OAUTH.PORT_RANGE_END}`,
+              ),
+            );
+          }
+        } else {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  /**
+   * Update redirect URL with new port
+   */
+  updateRedirectUrl(port: number, path: string = AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH): void {
+    this._redirectUrl = `http://localhost:${port}${path}`;
+    this._clientMetadata.redirect_uris = [this._redirectUrl];
   }
 
   /**

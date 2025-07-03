@@ -56,10 +56,10 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
             },
           };
 
-          if (validatedTransport.oauth) {
-            logger.info(`Creating OAuth client provider for SSE transport: ${name}`);
-            sseOptions.authProvider = new SDKOAuthClientProvider(name, validatedTransport.oauth);
-          }
+          // Always create OAuth provider with defaults if needed
+          const oauthConfig = validatedTransport.oauth || { autoRegister: true };
+          logger.info(`Creating OAuth client provider for SSE transport: ${name}`);
+          sseOptions.authProvider = new SDKOAuthClientProvider(name, oauthConfig);
 
           transport = new SSEClientTransport(new URL(validatedTransport.url), sseOptions) as EnhancedTransport;
           assignTransport(name, transport, validatedTransport);
@@ -78,10 +78,10 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
             },
           };
 
-          if (validatedTransport.oauth) {
-            logger.info(`Creating OAuth client provider for HTTP transport: ${name}`);
-            httpOptions.authProvider = new SDKOAuthClientProvider(name, validatedTransport.oauth);
-          }
+          // Always create OAuth provider with defaults if needed
+          const oauthConfig = validatedTransport.oauth || { autoRegister: true };
+          logger.info(`Creating OAuth client provider for HTTP transport: ${name}`);
+          httpOptions.authProvider = new SDKOAuthClientProvider(name, oauthConfig);
 
           transport = new StreamableHTTPClientTransport(
             new URL(validatedTransport.url),

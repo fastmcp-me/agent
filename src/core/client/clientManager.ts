@@ -22,18 +22,18 @@ export async function createClients(transports: Record<string, Transport>): Prom
       const client = await createClient();
 
       // Connect with retry logic
-      await connectWithRetry(client, transport, name);
+      const connectedClient = await connectWithRetry(client, transport, name);
 
       clients[name] = {
         name,
         transport,
-        client,
+        client: connectedClient,
         status: ClientStatus.Connected,
         lastConnected: new Date(),
       };
       logger.info(`Client created for ${name}`);
 
-      client.onclose = () => {
+      connectedClient.onclose = () => {
         clients[name].status = ClientStatus.Disconnected;
         logger.info(`Client ${name} disconnected`);
       };
@@ -57,21 +57,23 @@ export async function createClients(transports: Record<string, Transport>): Prom
  * @param client The client to connect
  * @param transport The transport to connect to
  * @param name The name of the client for logging
+ * @returns The connected client (may be a new instance after retries)
  */
-async function connectWithRetry(client: Client, transport: Transport, name: string): Promise<void> {
+async function connectWithRetry(client: Client, transport: Transport, name: string): Promise<Client> {
   let retryDelay = CONNECTION_RETRY.INITIAL_DELAY_MS;
+  let currentClient = client;
 
   for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
     try {
-      await client.connect(transport);
+      await currentClient.connect(transport);
 
-      const sv = await client.getServerVersion();
+      const sv = await currentClient.getServerVersion();
       if (sv?.name === MCP_SERVER_NAME) {
         throw new ClientConnectionError(name, new Error('Aborted to prevent circular dependency'));
       }
 
       logger.info(`Successfully connected to ${name} with server ${sv?.name} version ${sv?.version}`);
-      return;
+      return currentClient;
     } catch (error) {
       // Handle OAuth authorization flow (managed by SDK)
       if (error instanceof UnauthorizedError) {
@@ -83,6 +85,9 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
           logger.info(`Waiting for OAuth authorization to complete for ${name}...`);
           // Wait longer for OAuth flow (30 seconds)
           await new Promise((resolve) => setTimeout(resolve, 30000));
+
+          // Create a new client for OAuth retry to avoid "already started" errors
+          currentClient = await createClient();
           continue; // Skip the normal retry logic
         } else {
           throw new ClientConnectionError(name, new Error(`OAuth authorization required but max retries exceeded`));
@@ -97,12 +102,18 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
           logger.info(`Retrying in ${retryDelay}ms...`);
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
           retryDelay *= 2; // Exponential backoff
+
+          // Create a new client for retry to avoid "already started" errors
+          currentClient = await createClient();
         } else {
           throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
         }
       }
     }
   }
+
+  // This should never be reached due to the throw in the else block above
+  throw new ClientConnectionError(name, new Error('Max retries exceeded'));
 }
 
 // OAuth authorization flow is now handled by the SDK's built-in implementation

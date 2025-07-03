@@ -87,6 +87,11 @@ export const AUTH_CONFIG = {
       STATE_TTL_MS: 10 * 60 * 1000, // 10 minutes
       DEFAULT_TOKEN_EXPIRY_SECONDS: 3600, // 1 hour
       DEFAULT_REDIRECT_URL: 'http://localhost:3000/oauth/callback',
+      DEFAULT_CALLBACK_PORT: 3000,
+      DEFAULT_CALLBACK_PATH: '/oauth/callback',
+      DEFAULT_SCOPES: ['mcp:tools'],
+      PORT_RANGE_START: 3000,
+      PORT_RANGE_END: 3010,
     },
     PREFIXES: {
       CLIENT: 'cli_',
