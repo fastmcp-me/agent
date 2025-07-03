@@ -12,6 +12,8 @@ export enum ClientStatus {
   Disconnected = 'disconnected',
   /** Client encountered an error */
   Error = 'error',
+  /** Client is waiting for OAuth authorization */
+  AwaitingOAuth = 'awaiting_oauth',
 }
 
 /**
@@ -20,11 +22,15 @@ export enum ClientStatus {
 export interface ClientInfo {
   readonly name: string;
   readonly transport: EnhancedTransport;
-  readonly client: Client;
-  readonly lastError?: Error;
-  readonly lastConnected?: Date;
+  client: Client;
+  lastError?: Error;
+  lastConnected?: Date;
   status: ClientStatus;
   capabilities?: ServerCapabilities;
+  /** OAuth authorization URL for user to complete authentication */
+  authorizationUrl?: string;
+  /** When OAuth authorization was initiated */
+  oauthStartTime?: Date;
 }
 
 /**

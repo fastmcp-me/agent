@@ -182,6 +182,10 @@ export class ServerManager {
     return this.transports;
   }
 
+  public getClients(): Clients {
+    return this.clients;
+  }
+
   public getActiveTransportsCount(): number {
     return this.servers.size;
   }

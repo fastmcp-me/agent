@@ -39,6 +39,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   private sessionManager: SessionManager;
   private serverName: string;
   private config: OAuthClientConfig;
+  private _authorizationUrl?: string;
 
   constructor(serverName: string, config: OAuthClientConfig, sessionStoragePath?: string) {
     this.serverName = serverName;
@@ -103,18 +104,24 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   }
 
   /**
-   * Redirects user to authorization server
-   * In console application, this prints the URL for user to open
+   * Stores authorization URL instead of prompting user in console
    */
   redirectToAuthorization(authorizationUrl: URL): void {
-    logger.info(`OAuth authorization required for ${this.serverName}`);
+    this._authorizationUrl = authorizationUrl.toString();
+  }
 
-    console.log('\n=== OAUTH AUTHORIZATION REQUIRED ===');
-    console.log(`Server: ${this.serverName}`);
-    console.log(`Please open this URL in your browser to authorize:`);
-    console.log(`\n${authorizationUrl.toString()}\n`);
-    console.log('After authorization, the browser will redirect back to complete the OAuth flow.');
-    console.log('=====================================\n');
+  /**
+   * Gets the current authorization URL
+   */
+  getAuthorizationUrl(): string | undefined {
+    return this._authorizationUrl;
+  }
+
+  /**
+   * Clears the stored authorization URL
+   */
+  clearAuthorizationUrl(): void {
+    this._authorizationUrl = undefined;
   }
 
   /**

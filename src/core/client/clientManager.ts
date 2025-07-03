@@ -7,6 +7,7 @@ import logger from '../../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
 import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types/index.js';
+import { ServerConfigManager } from '../server/serverConfig.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -38,14 +39,40 @@ export async function createClients(transports: Record<string, Transport>): Prom
         logger.info(`Client ${name} disconnected`);
       };
     } catch (error) {
-      logger.error(`Failed to create client for ${name}: ${error}`);
-      clients[name] = {
-        name,
-        transport,
-        client: await createClient(),
-        status: ClientStatus.Error,
-        lastError: error instanceof Error ? error : new Error(String(error)),
-      };
+      if (error instanceof OAuthRequiredError) {
+        // Handle OAuth required - set client to AwaitingOAuth status
+        logger.info(`OAuth authorization required for ${name}`);
+
+        // Try to get authorization URL from OAuth provider
+        let authorizationUrl: string | undefined;
+        try {
+          // Extract OAuth provider from transport if available
+          const oauthProvider = (transport as any).authProvider;
+          if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
+            authorizationUrl = oauthProvider.getAuthorizationUrl();
+          }
+        } catch (urlError) {
+          logger.warn(`Could not extract authorization URL for ${name}:`, urlError);
+        }
+
+        clients[name] = {
+          name,
+          transport,
+          client: error.client,
+          status: ClientStatus.AwaitingOAuth,
+          authorizationUrl,
+          oauthStartTime: new Date(),
+        };
+      } else {
+        logger.error(`Failed to create client for ${name}: ${error}`);
+        clients[name] = {
+          name,
+          transport,
+          client: await createClient(),
+          status: ClientStatus.Error,
+          lastError: error instanceof Error ? error : new Error(String(error)),
+        };
+      }
     }
   }
 
@@ -77,21 +104,13 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
     } catch (error) {
       // Handle OAuth authorization flow (managed by SDK)
       if (error instanceof UnauthorizedError) {
-        logger.info(`OAuth authorization required for ${name}. The SDK will handle the OAuth flow automatically.`);
+        const serverConfig = ServerConfigManager.getInstance().getConfig();
+        logger.info(
+          `OAuth authorization required for ${name}. Visit http://localhost:${serverConfig.port}/oauth to authorize`,
+        );
 
-        // The SDK's OAuth implementation will handle the authorization flow
-        // We just need to wait and retry the connection after user authorization
-        if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
-          logger.info(`Waiting for OAuth authorization to complete for ${name}...`);
-          // Wait longer for OAuth flow (30 seconds)
-          await new Promise((resolve) => setTimeout(resolve, 30000));
-
-          // Create a new client for OAuth retry to avoid "already started" errors
-          currentClient = await createClient();
-          continue; // Skip the normal retry logic
-        } else {
-          throw new ClientConnectionError(name, new Error(`OAuth authorization required but max retries exceeded`));
-        }
+        // Throw special error that includes OAuth info
+        throw new OAuthRequiredError(name, currentClient);
       }
       // Handle other connection errors
       else {
@@ -209,4 +228,59 @@ export async function executeServerOperation<T>(
   options: OperationOptions = {},
 ): Promise<T> {
   return executeOperation(() => operation(server), 'server', options);
+}
+
+/**
+ * Attempts to reconnect a client after OAuth authorization
+ * @param clients The clients record to update
+ * @param serverName The name of the server to reconnect
+ * @returns Promise that resolves when reconnection is attempted
+ */
+export async function reconnectAfterOAuth(clients: Clients, serverName: string): Promise<void> {
+  const clientInfo = clients[serverName];
+  if (!clientInfo) {
+    throw new Error(`Client ${serverName} not found`);
+  }
+
+  try {
+    logger.info(`Attempting to reconnect ${serverName} after OAuth authorization`);
+
+    // Create a new client and attempt connection
+    const newClient = await createClient();
+    const connectedClient = await connectWithRetry(newClient, clientInfo.transport, serverName);
+
+    // Update client info with successful connection
+    clientInfo.client = connectedClient;
+    clientInfo.status = ClientStatus.Connected;
+    clientInfo.lastConnected = new Date();
+    clientInfo.authorizationUrl = undefined;
+    clientInfo.oauthStartTime = undefined;
+
+    // Set up disconnect handler
+    connectedClient.onclose = () => {
+      clientInfo.status = ClientStatus.Disconnected;
+      logger.info(`Client ${serverName} disconnected`);
+    };
+
+    logger.info(`Successfully reconnected ${serverName} after OAuth`);
+  } catch (error) {
+    logger.error(`Failed to reconnect ${serverName} after OAuth:`, error);
+    clientInfo.status = ClientStatus.Error;
+    clientInfo.lastError = error instanceof Error ? error : new Error(String(error));
+    clientInfo.authorizationUrl = undefined;
+    clientInfo.oauthStartTime = undefined;
+  }
+}
+
+/**
+ * Custom error class for OAuth authorization required
+ */
+export class OAuthRequiredError extends Error {
+  constructor(
+    public serverName: string,
+    public client: Client,
+  ) {
+    super(`OAuth authorization required for ${serverName}`);
+    this.name = 'OAuthRequiredError';
+  }
 }

@@ -9,6 +9,7 @@ import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthProvider } from '../../auth/sdkOAuthProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
+import oauthRoutes from './routes/oauthRoutes.js';
 import { ServerConfigManager } from '../../core/server/serverConfig.js';
 
 /**
@@ -93,6 +94,9 @@ export class ExpressServer {
       ? requireBearerAuth({ verifier: this.oauthProvider })
       : (req: express.Request, res: express.Response, next: express.NextFunction) => next();
 
+    // Setup OAuth management routes (no auth required)
+    this.app.use('/oauth', oauthRoutes);
+
     // Setup MCP transport routes with auth middleware
     setupStreamableHttpRoutes(this.app, this.serverManager, authMiddleware);
     setupSseRoutes(this.app, this.serverManager, authMiddleware);
@@ -119,6 +123,7 @@ export class ExpressServer {
     this.app.listen(port, host, () => {
       const authStatus = this.configManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
       logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport ${authStatus}`);
+      logger.info(`📋 OAuth Management Dashboard: http://${host}:${port}/oauth`);
     });
   }
 
