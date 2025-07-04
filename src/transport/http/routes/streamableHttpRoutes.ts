@@ -43,6 +43,15 @@ export function setupStreamableHttpRoutes(
           };
         } else {
           const existingTransport = serverManager.getTransport(sessionId);
+          if (!existingTransport) {
+            res.status(404).json({
+              error: {
+                code: ErrorCode.InvalidParams,
+                message: 'No active streamable HTTP session found for the provided sessionId',
+              },
+            });
+            return;
+          }
           if (existingTransport instanceof StreamableHTTPServerTransport) {
             transport = existingTransport;
           } else {
@@ -80,6 +89,15 @@ export function setupStreamableHttpRoutes(
       }
 
       const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+      if (!transport) {
+        res.status(404).json({
+          error: {
+            code: ErrorCode.InvalidParams,
+            message: 'No active streamable HTTP session found for the provided sessionId',
+          },
+        });
+        return;
+      }
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
       logger.error('Streamable HTTP error:', error);
@@ -103,6 +121,15 @@ export function setupStreamableHttpRoutes(
       }
 
       const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+      if (!transport) {
+        res.status(404).json({
+          error: {
+            code: ErrorCode.InvalidParams,
+            message: 'No active streamable HTTP session found for the provided sessionId',
+          },
+        });
+        return;
+      }
       await transport.handleRequest(req, res);
     } catch (error) {
       logger.error('Streamable HTTP error:', error);
