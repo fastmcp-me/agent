@@ -29,8 +29,9 @@ import { MCP_URI_SEPARATOR } from '../constants.js';
 import { executeClientOperation, executeServerOperation } from '../core/client/clientManager.js';
 import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
-import { Clients, ServerInfo } from '../core/types/index.js';
+import { Clients, ServerInfo, ClientStatus } from '../core/types/index.js';
 import { handlePagination } from '../utils/pagination.js';
+import logger from '../logger/logger.js';
 
 /**
  * Registers server-specific request handlers
@@ -94,6 +95,30 @@ export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo
     setLogLevel(request.params.level);
     return {};
   });
+
+  // Register ping handler
+  serverInfo.server.setRequestHandler(
+    PingRequestSchema,
+    withErrorHandling(async () => {
+      // Health check all connected upstream clients
+      const healthCheckPromises = Object.entries(clients).map(async ([clientName, clientInfo]) => {
+        if (clientInfo.status === ClientStatus.Connected) {
+          try {
+            await clientInfo.client.ping();
+            logger.info(`Health check successful for client: ${clientName}`);
+          } catch (error) {
+            logger.warn(`Health check failed for client ${clientName}: ${error}`);
+          }
+        }
+      });
+
+      // Wait for all health checks to complete (but don't fail if some fail)
+      await Promise.allSettled(healthCheckPromises);
+
+      // Always return successful pong response
+      return {};
+    }, 'Error handling ping'),
+  );
 
   // Register resource-related handlers
   registerResourceHandlers(clients, serverInfo);
