@@ -59,7 +59,6 @@ export const oAuthConfigSchema = z.object({
   clientSecret: z.string().optional(),
   scopes: z.array(z.string()).optional(),
   autoRegister: z.boolean().optional(),
-  redirectUrl: z.string().url().optional(),
 });
 
 /**

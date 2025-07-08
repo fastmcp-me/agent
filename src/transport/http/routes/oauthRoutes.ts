@@ -105,10 +105,9 @@ router.get('/authorize/:serverName', authorizeHandler);
  * Handle OAuth callback and trigger reconnection
  */
 router.get('/callback/:serverName', async (req: Request, res: Response) => {
+  const { serverName } = req.params;
+  const { code, error } = req.query;
   try {
-    const { serverName } = req.params;
-    const { code, error } = req.query;
-
     if (error) {
       logger.error(`OAuth error for ${serverName}:`, error);
       return res.redirect(`/oauth?error=${encodeURIComponent(String(error))}`);
@@ -125,7 +124,7 @@ router.get('/callback/:serverName', async (req: Request, res: Response) => {
     // Redirect back to dashboard with success
     res.redirect('/oauth?success=1');
   } catch (error) {
-    logger.error(`Error handling OAuth callback for ${req.params.serverName}:`, error);
+    logger.error(`Error handling OAuth callback for ${serverName}:`, error);
     res.redirect(`/oauth?error=callback_failed`);
   }
 });
@@ -134,8 +133,8 @@ router.get('/callback/:serverName', async (req: Request, res: Response) => {
  * Restart OAuth flow for a service
  */
 const restartHandler: RequestHandler = async (req: Request, res: Response) => {
+  const { serverName } = req.params;
   try {
-    const { serverName } = req.params;
     const serverManager = ServerManager.current;
     const clients = serverManager.getClients();
     const clientInfo = clients[serverName];
@@ -150,7 +149,7 @@ const restartHandler: RequestHandler = async (req: Request, res: Response) => {
 
     res.json({ success: true, message: 'OAuth flow restarted' });
   } catch (error) {
-    logger.error(`Error restarting OAuth for ${req.params.serverName}:`, error);
+    logger.error(`Error restarting OAuth for ${serverName}:`, error);
     res.status(500).json({ error: 'Failed to restart OAuth flow' });
   }
 };

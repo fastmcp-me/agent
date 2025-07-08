@@ -8,7 +8,9 @@ import { ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { AuthProviderTransport, transportConfigSchema } from '../core/types/index.js';
 import { MCPServerParams } from '../core/types/index.js';
-import { SDKOAuthClientProvider } from '../auth/sdkOAuthClientProvider.js';
+import { OAuthClientConfig, SDKOAuthClientProvider } from '../auth/sdkOAuthClientProvider.js';
+import { AUTH_CONFIG } from '../constants.js';
+import { ServerConfigManager } from '../core/server/serverConfig.js';
 
 /**
  * Creates transport instances from configuration
@@ -16,6 +18,7 @@ import { SDKOAuthClientProvider } from '../auth/sdkOAuthClientProvider.js';
  */
 export function createTransports(config: Record<string, MCPServerParams>): Record<string, AuthProviderTransport> {
   const transports: Record<string, AuthProviderTransport> = {};
+  const { host, port } = ServerConfigManager.getInstance().getConfig();
 
   const assignTransport = (
     name: string,
@@ -69,7 +72,11 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
           };
 
           // Always create OAuth provider with defaults if needed
-          const oauthConfig = validatedTransport.oauth || { autoRegister: true };
+          const oauthConfig: OAuthClientConfig = {
+            autoRegister: true,
+            redirectUrl: `http://${host}:${port}${AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH}/${name}`,
+            ...validatedTransport.oauth,
+          };
           logger.info(`Creating OAuth client provider for SSE transport: ${name}`);
           const oauthProvider = new SDKOAuthClientProvider(name, oauthConfig);
           sseOptions.authProvider = oauthProvider;
@@ -94,7 +101,11 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
           };
 
           // Always create OAuth provider with defaults if needed
-          const oauthConfig = validatedTransport.oauth || { autoRegister: true };
+          const oauthConfig: OAuthClientConfig = {
+            autoRegister: true,
+            redirectUrl: `http://${host}:${port}${AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH}/${name}`,
+            ...validatedTransport.oauth,
+          };
           logger.info(`Creating OAuth client provider for HTTP transport: ${name}`);
           const oauthProvider = new SDKOAuthClientProvider(name, oauthConfig);
           httpOptions.authProvider = oauthProvider;
