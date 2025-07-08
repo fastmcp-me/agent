@@ -6,7 +6,15 @@ import createClient from './clientFactory.js';
 import logger from '../../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types/index.js';
+import {
+  ClientStatus,
+  ClientInfo,
+  Clients,
+  OperationOptions,
+  ServerInfo,
+  ServerCapability,
+  AuthProviderTransport,
+} from '../types/index.js';
 import { ServerConfigManager } from '../server/serverConfig.js';
 
 /**
@@ -14,7 +22,7 @@ import { ServerConfigManager } from '../server/serverConfig.js';
  * @param transports Record of transport instances
  * @returns Record of client instances
  */
-export async function createClients(transports: Record<string, Transport>): Promise<Clients> {
+export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<Clients> {
   const clients: Record<string, ClientInfo> = {};
 
   for (const [name, transport] of Object.entries(transports)) {
@@ -47,7 +55,7 @@ export async function createClients(transports: Record<string, Transport>): Prom
         let authorizationUrl: string | undefined;
         try {
           // Extract OAuth provider from transport if available
-          const oauthProvider = (transport as any).authProvider;
+          const oauthProvider = transport.oauthProvider;
           if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
             authorizationUrl = oauthProvider.getAuthorizationUrl();
           }

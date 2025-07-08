@@ -1,6 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 import { EnhancedTransport } from './transport.js';
+import { SDKOAuthClientProvider } from '../../auth/sdkOAuthClientProvider.js';
 
 /**
  * Enum representing possible client connection states
@@ -14,6 +15,13 @@ export enum ClientStatus {
   Error = 'error',
   /** Client is waiting for OAuth authorization */
   AwaitingOAuth = 'awaiting_oauth',
+}
+
+/**
+ * Transport that includes an OAuth provider
+ */
+export interface AuthProviderTransport extends EnhancedTransport {
+  oauthProvider?: SDKOAuthClientProvider;
 }
 
 /**
