@@ -41,8 +41,13 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
         inferredParams.type = 'stdio';
         logger.info(`Inferred transport type for ${name} as stdio`);
       } else if (inferredParams.url) {
-        inferredParams.type = 'http';
-        logger.info(`Inferred transport type for ${name} as http/streamableHttp`);
+        if (inferredParams.url.endsWith('mcp')) {
+          inferredParams.type = 'http';
+          logger.info(`Inferred transport type for ${name} as http/streamableHttp`);
+        } else {
+          inferredParams.type = 'sse';
+          logger.info(`Inferred transport type for ${name} as sse`);
+        }
       }
     }
 
