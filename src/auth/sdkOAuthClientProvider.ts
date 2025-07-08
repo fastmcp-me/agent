@@ -8,6 +8,7 @@ import type {
 import logger from '../logger/logger.js';
 import { ServerSessionManager } from './sessionManager.js';
 import { AUTH_CONFIG } from '../constants.js';
+import { ClientSessionData } from './sessionTypes.js';
 
 /**
  * OAuth client configuration for connecting to downstream MCP servers
@@ -78,7 +79,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
    */
   saveClientInformation(clientInfo: OAuthClientInformationFull): void {
     this._clientInfo = clientInfo;
-    this.persistClientInfo();
+    this.persistAllData();
     logger.info(`OAuth client registered for ${this.serverName}: ${clientInfo.client_id}`);
   }
 
@@ -94,7 +95,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
    */
   saveTokens(tokens: OAuthTokens): void {
     this._tokens = tokens;
-    this.persistTokens();
+    this.persistAllData();
     logger.info(`OAuth tokens saved for ${this.serverName}`);
   }
 
@@ -124,7 +125,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
    */
   saveCodeVerifier(codeVerifier: string): void {
     this._codeVerifier = codeVerifier;
-    this.persistCodeVerifier();
+    this.persistAllData();
   }
 
   /**
@@ -140,7 +141,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   state(): string | Promise<string> {
     if (!this._state) {
       this._state = randomUUID();
-      this.persistState();
+      this.persistAllData();
     }
     return this._state;
   }
@@ -158,92 +159,66 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   }
 
   /**
-   * Load persisted OAuth data from session storage
+   * Load persisted OAuth data from unified client session storage
    */
   private loadPersistedData(): void {
-    const clientInfoKey = `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${this.serverName}`;
-    const tokensKey = `${AUTH_CONFIG.CLIENT.PREFIXES.TOKENS}${this.serverName}`;
-    const codeVerifierKey = `${AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER}${this.serverName}`;
-    const stateKey = `${AUTH_CONFIG.CLIENT.PREFIXES.STATE}${this.serverName}`;
+    const clientSession = this.sessionManager.getClientSession(this.serverName);
 
-    // Load client info
-    const clientInfoSession = this.sessionManager.getSession(clientInfoKey);
-    if (clientInfoSession?.data) {
-      this._clientInfo = JSON.parse(clientInfoSession.data);
-    }
+    if (clientSession) {
+      // Load client info
+      if (clientSession.clientInfo) {
+        this._clientInfo = JSON.parse(clientSession.clientInfo);
+      }
 
-    // Load tokens
-    const tokensSession = this.sessionManager.getSession(tokensKey);
-    if (tokensSession?.data) {
-      this._tokens = JSON.parse(tokensSession.data);
+      // Load tokens
+      if (clientSession.tokens) {
+        this._tokens = JSON.parse(clientSession.tokens);
 
-      // Check if tokens are expired
-      if (this._tokens && this.isTokenExpired(this._tokens)) {
-        logger.warn(`OAuth tokens expired for ${this.serverName}, clearing`);
-        this._tokens = undefined;
-        this.sessionManager.deleteSession(tokensKey);
+        // Check if tokens are expired
+        if (this._tokens && this.isTokenExpired(this._tokens)) {
+          logger.warn(`OAuth tokens expired for ${this.serverName}, clearing`);
+          this._tokens = undefined;
+          this.persistAllData();
+        }
+      }
+
+      // Load code verifier
+      if (clientSession.codeVerifier) {
+        this._codeVerifier = clientSession.codeVerifier;
+      }
+
+      // Load state
+      if (clientSession.state) {
+        this._state = clientSession.state;
       }
     }
-
-    // Load code verifier
-    const codeVerifierSession = this.sessionManager.getSession(codeVerifierKey);
-    if (codeVerifierSession?.data) {
-      this._codeVerifier = codeVerifierSession.data;
-    }
-
-    // Load state
-    const stateSession = this.sessionManager.getSession(stateKey);
-    if (stateSession?.data) {
-      this._state = stateSession.data;
-    }
   }
 
   /**
-   * Persist client information to session storage
+   * Persist all OAuth data to unified client session storage
    */
-  private persistClientInfo(): void {
-    if (this._clientInfo) {
-      const key = `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${this.serverName}`;
-      // Store for 30 days
-      const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.TTL_MS;
-      this.sessionManager.createSessionWithData(key, JSON.stringify(this._clientInfo), ttlMs);
-    }
-  }
+  private persistAllData(): void {
+    // Calculate the longest TTL based on the data we have
+    let maxTtl = AUTH_CONFIG.CLIENT.OAUTH.TTL_MS; // Default to 30 days
 
-  /**
-   * Persist OAuth tokens to session storage
-   */
-  private persistTokens(): void {
-    if (this._tokens) {
-      const key = `${AUTH_CONFIG.CLIENT.PREFIXES.TOKENS}${this.serverName}`;
-      // Use token's expires_in or default to 1 hour
-      const ttlMs = (this._tokens.expires_in || AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_TOKEN_EXPIRY_SECONDS) * 1000;
-      this.sessionManager.createSessionWithData(key, JSON.stringify(this._tokens), ttlMs);
+    // If we have tokens, use their expiry time
+    if (this._tokens && this._tokens.expires_in) {
+      const tokenTtl = this._tokens.expires_in * 1000;
+      maxTtl = Math.max(maxTtl, tokenTtl);
     }
-  }
 
-  /**
-   * Persist code verifier to session storage
-   */
-  private persistCodeVerifier(): void {
-    if (this._codeVerifier) {
-      const key = `${AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER}${this.serverName}`;
-      // Code verifier valid for 10 minutes
-      const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.CODE_VERIFIER_TTL_MS;
-      this.sessionManager.createSessionWithData(key, this._codeVerifier, ttlMs);
-    }
-  }
+    // Code verifier and state have shorter TTL, but we keep them for completeness
+    const clientSessionData: ClientSessionData = {
+      serverName: this.serverName,
+      clientInfo: this._clientInfo ? JSON.stringify(this._clientInfo) : undefined,
+      tokens: this._tokens ? JSON.stringify(this._tokens) : undefined,
+      codeVerifier: this._codeVerifier,
+      state: this._state,
+      expires: Date.now() + maxTtl,
+      createdAt: Date.now(),
+    };
 
-  /**
-   * Persist OAuth state to session storage
-   */
-  private persistState(): void {
-    if (this._state) {
-      const key = `${AUTH_CONFIG.CLIENT.PREFIXES.STATE}${this.serverName}`;
-      // State valid for 10 minutes
-      const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.STATE_TTL_MS;
-      this.sessionManager.createSessionWithData(key, this._state, ttlMs);
-    }
+    this.sessionManager.createClientSession(this.serverName, clientSessionData);
   }
 
   /**
@@ -263,14 +238,9 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
    * Clean up resources
    */
   shutdown(): void {
-    // Clean up any temporary session data
-    const keys = [
-      `${AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER}${this.serverName}`,
-      `${AUTH_CONFIG.CLIENT.PREFIXES.STATE}${this.serverName}`,
-    ];
-
-    keys.forEach((key) => {
-      this.sessionManager.deleteSession(key);
-    });
+    // Clean up temporary session data by clearing verifier and state
+    this._codeVerifier = undefined;
+    this._state = undefined;
+    this.persistAllData();
   }
 }

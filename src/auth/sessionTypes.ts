@@ -15,3 +15,14 @@ export interface AuthCodeData {
   expires: number;
   createdAt: number;
 }
+
+// Unified client session data structure
+export interface ClientSessionData {
+  serverName: string;
+  clientInfo?: string; // JSON string of OAuthClientInformationFull
+  tokens?: string; // JSON string of OAuthTokens
+  codeVerifier?: string;
+  state?: string;
+  expires: number;
+  createdAt: number;
+}
