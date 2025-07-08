@@ -2,7 +2,7 @@ import { Router, Request, Response, RequestHandler } from 'express';
 import logger from '../../../logger/logger.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import { ClientStatus } from '../../../core/types/index.js';
-import { reconnectAfterOAuth, OAuthRequiredError } from '../../../core/client/clientManager.js';
+import { OAuthRequiredError } from '../../../core/client/clientManager.js';
 import createClient from '../../../core/client/clientFactory.js';
 
 const router = Router();
@@ -101,6 +101,10 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
 
 router.get('/authorize/:serverName', authorizeHandler);
 
+function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: string) => Promise<void> } {
+  return typeof transport === 'object' && transport !== null && typeof (transport as any).finishAuth === 'function';
+}
+
 /**
  * Handle OAuth callback and trigger reconnection
  */
@@ -118,8 +122,26 @@ router.get('/callback/:serverName', async (req: Request, res: Response) => {
       return res.redirect(`/oauth?error=missing_code`);
     }
 
-    // Trigger reconnection attempt
-    await attemptReconnection(serverName);
+    const serverManager = ServerManager.current;
+    const clients = serverManager.getClients();
+    const clientInfo = clients[serverName];
+
+    if (!clientInfo) {
+      logger.error(`Client ${serverName} not found in OAuth callback`);
+      return res.redirect(`/oauth?error=client_not_found`);
+    }
+
+    // Use type guard for transport with finishAuth
+    if (!hasFinishAuth(clientInfo.transport)) {
+      logger.error(`Transport for ${serverName} does not support finishAuth`);
+      return res.redirect(`/oauth?error=invalid_oauth_transport`);
+    }
+
+    // Complete the OAuth flow with the authorization code
+    await clientInfo.transport.finishAuth(String(code));
+
+    // Trigger reconnection attempt for this specific client
+    // await attemptReconnection(serverName);
 
     // Redirect back to dashboard with success
     res.redirect('/oauth?success=1');
@@ -193,16 +215,6 @@ async function initiateOAuth(serverName: string): Promise<void> {
       throw error; // Re-throw non-OAuth errors
     }
   }
-}
-
-/**
- * Attempt to reconnect a service after OAuth callback
- */
-async function attemptReconnection(serverName: string): Promise<void> {
-  const serverManager = ServerManager.current;
-  const clients = serverManager.getClients();
-
-  await reconnectAfterOAuth(clients, serverName);
 }
 
 /**

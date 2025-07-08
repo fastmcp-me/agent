@@ -239,48 +239,6 @@ export async function executeServerOperation<T>(
 }
 
 /**
- * Attempts to reconnect a client after OAuth authorization
- * @param clients The clients record to update
- * @param serverName The name of the server to reconnect
- * @returns Promise that resolves when reconnection is attempted
- */
-export async function reconnectAfterOAuth(clients: Clients, serverName: string): Promise<void> {
-  const clientInfo = clients[serverName];
-  if (!clientInfo) {
-    throw new Error(`Client ${serverName} not found`);
-  }
-
-  try {
-    logger.info(`Attempting to reconnect ${serverName} after OAuth authorization`);
-
-    // Create a new client and attempt connection
-    const newClient = await createClient();
-    const connectedClient = await connectWithRetry(newClient, clientInfo.transport, serverName);
-
-    // Update client info with successful connection
-    clientInfo.client = connectedClient;
-    clientInfo.status = ClientStatus.Connected;
-    clientInfo.lastConnected = new Date();
-    clientInfo.authorizationUrl = undefined;
-    clientInfo.oauthStartTime = undefined;
-
-    // Set up disconnect handler
-    connectedClient.onclose = () => {
-      clientInfo.status = ClientStatus.Disconnected;
-      logger.info(`Client ${serverName} disconnected`);
-    };
-
-    logger.info(`Successfully reconnected ${serverName} after OAuth`);
-  } catch (error) {
-    logger.error(`Failed to reconnect ${serverName} after OAuth:`, error);
-    clientInfo.status = ClientStatus.Error;
-    clientInfo.lastError = error instanceof Error ? error : new Error(String(error));
-    clientInfo.authorizationUrl = undefined;
-    clientInfo.oauthStartTime = undefined;
-  }
-}
-
-/**
  * Custom error class for OAuth authorization required
  */
 export class OAuthRequiredError extends Error {
