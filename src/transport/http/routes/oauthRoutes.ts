@@ -1,11 +1,34 @@
 import { Router, Request, Response, RequestHandler } from 'express';
+import rateLimit from 'express-rate-limit';
 import logger from '../../../logger/logger.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import { ClientStatus } from '../../../core/types/index.js';
 import { OAuthRequiredError } from '../../../core/client/clientManager.js';
 import createClient from '../../../core/client/clientFactory.js';
+import { RATE_LIMIT_CONFIG } from '../../../constants.js';
 
 const router = Router();
+
+// Rate limiter for OAuth endpoints
+const oauthLimiter = rateLimit({
+  windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
+  max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+});
+
+/**
+ * HTML escape function to prevent XSS attacks
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 /**
  * Check if a server requires OAuth based on runtime behavior
@@ -35,7 +58,7 @@ function requiresOAuth(service: any): boolean {
 /**
  * OAuth Dashboard - Shows all services and their OAuth status
  */
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', oauthLimiter, async (req: Request, res: Response) => {
   try {
     const serverManager = ServerManager.current;
     const clients = serverManager.getClients();
@@ -99,7 +122,7 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
   }
 };
 
-router.get('/authorize/:serverName', authorizeHandler);
+router.get('/authorize/:serverName', oauthLimiter, authorizeHandler);
 
 function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: string) => Promise<void> } {
   return typeof transport === 'object' && transport !== null && typeof (transport as any).finishAuth === 'function';
@@ -108,7 +131,7 @@ function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: st
 /**
  * Handle OAuth callback and trigger reconnection
  */
-router.get('/callback/:serverName', async (req: Request, res: Response) => {
+router.get('/callback/:serverName', oauthLimiter, async (req: Request, res: Response) => {
   const { serverName } = req.params;
   const { code, error } = req.query;
   try {
@@ -251,10 +274,10 @@ function generateOAuthDashboard(services: any[], req: Request): string {
 
       return `
       <tr>
-        <td>${service.name}</td>
+        <td>${escapeHtml(service.name)}</td>
         <td>${statusIcon} ${statusText}</td>
-        <td>${service.lastConnected ? new Date(service.lastConnected).toLocaleString() : 'Never'}</td>
-        <td>${service.lastError || '-'}</td>
+        <td>${service.lastConnected ? escapeHtml(new Date(service.lastConnected).toLocaleString()) : 'Never'}</td>
+        <td>${service.lastError ? escapeHtml(service.lastError) : '-'}</td>
         <td>${actionButton}</td>
       </tr>
     `;
@@ -389,12 +412,12 @@ function getActionButton(service: any): string {
         return '<span class="status-connected">✓ Connected</span>';
       }
     case ClientStatus.AwaitingOAuth:
-      return `<a href="/oauth/authorize/${service.name}" class="btn btn-warning">🔐 Authorize</a>`;
+      return `<a href="/oauth/authorize/${encodeURIComponent(service.name)}" class="btn btn-warning">🔐 Authorize</a>`;
     case ClientStatus.Error:
     case ClientStatus.Disconnected:
-      return `<button onclick="restartOAuth('${service.name}')" class="btn btn-primary">🔄 Restart OAuth</button>`;
+      return `<button onclick="restartOAuth('${escapeHtml(service.name)}')" class="btn btn-primary">🔄 Restart OAuth</button>`;
     default:
-      return `<button onclick="restartOAuth('${service.name}')" class="btn btn-primary">🔄 Start OAuth</button>`;
+      return `<button onclick="restartOAuth('${escapeHtml(service.name)}')" class="btn btn-primary">🔄 Start OAuth</button>`;
   }
 }
 
@@ -404,7 +427,7 @@ function getAlertHtml(req: Request): string {
   }
   if (req.query.error) {
     const error = req.query.error;
-    return `<div class="alert alert-error">❌ OAuth error: ${error}</div>`;
+    return `<div class="alert alert-error">❌ OAuth error: ${escapeHtml(String(error))}</div>`;
   }
   return '';
 }
