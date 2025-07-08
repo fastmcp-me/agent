@@ -9,7 +9,7 @@ import type {
   OAuthTokenRevocationRequest,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { SessionManager } from './sessionManager.js';
+import { ServerSessionManager } from './sessionManager.js';
 import { ServerConfigManager } from '../core/server/serverConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
 
@@ -17,9 +17,9 @@ import { AUTH_CONFIG } from '../constants.js';
  * File-based OAuth clients store implementation using AUTH_CONFIG settings
  */
 class FileBasedClientsStore implements OAuthRegisteredClientsStore {
-  private sessionManager: SessionManager;
+  private sessionManager: ServerSessionManager;
 
-  constructor(sessionManager: SessionManager) {
+  constructor(sessionManager: ServerSessionManager) {
     this.sessionManager = sessionManager;
   }
 
@@ -86,12 +86,12 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
  * while maintaining compatibility with the existing session storage system.
  */
 export class SDKOAuthServerProvider implements OAuthServerProvider {
-  private sessionManager: SessionManager;
+  private sessionManager: ServerSessionManager;
   private configManager: ServerConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
 
   constructor(sessionStoragePath?: string) {
-    this.sessionManager = new SessionManager(sessionStoragePath);
+    this.sessionManager = new ServerSessionManager(sessionStoragePath);
     this.configManager = ServerConfigManager.getInstance();
     this._clientsStore = new FileBasedClientsStore(this.sessionManager);
   }

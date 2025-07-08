@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { SessionManager } from './sessionManager.js';
+import { ServerSessionManager } from './sessionManager.js';
 
 // Mock fs module
 vi.mock('fs');
 vi.mock('path');
 
-describe('SessionManager', () => {
-  let sessionManager: SessionManager;
+describe('ServerSessionManager', () => {
+  let sessionManager: ServerSessionManager;
   const mockStoragePath = '/tmp/test-sessions';
 
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe('SessionManager', () => {
     // Mock path.resolve
     vi.mocked(path.resolve).mockImplementation((...args) => args.join('/'));
 
-    sessionManager = new SessionManager(mockStoragePath);
+    sessionManager = new ServerSessionManager(mockStoragePath);
   });
 
   afterEach(() => {

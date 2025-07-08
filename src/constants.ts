@@ -88,8 +88,6 @@ export const AUTH_CONFIG = {
       DEFAULT_TOKEN_EXPIRY_SECONDS: 3600, // 1 hour
       DEFAULT_CALLBACK_PATH: '/oauth/callback',
       DEFAULT_SCOPES: [],
-      PORT_RANGE_START: 3000,
-      PORT_RANGE_END: 3010,
     },
     PREFIXES: {
       CLIENT: 'cli_',

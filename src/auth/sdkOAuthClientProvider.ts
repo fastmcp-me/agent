@@ -6,7 +6,7 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { SessionManager } from './sessionManager.js';
+import { ServerSessionManager } from './sessionManager.js';
 import { AUTH_CONFIG } from '../constants.js';
 
 /**
@@ -32,7 +32,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   private _tokens?: OAuthTokens;
   private _codeVerifier?: string;
   private _state?: string;
-  private sessionManager: SessionManager;
+  private sessionManager: ServerSessionManager;
   private serverName: string;
   private config: OAuthClientConfig;
   private _authorizationUrl?: string;
@@ -40,7 +40,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   constructor(serverName: string, config: OAuthClientConfig, sessionStoragePath?: string) {
     this.serverName = serverName;
     this.config = config;
-    this.sessionManager = new SessionManager(sessionStoragePath);
+    this.sessionManager = new ServerSessionManager(sessionStoragePath);
 
     // Set up client metadata for registration with better defaults
     this._clientMetadata = {

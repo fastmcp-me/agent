@@ -3,44 +3,7 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import logger from '../logger/logger.js';
 import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
-
-/**
- * Represents session data stored for access tokens.
- *
- * Contains all necessary information to validate and manage user sessions
- * including client identification, resource access, and expiration details.
- */
-export interface SessionData {
-  /** The client ID that owns this session */
-  clientId: string;
-  /** The resource this session has access to */
-  resource: string;
-  /** Unix timestamp when this session expires */
-  expires: number;
-  /** Unix timestamp when this session was created */
-  createdAt: number;
-  /** Optional custom data for the session */
-  data?: string;
-}
-
-/**
- * Represents authorization code data for OAuth 2.1 flow.
- *
- * Contains information about authorization codes used in the OAuth
- * authorization code grant flow, including client and redirect details.
- */
-export interface AuthCodeData {
-  /** The client ID that requested this authorization code */
-  clientId: string;
-  /** The redirect URI where the code should be used */
-  redirectUri: string;
-  /** The resource this code grants access to */
-  resource: string;
-  /** Unix timestamp when this code expires */
-  expires: number;
-  /** Unix timestamp when this code was created */
-  createdAt: number;
-}
+import { SessionData, AuthCodeData } from './sessionTypes.js';
 
 /**
  * SessionManager handles file-based session storage with automatic cleanup.
@@ -62,7 +25,7 @@ export interface AuthCodeData {
  * const session = sessionManager.getSession(sessionId);
  * ```
  */
-export class SessionManager {
+export class ServerSessionManager {
   private sessionStoragePath: string;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -526,5 +489,31 @@ export class SessionManager {
       logger.error(`Failed to create data session: ${error}`);
       throw error;
     }
+  }
+}
+
+/**
+ * ClientSessionManager provides static methods for client-side ID validation.
+ */
+export class ClientSessionManager {
+  /**
+   * Validates client-side OAuth IDs (client, tokens, verifier, state).
+   * @param id - The client-side ID to validate
+   * @returns true if valid, false otherwise
+   */
+  static isValidClientId(id: string): boolean {
+    if (!id || id.length < 8) return false;
+    const clientPrefixes = [
+      AUTH_CONFIG.CLIENT.PREFIXES.CLIENT,
+      AUTH_CONFIG.CLIENT.PREFIXES.TOKENS,
+      AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER,
+      AUTH_CONFIG.CLIENT.PREFIXES.STATE,
+    ];
+    const hasClientPrefix = clientPrefixes.some((prefix) => id.startsWith(prefix));
+    if (hasClientPrefix) {
+      const contentPart = id.substring(4); // All client prefixes are 4 characters
+      return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
+    }
+    return false;
   }
 }
