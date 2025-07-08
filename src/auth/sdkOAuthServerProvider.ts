@@ -9,7 +9,7 @@ import type {
   OAuthTokenRevocationRequest,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { ServerSessionManager } from './sessionManager.js';
+import { ServerSessionManager } from './serverSessionManager.js';
 import { ServerConfigManager } from '../core/server/serverConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
 

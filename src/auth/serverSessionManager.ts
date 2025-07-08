@@ -3,7 +3,7 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import logger from '../logger/logger.js';
 import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
-import { SessionData, AuthCodeData, ClientSessionData } from './sessionTypes.js';
+import { SessionData, AuthCodeData } from './sessionTypes.js';
 
 /**
  * SessionManager handles file-based session storage with automatic cleanup.
@@ -27,7 +27,6 @@ import { SessionData, AuthCodeData, ClientSessionData } from './sessionTypes.js'
  */
 export class ServerSessionManager {
   private sessionStoragePath: string;
-  private clientSessionStoragePath: string;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   /**
@@ -41,9 +40,7 @@ export class ServerSessionManager {
   constructor(sessionStoragePath?: string) {
     this.sessionStoragePath =
       sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SERVER.SESSION.STORAGE_DIR);
-    this.clientSessionStoragePath = path.join(getGlobalConfigDir(), 'clientSessions');
     this.ensureSessionDirectory();
-    this.ensureClientSessionDirectory();
     this.startCleanupInterval();
   }
 
@@ -54,15 +51,6 @@ export class ServerSessionManager {
    */
   public getSessionStoragePath(): string {
     return this.sessionStoragePath;
-  }
-
-  /**
-   * Gets the client session storage path.
-   *
-   * @returns The absolute path to the client session storage directory
-   */
-  public getClientSessionStoragePath(): string {
-    return this.clientSessionStoragePath;
   }
 
   /**
@@ -81,26 +69,6 @@ export class ServerSessionManager {
       }
     } catch (error) {
       logger.error(`Failed to create session directory: ${error}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Ensures the client session storage directory exists.
-   *
-   * Creates the directory structure if it doesn't exist, including
-   * parent directories as needed.
-   *
-   * @throws Error if directory creation fails
-   */
-  private ensureClientSessionDirectory(): void {
-    try {
-      if (!fs.existsSync(this.clientSessionStoragePath)) {
-        fs.mkdirSync(this.clientSessionStoragePath, { recursive: true });
-        logger.info(`Created client session storage directory: ${this.clientSessionStoragePath}`);
-      }
-    } catch (error) {
-      logger.error(`Failed to create client session directory: ${error}`);
       throw error;
     }
   }
@@ -294,101 +262,6 @@ export class ServerSessionManager {
   }
 
   /**
-   * Gets the file path for a client session.
-   *
-   * @param serverName - The server name for the client session
-   * @returns Full file path for the client session file
-   */
-  private getClientSessionFilePath(serverName: string): string {
-    // Validate server name
-    if (!serverName || !/^[a-zA-Z0-9_-]+$/.test(serverName)) {
-      throw new Error('Invalid server name format');
-    }
-
-    const fileName = `oauth_${serverName}.json`;
-    const filePath = path.resolve(this.clientSessionStoragePath, fileName);
-
-    // Additional security check: ensure resolved path is within client session storage
-    const normalizedStoragePath = path.resolve(this.clientSessionStoragePath);
-    const normalizedFilePath = path.resolve(filePath);
-
-    if (!normalizedFilePath.startsWith(normalizedStoragePath + path.sep)) {
-      throw new Error('Invalid client session file path: outside storage directory');
-    }
-
-    return filePath;
-  }
-
-  /**
-   * Creates or updates a client session.
-   *
-   * @param serverName - The server name for the client session
-   * @param clientSessionData - The client session data to store
-   * @returns The server name
-   * @throws Error if client session creation fails
-   */
-  public createClientSession(serverName: string, clientSessionData: ClientSessionData): string {
-    try {
-      const filePath = this.getClientSessionFilePath(serverName);
-      fs.writeFileSync(filePath, JSON.stringify(clientSessionData, null, 2));
-      logger.info(`Created/updated client session for server: ${serverName}`);
-      return serverName;
-    } catch (error) {
-      logger.error(`Failed to create client session for ${serverName}: ${error}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Retrieves client session data by server name.
-   *
-   * @param serverName - The server name to retrieve client session for
-   * @returns Client session data if valid and not expired, null otherwise
-   */
-  public getClientSession(serverName: string): ClientSessionData | null {
-    try {
-      const filePath = this.getClientSessionFilePath(serverName);
-      if (!fs.existsSync(filePath)) {
-        return null;
-      }
-
-      const data = fs.readFileSync(filePath, 'utf8');
-      const clientSessionData: ClientSessionData = JSON.parse(data);
-
-      if (clientSessionData.expires < Date.now()) {
-        this.deleteClientSession(serverName);
-        return null;
-      }
-
-      return clientSessionData;
-    } catch (error) {
-      logger.error(`Failed to read client session for ${serverName}: ${error}`);
-      return null;
-    }
-  }
-
-  /**
-   * Deletes a client session by server name.
-   *
-   * @param serverName - The server name to delete client session for
-   * @returns True if client session was deleted, false if it didn't exist
-   */
-  public deleteClientSession(serverName: string): boolean {
-    try {
-      const filePath = this.getClientSessionFilePath(serverName);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        logger.info(`Deleted client session for server: ${serverName}`);
-        return true;
-      }
-      return false;
-    } catch (error) {
-      logger.error(`Failed to delete client session for ${serverName}: ${error}`);
-      return false;
-    }
-  }
-
-  /**
    * Creates a new authorization code for OAuth 2.1 flow.
    *
    * Generates a unique authorization code with prefix, stores the code data
@@ -509,7 +382,6 @@ export class ServerSessionManager {
    */
   private cleanupExpiredSessions(): void {
     this.cleanupExpiredServerSessions();
-    this.cleanupExpiredClientSessions();
   }
 
   /**
@@ -549,50 +421,6 @@ export class ServerSessionManager {
       }
     } catch (error) {
       logger.error(`Failed to cleanup expired server sessions: ${error}`);
-    }
-  }
-
-  /**
-   * Cleans up expired client sessions.
-   */
-  private cleanupExpiredClientSessions(): void {
-    try {
-      if (!fs.existsSync(this.clientSessionStoragePath)) {
-        return;
-      }
-
-      const files = fs.readdirSync(this.clientSessionStoragePath);
-      let cleanedCount = 0;
-
-      for (const file of files) {
-        if (file.endsWith('.json') && file.startsWith('oauth_')) {
-          const filePath = path.join(this.clientSessionStoragePath, file);
-          try {
-            const data = fs.readFileSync(filePath, 'utf8');
-            const clientSessionData = JSON.parse(data);
-
-            if (clientSessionData.expires < Date.now()) {
-              fs.unlinkSync(filePath);
-              cleanedCount++;
-            }
-          } catch (error) {
-            logger.warn(`Failed to process client session file ${file}: ${error}`);
-            // Remove corrupted files
-            try {
-              fs.unlinkSync(filePath);
-              cleanedCount++;
-            } catch (unlinkError) {
-              logger.error(`Failed to remove corrupted client session file ${file}: ${unlinkError}`);
-            }
-          }
-        }
-      }
-
-      if (cleanedCount > 0) {
-        logger.info(`Cleaned up ${cleanedCount} expired client sessions`);
-      }
-    } catch (error) {
-      logger.error(`Failed to cleanup expired client sessions: ${error}`);
     }
   }
 
@@ -668,31 +496,5 @@ export class ServerSessionManager {
       logger.error(`Failed to create data session: ${error}`);
       throw error;
     }
-  }
-}
-
-/**
- * ClientSessionManager provides static methods for client-side ID validation.
- */
-export class ClientSessionManager {
-  /**
-   * Validates client-side OAuth IDs (client, tokens, verifier, state).
-   * @param id - The client-side ID to validate
-   * @returns true if valid, false otherwise
-   */
-  static isValidClientId(id: string): boolean {
-    if (!id || id.length < 8) return false;
-    const clientPrefixes = [
-      AUTH_CONFIG.CLIENT.PREFIXES.CLIENT,
-      AUTH_CONFIG.CLIENT.PREFIXES.TOKENS,
-      AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER,
-      AUTH_CONFIG.CLIENT.PREFIXES.STATE,
-    ];
-    const hasClientPrefix = clientPrefixes.some((prefix) => id.startsWith(prefix));
-    if (hasClientPrefix) {
-      const contentPart = id.substring(4); // All client prefixes are 4 characters
-      return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
-    }
-    return false;
   }
 }

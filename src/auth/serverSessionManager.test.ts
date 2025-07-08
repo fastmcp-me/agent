@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { ServerSessionManager } from './sessionManager.js';
+import { ServerSessionManager } from './serverSessionManager.js';
 
 // Mock fs module
 vi.mock('fs');
