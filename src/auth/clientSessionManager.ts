@@ -3,6 +3,7 @@ import path from 'path';
 import logger from '../logger/logger.js';
 import { getGlobalConfigDir } from '../constants.js';
 import { ClientSessionData } from './sessionTypes.js';
+import { sanitizeServerName } from '../utils/sanitization.js';
 
 /**
  * ClientSessionManager handles file-based client session storage with automatic cleanup.
@@ -71,39 +72,13 @@ export class ClientSessionManager {
   }
 
   /**
-   * Sanitizes server name for use as filename by replacing special characters.
-   *
-   * @param serverName - The server name to sanitize
-   * @returns Sanitized server name safe for use as filename
-   */
-  private sanitizeServerName(serverName: string): string {
-    if (!serverName) {
-      return 'default';
-    }
-
-    // Replace special characters with safe equivalents
-    let sanitized = serverName
-      .replace(/[^a-zA-Z0-9_-]/g, '_') // Replace any non-alphanumeric, underscore, or hyphen with underscore
-      .replace(/_{2,}/g, '_') // Replace multiple consecutive underscores with single underscore
-      .replace(/^_+|_+$/g, '') // Remove leading/trailing underscores
-      .substring(0, 100); // Limit length to prevent filesystem issues
-
-    // If result is empty or only underscores, use default
-    if (!sanitized || sanitized.length === 0) {
-      return 'default';
-    }
-
-    return sanitized;
-  }
-
-  /**
    * Gets the file path for a client session.
    *
    * @param serverName - The server name for the client session
    * @returns Full file path for the client session file
    */
   private getClientSessionFilePath(serverName: string): string {
-    const sanitizedServerName = this.sanitizeServerName(serverName);
+    const sanitizedServerName = sanitizeServerName(serverName);
     const fileName = `oauth_${sanitizedServerName}.json`;
     const filePath = path.resolve(this.clientSessionStoragePath, fileName);
 

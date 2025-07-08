@@ -6,6 +6,12 @@ import { ClientStatus } from '../../../core/types/index.js';
 import { OAuthRequiredError } from '../../../core/client/clientManager.js';
 import createClient from '../../../core/client/clientFactory.js';
 import { RATE_LIMIT_CONFIG } from '../../../constants.js';
+import {
+  escapeHtml,
+  sanitizeUrlParam,
+  sanitizeErrorMessage,
+  sanitizeServerNameForContext,
+} from '../../../utils/sanitization.js';
 
 const router = Router();
 
@@ -17,18 +23,6 @@ const oauthLimiter = rateLimit({
   legacyHeaders: false,
   message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
 });
-
-/**
- * HTML escape function to prevent XSS attacks
- */
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 /**
  * Check if a server requires OAuth based on runtime behavior
@@ -274,10 +268,10 @@ function generateOAuthDashboard(services: any[], req: Request): string {
 
       return `
       <tr>
-        <td>${escapeHtml(service.name)}</td>
+        <td>${sanitizeServerNameForContext(service.name, 'html')}</td>
         <td>${statusIcon} ${statusText}</td>
         <td>${service.lastConnected ? escapeHtml(new Date(service.lastConnected).toLocaleString()) : 'Never'}</td>
-        <td>${service.lastError ? escapeHtml(service.lastError) : '-'}</td>
+        <td>${service.lastError ? sanitizeErrorMessage(service.lastError) : '-'}</td>
         <td>${actionButton}</td>
       </tr>
     `;
@@ -412,12 +406,12 @@ function getActionButton(service: any): string {
         return '<span class="status-connected">✓ Connected</span>';
       }
     case ClientStatus.AwaitingOAuth:
-      return `<a href="/oauth/authorize/${encodeURIComponent(service.name)}" class="btn btn-warning">🔐 Authorize</a>`;
+      return `<a href="/oauth/authorize/${sanitizeUrlParam(service.name)}" class="btn btn-warning">🔐 Authorize</a>`;
     case ClientStatus.Error:
     case ClientStatus.Disconnected:
-      return `<button onclick="restartOAuth('${escapeHtml(service.name)}')" class="btn btn-primary">🔄 Restart OAuth</button>`;
+      return `<button onclick="restartOAuth('${sanitizeServerNameForContext(service.name, 'html')}')" class="btn btn-primary">🔄 Restart OAuth</button>`;
     default:
-      return `<button onclick="restartOAuth('${escapeHtml(service.name)}')" class="btn btn-primary">🔄 Start OAuth</button>`;
+      return `<button onclick="restartOAuth('${sanitizeServerNameForContext(service.name, 'html')}')" class="btn btn-primary">🔄 Start OAuth</button>`;
   }
 }
 
@@ -427,7 +421,7 @@ function getAlertHtml(req: Request): string {
   }
   if (req.query.error) {
     const error = req.query.error;
-    return `<div class="alert alert-error">❌ OAuth error: ${escapeHtml(String(error))}</div>`;
+    return `<div class="alert alert-error">❌ OAuth error: ${sanitizeErrorMessage(String(error))}</div>`;
   }
   return '';
 }
