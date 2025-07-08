@@ -3,7 +3,7 @@ import { ConfigChangeEvent, ConfigManager } from '../config/configManager.js';
 import { MCPServerParams, ServerInfo, EnhancedTransport } from '../core/types/index.js';
 import { createClients } from '../core/client/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
-import { createTransports } from '../transport/config.js';
+import { createTransports } from '../transport/transportFactory.js';
 import { ServerManager } from '../core/server/serverManager.js';
 
 /**

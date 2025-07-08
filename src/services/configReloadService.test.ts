@@ -2,7 +2,7 @@ import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 import { ConfigReloadService } from './configReloadService.js';
 import { ConfigManager, ConfigChangeEvent } from '../config/configManager.js';
 import { createClients } from '../core/client/clientManager.js';
-import { createTransports } from '../transport/config.js';
+import { createTransports } from '../transport/transportFactory.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { ServerManager } from '../core/server/serverManager.js';
 import logger from '../logger/logger.js';
@@ -21,7 +21,7 @@ vi.mock('../core/client/clientManager.js', () => ({
   createClients: vi.fn(),
 }));
 
-vi.mock('../transport/config.js', () => ({
+vi.mock('../transport/transportFactory.js', () => ({
   createTransports: vi.fn(),
 }));
 
