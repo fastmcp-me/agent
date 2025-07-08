@@ -6,7 +6,7 @@ import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middlew
 import logger from '../../logger/logger.js';
 import errorHandler from './errorHandler.js';
 import { ServerManager } from '../../core/server/serverManager.js';
-import { SDKOAuthProvider } from '../../auth/sdkOAuthProvider.js';
+import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import oauthRoutes from './routes/oauthRoutes.js';
@@ -28,7 +28,7 @@ import { ServerConfigManager } from '../../core/server/serverConfig.js';
 export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
-  private oauthProvider: SDKOAuthProvider;
+  private oauthProvider: SDKOAuthServerProvider;
   private configManager: ServerConfigManager;
 
   /**
@@ -46,7 +46,7 @@ export class ExpressServer {
 
     // Initialize OAuth provider with custom session storage path if configured
     const sessionStoragePath = this.configManager.getSessionStoragePath();
-    this.oauthProvider = new SDKOAuthProvider(sessionStoragePath);
+    this.oauthProvider = new SDKOAuthServerProvider(sessionStoragePath);
 
     this.setupMiddleware();
     this.setupRoutes();

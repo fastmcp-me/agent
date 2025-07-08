@@ -2,18 +2,18 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpdir } from 'os';
 import path from 'path';
 import fs from 'fs';
-import { SDKOAuthProvider } from './sdkOAuthProvider.js';
+import { SDKOAuthServerProvider } from './sdkOAuthServerProvider.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
 
 describe('SDKOAuthProvider', () => {
-  let provider: SDKOAuthProvider;
+  let provider: SDKOAuthServerProvider;
   let tempDir: string;
 
   beforeEach(() => {
     // Create a temporary directory for testing
     tempDir = path.join(tmpdir(), `test-oauth-${Date.now()}`);
     fs.mkdirSync(tempDir, { recursive: true });
-    provider = new SDKOAuthProvider(tempDir);
+    provider = new SDKOAuthServerProvider(tempDir);
   });
 
   afterEach(() => {

@@ -85,7 +85,7 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
  * This provider implements OAuth 2.1 server functionality using the MCP SDK's interfaces
  * while maintaining compatibility with the existing session storage system.
  */
-export class SDKOAuthProvider implements OAuthServerProvider {
+export class SDKOAuthServerProvider implements OAuthServerProvider {
   private sessionManager: SessionManager;
   private configManager: ServerConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
