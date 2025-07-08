@@ -29,7 +29,7 @@ export interface AuthProviderTransport extends EnhancedTransport {
  */
 export interface ClientInfo {
   readonly name: string;
-  readonly transport: EnhancedTransport;
+  readonly transport: AuthProviderTransport;
   client: Client;
   lastError?: Error;
   lastConnected?: Date;

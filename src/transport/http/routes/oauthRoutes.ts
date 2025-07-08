@@ -140,8 +140,9 @@ router.get('/callback/:serverName', async (req: Request, res: Response) => {
     // Complete the OAuth flow with the authorization code
     await clientInfo.transport.finishAuth(String(code));
 
-    // Trigger reconnection attempt for this specific client
-    // await attemptReconnection(serverName);
+    clientInfo.status = ClientStatus.Connected;
+    clientInfo.lastConnected = new Date();
+    clientInfo.lastError = undefined;
 
     // Redirect back to dashboard with success
     res.redirect('/oauth?success=1');
@@ -202,7 +203,7 @@ async function initiateOAuth(serverName: string): Promise<void> {
 
       // Try to get authorization URL from OAuth provider
       try {
-        const oauthProvider = (clientInfo.transport as any).authProvider;
+        const oauthProvider = clientInfo.transport.oauthProvider;
         if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
           clientInfo.authorizationUrl = oauthProvider.getAuthorizationUrl();
         }
