@@ -5,6 +5,7 @@ import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../transport/http/middleware/loggingMiddleware.js';
 import { Clients, ServerInfo, ServerInfoExtra } from '../types/index.js';
+import type { ClientInfo } from '../types/client.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -184,6 +185,17 @@ export class ServerManager {
 
   public getClients(): Clients {
     return this.clients;
+  }
+
+  /**
+   * Safely get a client by name. Returns undefined if not found or not an own property.
+   * Encapsulates access to prevent prototype pollution and accidental key collisions.
+   */
+  public getClient(serverName: string): ClientInfo | undefined {
+    if (Object.prototype.hasOwnProperty.call(this.clients, serverName)) {
+      return this.clients[serverName];
+    }
+    return undefined;
   }
 
   public getActiveTransportsCount(): number {

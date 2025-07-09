@@ -88,9 +88,8 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
   try {
     const { serverName } = req.params;
     const serverManager = ServerManager.current;
-    const clients = serverManager.getClients();
-    const clientInfo = clients[serverName];
 
+    const clientInfo = serverManager.getClient(serverName);
     if (!clientInfo) {
       res.status(404).json({ error: 'Service not found' });
       return;
@@ -146,9 +145,8 @@ router.get('/callback/:serverName', async (req: Request, res: Response) => {
     }
 
     const serverManager = ServerManager.current;
-    const clients = serverManager.getClients();
-    const clientInfo = clients[serverName];
 
+    const clientInfo = serverManager.getClient(serverName);
     if (!clientInfo) {
       logger.error(`Client ${serverName} not found in OAuth callback`);
       return res.redirect(`/oauth?error=client_not_found`);
@@ -182,9 +180,8 @@ const restartHandler: RequestHandler = async (req: Request, res: Response) => {
   const { serverName } = req.params;
   try {
     const serverManager = ServerManager.current;
-    const clients = serverManager.getClients();
-    const clientInfo = clients[serverName];
 
+    const clientInfo = serverManager.getClient(serverName);
     if (!clientInfo) {
       res.status(404).json({ error: 'Service not found' });
       return;
@@ -207,9 +204,8 @@ router.post('/restart/:serverName', restartHandler);
  */
 async function initiateOAuth(serverName: string): Promise<void> {
   const serverManager = ServerManager.current;
-  const clients = serverManager.getClients();
-  const clientInfo = clients[serverName];
 
+  const clientInfo = serverManager.getClient(serverName);
   if (!clientInfo) {
     throw new Error(`Service ${serverName} not found`);
   }
@@ -246,9 +242,8 @@ async function initiateOAuth(serverName: string): Promise<void> {
  */
 async function restartOAuthFlow(serverName: string): Promise<void> {
   const serverManager = ServerManager.current;
-  const clients = serverManager.getClients();
-  const clientInfo = clients[serverName];
 
+  const clientInfo = serverManager.getClient(serverName);
   if (!clientInfo) {
     throw new Error(`Service ${serverName} not found`);
   }
