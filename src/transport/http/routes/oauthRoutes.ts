@@ -6,6 +6,7 @@ import { ClientStatus } from '../../../core/types/index.js';
 import { OAuthRequiredError } from '../../../core/client/clientManager.js';
 import createClient from '../../../core/client/clientFactory.js';
 import { RATE_LIMIT_CONFIG } from '../../../constants.js';
+import { ServerConfigManager } from '../../../core/server/serverConfig.js';
 import {
   escapeHtml,
   sanitizeUrlParam,
@@ -16,13 +17,16 @@ import {
 const router = Router();
 
 // Rate limiter for OAuth endpoints
-const oauthLimiter = rateLimit({
-  windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
-  max: RATE_LIMIT_CONFIG.OAUTH.MAX,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
-});
+const createOAuthLimiter = () => {
+  const serverConfig = ServerConfigManager.getInstance();
+  return rateLimit({
+    windowMs: serverConfig.getRateLimitWindowMs(),
+    max: serverConfig.getRateLimitMax(),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+  });
+};
 
 /**
  * Check if a server requires OAuth based on runtime behavior
@@ -52,7 +56,7 @@ function requiresOAuth(service: any): boolean {
 /**
  * OAuth Dashboard - Shows all services and their OAuth status
  */
-router.get('/', oauthLimiter, async (req: Request, res: Response) => {
+router.get('/', createOAuthLimiter(), async (req: Request, res: Response) => {
   try {
     const serverManager = ServerManager.current;
     const clients = serverManager.getClients();
@@ -116,7 +120,7 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
   }
 };
 
-router.get('/authorize/:serverName', oauthLimiter, authorizeHandler);
+router.get('/authorize/:serverName', createOAuthLimiter(), authorizeHandler);
 
 function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: string) => Promise<void> } {
   return typeof transport === 'object' && transport !== null && typeof (transport as any).finishAuth === 'function';
@@ -125,7 +129,7 @@ function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: st
 /**
  * Handle OAuth callback and trigger reconnection
  */
-router.get('/callback/:serverName', oauthLimiter, async (req: Request, res: Response) => {
+router.get('/callback/:serverName', createOAuthLimiter(), async (req: Request, res: Response) => {
   const { serverName } = req.params;
   const { code, error } = req.query;
   try {
@@ -194,7 +198,7 @@ const restartHandler: RequestHandler = async (req: Request, res: Response) => {
   }
 };
 
-router.post('/restart/:serverName', restartHandler);
+router.post('/restart/:serverName', createOAuthLimiter(), restartHandler);
 
 /**
  * Initiate OAuth flow for a service

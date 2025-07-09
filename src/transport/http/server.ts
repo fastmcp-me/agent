@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import { Options as RateLimitOptions } from 'express-rate-limit';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../logger/logger.js';
@@ -11,6 +12,7 @@ import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import oauthRoutes from './routes/oauthRoutes.js';
 import { ServerConfigManager } from '../../core/server/serverConfig.js';
+import { RATE_LIMIT_CONFIG } from '../../constants.js';
 
 /**
  * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.
@@ -83,9 +85,30 @@ export class ExpressServer {
     // Setup OAuth routes using SDK's mcpAuthRouter
     const { host, port } = this.configManager.getConfig();
     const issuerUrl = new URL(`http://${host}:${port}`);
+
+    const rateLimitConfig: Partial<RateLimitOptions> = {
+      windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
+      max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+      message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+      standardHeaders: true,
+      legacyHeaders: false,
+    };
+
     const authRouter = mcpAuthRouter({
       provider: this.oauthProvider,
       issuerUrl,
+      authorizationOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      tokenOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      revocationOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      clientRegistrationOptions: {
+        rateLimit: rateLimitConfig,
+      },
     });
     this.app.use(authRouter);
 

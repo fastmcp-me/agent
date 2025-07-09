@@ -1,4 +1,4 @@
-import { AUTH_CONFIG, HOST, PORT } from '../../constants.js';
+import { AUTH_CONFIG, HOST, PORT, RATE_LIMIT_CONFIG } from '../../constants.js';
 
 /**
  * Configuration interface for server-specific settings.
@@ -15,6 +15,10 @@ export interface ServerConfig {
     sessionStoragePath?: string;
     oauthCodeTtlMs: number;
     oauthTokenTtlMs: number;
+  };
+  rateLimit: {
+    windowMs: number;
+    max: number;
   };
 }
 
@@ -54,6 +58,10 @@ export class ServerConfigManager {
         oauthCodeTtlMs: AUTH_CONFIG.SERVER.OAUTH.CODE_TTL_MS,
         oauthTokenTtlMs: AUTH_CONFIG.SERVER.OAUTH.TOKEN_TTL_MS,
       },
+      rateLimit: {
+        windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
+        max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+      },
     };
   }
 
@@ -84,6 +92,9 @@ export class ServerConfigManager {
     this.config = { ...this.config, ...updates };
     if (updates.auth) {
       this.config.auth = { ...this.config.auth, ...updates.auth };
+    }
+    if (updates.rateLimit) {
+      this.config.rateLimit = { ...this.config.rateLimit, ...updates.rateLimit };
     }
   }
 
@@ -142,5 +153,23 @@ export class ServerConfigManager {
    */
   public getOAuthTokenTtlMs(): number {
     return this.config.auth.oauthTokenTtlMs;
+  }
+
+  /**
+   * Gets the rate limit window in milliseconds.
+   *
+   * @returns Rate limit window in milliseconds
+   */
+  public getRateLimitWindowMs(): number {
+    return this.config.rateLimit.windowMs;
+  }
+
+  /**
+   * Gets the maximum number of requests per rate limit window.
+   *
+   * @returns Maximum requests per window
+   */
+  public getRateLimitMax(): number {
+    return this.config.rateLimit.max;
   }
 }

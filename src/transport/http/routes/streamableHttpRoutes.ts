@@ -1,11 +1,25 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { randomUUID } from 'node:crypto';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
-import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
+import { STREAMABLE_HTTP_ENDPOINT, RATE_LIMIT_CONFIG } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
+import { ServerConfigManager } from '../../../core/server/serverConfig.js';
 import tagsExtractor from '../../../utils/tagsExtractor.js';
+
+// Rate limiter for Streamable HTTP endpoints
+const createStreamableHttpLimiter = () => {
+  const serverConfig = ServerConfigManager.getInstance();
+  return rateLimit({
+    windowMs: serverConfig.getRateLimitWindowMs(),
+    max: serverConfig.getRateLimitMax(),
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+  });
+};
 
 export function setupStreamableHttpRoutes(
   app: express.Application,
@@ -14,6 +28,7 @@ export function setupStreamableHttpRoutes(
 ): void {
   app.post(
     STREAMABLE_HTTP_ENDPOINT,
+    createStreamableHttpLimiter(),
     authMiddleware,
     tagsExtractor,
     async (req: express.Request, res: express.Response) => {
@@ -73,67 +88,77 @@ export function setupStreamableHttpRoutes(
     },
   );
 
-  app.get(STREAMABLE_HTTP_ENDPOINT, authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      logger.info('[GET] streamable-http', { query: req.query, headers: req.headers });
+  app.get(
+    STREAMABLE_HTTP_ENDPOINT,
+    createStreamableHttpLimiter(),
+    authMiddleware,
+    async (req: express.Request, res: express.Response) => {
+      try {
+        logger.info('[GET] streamable-http', { query: req.query, headers: req.headers });
 
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      if (!sessionId) {
-        res.status(400).json({
-          error: {
-            code: ErrorCode.InvalidParams,
-            message: 'Invalid params: sessionId is required',
-          },
-        });
-        return;
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId) {
+          res.status(400).json({
+            error: {
+              code: ErrorCode.InvalidParams,
+              message: 'Invalid params: sessionId is required',
+            },
+          });
+          return;
+        }
+
+        const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+        if (!transport) {
+          res.status(404).json({
+            error: {
+              code: ErrorCode.InvalidParams,
+              message: 'No active streamable HTTP session found for the provided sessionId',
+            },
+          });
+          return;
+        }
+        await transport.handleRequest(req, res, req.body);
+      } catch (error) {
+        logger.error('Streamable HTTP error:', error);
+        res.status(500).end();
       }
+    },
+  );
 
-      const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
-      if (!transport) {
-        res.status(404).json({
-          error: {
-            code: ErrorCode.InvalidParams,
-            message: 'No active streamable HTTP session found for the provided sessionId',
-          },
-        });
-        return;
+  app.delete(
+    STREAMABLE_HTTP_ENDPOINT,
+    createStreamableHttpLimiter(),
+    authMiddleware,
+    async (req: express.Request, res: express.Response) => {
+      try {
+        logger.info('[DELETE] streamable-http', { query: req.query, headers: req.headers });
+
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId) {
+          res.status(400).json({
+            error: {
+              code: ErrorCode.InvalidParams,
+              message: 'Invalid params: sessionId is required',
+            },
+          });
+          return;
+        }
+
+        const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
+        if (!transport) {
+          res.status(404).json({
+            error: {
+              code: ErrorCode.InvalidParams,
+              message: 'No active streamable HTTP session found for the provided sessionId',
+            },
+          });
+          return;
+        }
+        await transport.handleRequest(req, res);
+      } catch (error) {
+        logger.error('Streamable HTTP error:', error);
+        res.status(500).end();
       }
-      await transport.handleRequest(req, res, req.body);
-    } catch (error) {
-      logger.error('Streamable HTTP error:', error);
-      res.status(500).end();
-    }
-  });
-
-  app.delete(STREAMABLE_HTTP_ENDPOINT, authMiddleware, async (req: express.Request, res: express.Response) => {
-    try {
-      logger.info('[DELETE] streamable-http', { query: req.query, headers: req.headers });
-
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      if (!sessionId) {
-        res.status(400).json({
-          error: {
-            code: ErrorCode.InvalidParams,
-            message: 'Invalid params: sessionId is required',
-          },
-        });
-        return;
-      }
-
-      const transport = serverManager.getTransport(sessionId) as StreamableHTTPServerTransport;
-      if (!transport) {
-        res.status(404).json({
-          error: {
-            code: ErrorCode.InvalidParams,
-            message: 'No active streamable HTTP session found for the provided sessionId',
-          },
-        });
-        return;
-      }
-      await transport.handleRequest(req, res);
-    } catch (error) {
-      logger.error('Streamable HTTP error:', error);
-      res.status(500).end();
-    }
-  });
+    },
+  );
 }
