@@ -28,6 +28,8 @@ const createOAuthLimiter = () => {
   });
 };
 
+router.use(createOAuthLimiter());
+
 /**
  * Check if a server requires OAuth based on runtime behavior
  * A server requires OAuth if it has ever thrown UnauthorizedError (indicated by authorizationUrl or oauthStartTime)
@@ -56,7 +58,7 @@ function requiresOAuth(service: any): boolean {
 /**
  * OAuth Dashboard - Shows all services and their OAuth status
  */
-router.get('/', createOAuthLimiter(), async (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
     const serverManager = ServerManager.current;
     const clients = serverManager.getClients();
@@ -120,7 +122,7 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
   }
 };
 
-router.get('/authorize/:serverName', createOAuthLimiter(), authorizeHandler);
+router.get('/authorize/:serverName', authorizeHandler);
 
 function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: string) => Promise<void> } {
   return typeof transport === 'object' && transport !== null && typeof (transport as any).finishAuth === 'function';
@@ -129,7 +131,7 @@ function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: st
 /**
  * Handle OAuth callback and trigger reconnection
  */
-router.get('/callback/:serverName', createOAuthLimiter(), async (req: Request, res: Response) => {
+router.get('/callback/:serverName', async (req: Request, res: Response) => {
   const { serverName } = req.params;
   const { code, error } = req.query;
   try {
@@ -198,7 +200,7 @@ const restartHandler: RequestHandler = async (req: Request, res: Response) => {
   }
 };
 
-router.post('/restart/:serverName', createOAuthLimiter(), restartHandler);
+router.post('/restart/:serverName', restartHandler);
 
 /**
  * Initiate OAuth flow for a service

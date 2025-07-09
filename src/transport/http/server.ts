@@ -112,17 +112,18 @@ export class ExpressServer {
     });
     this.app.use(authRouter);
 
-    // Create auth middleware using SDK's requireBearerAuth
-    const authMiddleware = this.configManager.isAuthEnabled()
-      ? requireBearerAuth({ verifier: this.oauthProvider })
-      : (req: express.Request, res: express.Response, next: express.NextFunction) => next();
-
     // Setup OAuth management routes (no auth required)
     this.app.use('/oauth', oauthRoutes);
 
     // Setup MCP transport routes with auth middleware
-    setupStreamableHttpRoutes(this.app, this.serverManager, authMiddleware);
-    setupSseRoutes(this.app, this.serverManager, authMiddleware);
+    const router = express.Router();
+    if (this.configManager.isAuthEnabled()) {
+      // Create auth middleware using SDK's requireBearerAuth
+      router.use(requireBearerAuth({ verifier: this.oauthProvider }));
+    }
+    setupStreamableHttpRoutes(router, this.serverManager);
+    setupSseRoutes(router, this.serverManager);
+    this.app.use(router);
 
     // Log authentication status
     if (this.configManager.isAuthEnabled()) {
