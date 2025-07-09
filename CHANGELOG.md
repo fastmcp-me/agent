@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-07-08
+
+### 🚀 Features
+- Add error handling for missing streamable HTTP sessions by @xizhibei
+- Implement ping handler for client health checks by @xizhibei
+- Add Vitest support and type checking script by @xizhibei
+- Refactor project structure and enhance authentication management by @xizhibei
+- Add .cursorindexingignore and update .gitignore for improved file management by @xizhibei
+- Update server info management and enhance initialization by @xizhibei
+- Add unit tests for capability management and conflict resolution by @xizhibei
+- Implement debounced configuration reload on file changes by @xizhibei
+- Add comprehensive tests for cursor parsing and encoding utilities by @xizhibei
+- Enhance connection handling and logging by @xizhibei
+- Enhance URI parsing with robust validation and error handling by @xizhibei
+- Enhance session and auth code validation with improved error handling by @xizhibei
+- Add glama.json configuration file for maintainers by @xizhibei
+
+### 🚜 Refactor
+- Preserve original notification structure while modifying parameters by @xizhibei
+
+### 🧪 Testing
+- Add vitest framework for client filtering tests by @xizhibei
+
+
 ## [0.11.0] - 2025-06-26
 
 ### 🚀 Features
@@ -262,6 +286,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.12.0]: https://github.com/1mcp-app/agent/compare/v0.11.0..v0.12.0
 [0.11.0]: https://github.com/1mcp-app/agent/compare/v0.10.3..v0.11.0
 [0.10.3]: https://github.com/1mcp-app/agent/compare/v0.10.2..v0.10.3
 [0.10.2]: https://github.com/1mcp-app/agent/compare/v0.10.1..v0.10.2
