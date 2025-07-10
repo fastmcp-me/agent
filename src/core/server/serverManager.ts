@@ -3,7 +3,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
-import { enhanceServerWithLogging } from '../../transport/http/middleware/loggingMiddleware.js';
+import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
 import { Clients, ServerInfo, ServerInfoExtra } from '../types/index.js';
 import type { ClientInfo } from '../types/client.js';
 

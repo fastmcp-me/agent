@@ -5,7 +5,7 @@ import { ServerManager } from './serverManager.js';
 import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
-import { enhanceServerWithLogging } from '../../transport/http/middleware/loggingMiddleware.js';
+import { enhanceServerWithLogging } from '../../logger/middleware/mcpLoggingEnhancer.js';
 import { Clients } from '../types/index.js';
 
 // Mock dependencies
@@ -41,7 +41,7 @@ vi.mock('../../capabilities/capabilityManager.js', () => ({
   setupCapabilities: vi.fn(),
 }));
 
-vi.mock('../../transport/http/middleware/loggingMiddleware.js', () => ({
+vi.mock('../../logger/middleware/mcpLoggingEnhancer.js', () => ({
   enhanceServerWithLogging: vi.fn(),
 }));
 

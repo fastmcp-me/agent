@@ -5,7 +5,7 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
 import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
-import tagsExtractor from '../../../utils/tagsExtractor.js';
+import tagsExtractor from '../middlewares/tagsExtractor.js';
 
 export function setupStreamableHttpRoutes(router: Router, serverManager: ServerManager): void {
   router.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {

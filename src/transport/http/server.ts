@@ -5,7 +5,7 @@ import { Options as RateLimitOptions } from 'express-rate-limit';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../logger/logger.js';
-import errorHandler from './errorHandler.js';
+import errorHandler from './middlewares/errorHandler.js';
 import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
