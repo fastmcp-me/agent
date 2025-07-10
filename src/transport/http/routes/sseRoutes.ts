@@ -4,7 +4,7 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
-import tagsExtractor from '../middleware/tagsExtractor.js';
+import tagsExtractor from '../middlewares/tagsExtractor.js';
 
 export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
   router.get(SSE_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
