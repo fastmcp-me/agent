@@ -16,6 +16,8 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - Provides a standardized way for AI models to interact with external tools and resources
 - Supports dynamic configuration reloading without server restart
 - Handles graceful shutdown and resource cleanup
+- Includes comprehensive authentication and security features
+- Supports advanced filtering, pagination, and request optimization
 
 ## Quick Start
 
@@ -71,6 +73,8 @@ Available options:
 - `--auth`: Enable authentication (OAuth 2.1) (boolean, default: false)
 - `--session-ttl`: Session expiry time in minutes (number, default: 1440)
 - `--session-storage-path`: Custom session storage directory path (string, default: undefined)
+- `--rate-limit-window`: OAuth rate limit window in minutes (number, default: 15)
+- `--rate-limit-max`: Maximum requests per OAuth rate limit window (number, default: 100)
 - `--help, -h`: Show help
 
 Example with environment variables:
@@ -122,6 +126,8 @@ You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
 - `ONE_MCP_AUTH`: Enable authentication (OAuth 2.1) (boolean, default: false)
 - `ONE_MCP_SESSION_TTL`: Session expiry time in minutes (number, default: 1440)
 - `ONE_MCP_SESSION_STORAGE_PATH`: Custom session storage directory path (string, default: undefined)
+- `ONE_MCP_RATE_LIMIT_WINDOW`: OAuth rate limit window in minutes (number, default: 15)
+- `ONE_MCP_RATE_LIMIT_MAX`: Maximum requests per OAuth rate limit window (number, default: 100)
 
 Example with environment variables:
 

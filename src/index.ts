@@ -73,12 +73,12 @@ const argv = yargs(hideBin(process.argv))
       default: undefined,
     },
     'rate-limit-window': {
-      describe: 'Rate limit window in minutes',
+      describe: 'OAuth rate limit window in minutes',
       type: 'number',
       default: 15,
     },
     'rate-limit-max': {
-      describe: 'Maximum requests per rate limit window',
+      describe: 'Maximum requests per OAuth rate limit window',
       type: 'number',
       default: 100,
     },
