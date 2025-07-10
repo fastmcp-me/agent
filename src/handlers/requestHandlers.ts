@@ -27,7 +27,8 @@ import {
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR } from '../constants.js';
 import { executeClientOperation, executeServerOperation } from '../core/client/clientManager.js';
-import { parseUri, withErrorHandling } from '../utils/errorHandling.js';
+import { parseUri } from '../utils/parsing.js';
+import { withErrorHandling } from '../utils/errorHandling.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
 import { Clients, ServerInfo, ClientStatus } from '../core/types/index.js';
 import { handlePagination } from '../utils/pagination.js';
