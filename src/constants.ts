@@ -6,7 +6,7 @@ import { ClientCapabilities, ServerCapabilities } from '@modelcontextprotocol/sd
 
 // Server configuration
 export const PORT = 3050;
-export const HOST = '127.0.0.1';
+export const HOST = 'localhost';
 
 // API endpoints
 export const SSE_ENDPOINT = '/sse';
@@ -58,27 +58,51 @@ export const CONNECTION_RETRY = {
 
 // Authentication and session settings
 export const AUTH_CONFIG = {
-  DEFAULT_ENABLED: false,
-  DEFAULT_SESSION_TTL_MINUTES: 24 * 60, // 24 hours
-  DEFAULT_OAUTH_CODE_TTL_MS: 60 * 1000, // 1 minute
-  DEFAULT_OAUTH_TOKEN_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
-  SESSION_STORAGE_DIR: 'sessions',
-  SESSION_FILE_PREFIX: 'session_',
-  SESSION_FILE_EXTENSION: '.json',
-  // Identifier prefixes for easy distinction
-  PREFIXES: {
-    SESSION_ID: 'sess-',
-    ACCESS_TOKEN: 'tk-',
-    AUTH_CODE: 'code-',
-    CLIENT_ID: 'client-',
+  // Server-side authentication
+  SERVER: {
+    DEFAULT_ENABLED: false,
+    SESSION: {
+      TTL_MINUTES: 24 * 60, // 24 hours
+      STORAGE_DIR: 'sessions',
+      FILE_PREFIX: 'session_',
+      FILE_EXTENSION: '.json',
+    },
+    OAUTH: {
+      CODE_TTL_MS: 60 * 1000, // 1 minute
+      TOKEN_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
+    },
+    PREFIXES: {
+      SESSION_ID: 'sess-',
+      ACCESS_TOKEN: 'tk-',
+      AUTH_CODE: 'code-',
+      CLIENT_ID: 'client-',
+    },
+  },
+
+  // Client-side authentication
+  CLIENT: {
+    OAUTH: {
+      TTL_MS: 30 * 24 * 60 * 60 * 1000, // 30 days
+      CODE_VERIFIER_TTL_MS: 10 * 60 * 1000, // 10 minutes
+      STATE_TTL_MS: 10 * 60 * 1000, // 10 minutes
+      DEFAULT_TOKEN_EXPIRY_SECONDS: 3600, // 1 hour
+      DEFAULT_CALLBACK_PATH: '/oauth/callback',
+      DEFAULT_SCOPES: [],
+    },
+    PREFIXES: {
+      CLIENT: 'cli_',
+      TOKENS: 'tok_',
+      VERIFIER: 'ver_',
+      STATE: 'sta_',
+    },
   },
 };
 
 // Rate limiting configuration for OAuth endpoints
 export const RATE_LIMIT_CONFIG = {
   OAUTH: {
-    WINDOW_MS: 60 * 1000, // 1 minute
-    MAX: 10, // max requests per window per IP
+    WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    MAX: 100, // max requests per window per IP
     MESSAGE: { error: 'Too many requests, please try again later.' },
   },
 };

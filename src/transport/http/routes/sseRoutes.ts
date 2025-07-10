@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router, Request, Response } from 'express';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
@@ -6,12 +6,8 @@ import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import tagsExtractor from '../../../utils/tagsExtractor.js';
 
-export function setupSseRoutes(
-  app: express.Application,
-  serverManager: ServerManager,
-  authMiddleware: express.RequestHandler,
-): void {
-  app.get(SSE_ENDPOINT, authMiddleware, tagsExtractor, async (req: express.Request, res: express.Response) => {
+export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
+  router.get(SSE_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
     try {
       logger.info('[GET] sse', { query: req.query, headers: req.headers });
       const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
@@ -35,7 +31,7 @@ export function setupSseRoutes(
     }
   });
 
-  app.post(MESSAGES_ENDPOINT, authMiddleware, async (req: express.Request, res: express.Response) => {
+  router.post(MESSAGES_ENDPOINT, async (req: Request, res: Response) => {
     try {
       const sessionId = req.query.sessionId as string;
       if (!sessionId) {

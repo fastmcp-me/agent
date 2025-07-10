@@ -1,15 +1,18 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
-import { ServerManager } from '../../core/server/serverManager.js';
+import { Options as RateLimitOptions } from 'express-rate-limit';
+import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../logger/logger.js';
 import errorHandler from './errorHandler.js';
-import { AuthManager } from '../../auth/authManager.js';
-import { createAuthMiddleware } from '../../auth/authMiddleware.js';
-import { setupOAuthRoutes } from './routes/oauthRoutes.js';
+import { ServerManager } from '../../core/server/serverManager.js';
+import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
+import oauthRoutes from './routes/oauthRoutes.js';
 import { ServerConfigManager } from '../../core/server/serverConfig.js';
+import { RATE_LIMIT_CONFIG } from '../../constants.js';
 
 /**
  * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.
@@ -27,7 +30,7 @@ import { ServerConfigManager } from '../../core/server/serverConfig.js';
 export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
-  private authManager: AuthManager;
+  private oauthProvider: SDKOAuthServerProvider;
   private configManager: ServerConfigManager;
 
   /**
@@ -43,9 +46,9 @@ export class ExpressServer {
     this.serverManager = serverManager;
     this.configManager = ServerConfigManager.getInstance();
 
-    // Initialize auth manager with custom session storage path if configured
+    // Initialize OAuth provider with custom session storage path if configured
     const sessionStoragePath = this.configManager.getSessionStoragePath();
-    this.authManager = new AuthManager(sessionStoragePath);
+    this.oauthProvider = new SDKOAuthServerProvider(sessionStoragePath);
 
     this.setupMiddleware();
     this.setupRoutes();
@@ -62,6 +65,7 @@ export class ExpressServer {
   private setupMiddleware(): void {
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({ extended: true }));
 
     // Add error handling middleware
     this.app.use(errorHandler);
@@ -78,19 +82,52 @@ export class ExpressServer {
    * Logs the authentication status for debugging purposes.
    */
   private setupRoutes(): void {
-    // Create auth middleware
-    const authMiddleware = createAuthMiddleware(this.authManager);
+    // Setup OAuth routes using SDK's mcpAuthRouter
+    const { host, port } = this.configManager.getConfig();
+    const issuerUrl = new URL(`http://${host}:${port}`);
 
-    // Setup OAuth routes (always available, but auth can be disabled)
-    setupOAuthRoutes(this.app, this.authManager);
+    const rateLimitConfig: Partial<RateLimitOptions> = {
+      windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
+      max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+      message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
+      standardHeaders: true,
+      legacyHeaders: false,
+    };
+
+    const authRouter = mcpAuthRouter({
+      provider: this.oauthProvider,
+      issuerUrl,
+      authorizationOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      tokenOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      revocationOptions: {
+        rateLimit: rateLimitConfig,
+      },
+      clientRegistrationOptions: {
+        rateLimit: rateLimitConfig,
+      },
+    });
+    this.app.use(authRouter);
+
+    // Setup OAuth management routes (no auth required)
+    this.app.use('/oauth', oauthRoutes);
 
     // Setup MCP transport routes with auth middleware
-    setupStreamableHttpRoutes(this.app, this.serverManager, authMiddleware);
-    setupSseRoutes(this.app, this.serverManager, authMiddleware);
+    const router = express.Router();
+    if (this.configManager.isAuthEnabled()) {
+      // Create auth middleware using SDK's requireBearerAuth
+      router.use(requireBearerAuth({ verifier: this.oauthProvider }));
+    }
+    setupStreamableHttpRoutes(router, this.serverManager);
+    setupSseRoutes(router, this.serverManager);
+    this.app.use(router);
 
     // Log authentication status
-    if (this.authManager.isAuthEnabled()) {
-      logger.info('Authentication enabled - OAuth 2.1 endpoints available');
+    if (this.configManager.isAuthEnabled()) {
+      logger.info('Authentication enabled - OAuth 2.1 endpoints available via SDK');
     } else {
       logger.info('Authentication disabled - all endpoints accessible without auth');
     }
@@ -105,10 +142,12 @@ export class ExpressServer {
    * @param port - The port number to listen on
    * @param host - The host address to bind to
    */
-  public start(port: number, host: string): void {
+  public start(): void {
+    const { port, host } = this.configManager.getConfig();
     this.app.listen(port, host, () => {
-      const authStatus = this.authManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
+      const authStatus = this.configManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
       logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport ${authStatus}`);
+      logger.info(`📋 OAuth Management Dashboard: http://${host}:${port}/oauth`);
     });
   }
 
@@ -121,6 +160,6 @@ export class ExpressServer {
    * - Timer cleanup
    */
   public shutdown(): void {
-    this.authManager.shutdown();
+    this.oauthProvider.shutdown();
   }
 }

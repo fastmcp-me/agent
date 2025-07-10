@@ -72,6 +72,16 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       default: undefined,
     },
+    'rate-limit-window': {
+      describe: 'Rate limit window in minutes',
+      type: 'number',
+      default: 15,
+    },
+    'rate-limit-max': {
+      describe: 'Maximum requests per rate limit window',
+      type: 'number',
+      default: 100,
+    },
   })
   .help()
   .alias('help', 'h')
@@ -131,12 +141,18 @@ async function main() {
     // Configure server settings from CLI arguments
     const serverConfigManager = ServerConfigManager.getInstance();
     serverConfigManager.updateConfig({
+      host: argv.host,
+      port: argv.port,
       auth: {
         enabled: argv['auth'],
         sessionTtlMinutes: argv['session-ttl'],
         sessionStoragePath: argv['session-storage-path'],
         oauthCodeTtlMs: 60 * 1000, // 1 minute
         oauthTokenTtlMs: argv['session-ttl'] * 60 * 1000, // Convert minutes to milliseconds
+      },
+      rateLimit: {
+        windowMs: argv['rate-limit-window'] * 60 * 1000, // Convert minutes to milliseconds
+        max: argv['rate-limit-max'],
       },
     });
 
@@ -169,7 +185,7 @@ async function main() {
       case 'http': {
         // Use HTTP/SSE transport
         expressServer = new ExpressServer(serverManager);
-        expressServer.start(argv.port, argv.host);
+        expressServer.start();
         break;
       }
       default:

@@ -1,170 +1,430 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import { randomUUID } from 'node:crypto';
-import logger from '../../../logger/logger.js';
-import { AuthManager } from '../../../auth/authManager.js';
-import { ServerConfigManager } from '../../../core/server/serverConfig.js';
-import { AUTH_CONFIG, RATE_LIMIT_CONFIG } from '../../../constants.js';
+import { Router, Request, Response, RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
+import logger from '../../../logger/logger.js';
+import { ServerManager } from '../../../core/server/serverManager.js';
+import { ClientStatus } from '../../../core/types/index.js';
+import { OAuthRequiredError } from '../../../core/client/clientManager.js';
+import createClient from '../../../core/client/clientFactory.js';
+import { RATE_LIMIT_CONFIG } from '../../../constants.js';
+import { ServerConfigManager } from '../../../core/server/serverConfig.js';
+import {
+  escapeHtml,
+  sanitizeUrlParam,
+  sanitizeErrorMessage,
+  sanitizeServerNameForContext,
+} from '../../../utils/sanitization.js';
 
-/**
- * Sets up OAuth 2.1 and related endpoints on the Express app.
- *
- * This function registers all OAuth 2.1 endpoints (authorization, token, metadata, registration)
- * and MCP resource metadata endpoints on the provided Express application. It uses the provided
- * AuthManager for all authentication and token operations.
- *
- * @param app - The Express application instance
- * @param authManager - The AuthManager instance for OAuth/session logic
- */
-export function setupOAuthRoutes(app: express.Application, authManager: AuthManager): void {
-  const configManager = ServerConfigManager.getInstance();
-  const DEFAULT_REDIRECT_PATH = '/oauth/callback';
+const router = Router();
 
-  // Rate limiter: 10 requests per minute per IP for sensitive endpoints
-  const oauthLimiter = rateLimit({
-    windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
-    max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+// Rate limiter for OAuth endpoints
+const createOAuthLimiter = () => {
+  const serverConfig = ServerConfigManager.getInstance();
+  return rateLimit({
+    windowMs: serverConfig.getRateLimitWindowMs(),
+    max: serverConfig.getRateLimitMax(),
     standardHeaders: true,
     legacyHeaders: false,
     message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
   });
+};
 
-  /**
-   * Helper to build the OAuth issuer URL from the incoming request.
-   * Uses protocol and host headers for correct environment support.
-   */
-  function getIssuer(req: express.Request): string {
-    // X-Forwarded-Proto/Host for proxies, fallback to req.protocol/host
-    const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol;
-    const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
-    return `${proto}://${host}`;
+router.use(createOAuthLimiter());
+
+/**
+ * Check if a server requires OAuth based on runtime behavior
+ * A server requires OAuth if it has ever thrown UnauthorizedError (indicated by authorizationUrl or oauthStartTime)
+ */
+function requiresOAuth(service: any): boolean {
+  // The most reliable indicator: server has ever had an authorization URL
+  // This means the server threw UnauthorizedError and we captured the OAuth URL
+  if (service.authorizationUrl) {
+    return true;
   }
 
-  // /authorize endpoint (auto-approve)
-  app.get('/authorize', oauthLimiter, (req, res) => {
-    logger.info('[OAuth] /authorize request', { query: req.query, headers: req.headers });
+  // Secondary indicator: server has ever been in AwaitingOAuth status
+  // This means the server threw UnauthorizedError at some point
+  if (service.oauthStartTime) {
+    return true;
+  }
 
-    const {
-      response_type,
-      client_id,
-      redirect_uri,
-      state,
-      resource,
-      code_challenge: _code_challenge,
-      code_challenge_method: _code_challenge_method,
-    } = req.query;
+  // If currently awaiting OAuth, it definitely requires OAuth
+  if (service.status === ClientStatus.AwaitingOAuth) {
+    return true;
+  }
 
-    if (response_type !== 'code' || !client_id) {
-      logger.warn('[OAuth] /authorize invalid request', { response_type, client_id });
-      res.status(400).json({ error: 'invalid_request' });
-      return;
-    }
-
-    // Accept S256 or plain for code_challenge_method (not enforced for local dev)
-    // Use default redirect URI if not provided
-    const issuer = getIssuer(req);
-    const defaultRedirect = `${issuer}${DEFAULT_REDIRECT_PATH}`;
-    const redirect = typeof redirect_uri === 'string' ? redirect_uri : defaultRedirect;
-
-    const code = authManager.createAuthCode(
-      client_id as string,
-      redirect,
-      typeof resource === 'string' ? resource : '',
-    );
-
-    // Build redirect URL
-    const url = new URL(redirect);
-    url.searchParams.set('code', code);
-    if (state) url.searchParams.set('state', state as string);
-
-    logger.info('[OAuth] /authorize success', { client_id, code, redirect: url.toString() });
-    res.redirect(url.toString());
-  });
-
-  // /token endpoint
-  app.post('/token', oauthLimiter, bodyParser.urlencoded({ extended: false }), (req, res) => {
-    logger.info('[OAuth] /token request', { body: req.body, headers: req.headers });
-
-    const { grant_type, code, client_id, redirect_uri, resource } = req.body;
-
-    if (grant_type !== 'authorization_code' || !code || !client_id) {
-      logger.warn('[OAuth] /token invalid request', { grant_type, code: !!code, client_id });
-      res.status(400).json({ error: 'invalid_request' });
-      return;
-    }
-
-    const accessToken = authManager.exchangeCodeForToken(code, client_id, redirect_uri, resource);
-
-    if (!accessToken) {
-      logger.warn('[OAuth] /token invalid grant', { code, client_id });
-      res.status(400).json({ error: 'invalid_grant' });
-      return;
-    }
-
-    const ttlMs = configManager.getOAuthTokenTtlMs();
-    logger.info('[OAuth] /token success', { client_id, accessToken });
-
-    res.json({
-      access_token: accessToken,
-      token_type: 'Bearer',
-      expires_in: ttlMs / 1000,
-      scope: '',
-    });
-  });
-
-  // OAuth 2.0 Authorization Server Metadata (RFC8414)
-  app.get('/.well-known/oauth-authorization-server', (req, res) => {
-    logger.info('[OAuth] metadata request', { url: req.url });
-    const issuer = getIssuer(req);
-
-    res.json({
-      issuer,
-      authorization_endpoint: `${issuer}/authorize`,
-      token_endpoint: `${issuer}/token`,
-      registration_endpoint: `${issuer}/register`,
-      response_types_supported: ['code'],
-      grant_types_supported: ['authorization_code'],
-      code_challenge_methods_supported: ['S256', 'plain'],
-      token_endpoint_auth_methods_supported: ['none'],
-    });
-  });
-
-  // MCP Resource Metadata (RFC9728)
-  app.get('/mcp-resource-metadata', (req, res) => {
-    logger.info('[OAuth] resource metadata request', { url: req.url });
-    const issuer = getIssuer(req);
-
-    res.json({
-      authorization_servers: [`${issuer}/.well-known/oauth-authorization-server`],
-      resource: issuer,
-    });
-  });
-
-  // OAuth 2.0 Protected Resource Metadata (RFC9728) well-known endpoint
-  app.get('/.well-known/oauth-protected-resource', (req, res) => {
-    logger.info('[OAuth] protected resource metadata request', { url: req.url });
-    const issuer = getIssuer(req);
-
-    res.json({
-      authorization_servers: [`${issuer}/.well-known/oauth-authorization-server`],
-      resource: issuer,
-    });
-  });
-
-  // OAuth 2.0 Dynamic Client Registration (RFC7591)
-  app.post('/register', oauthLimiter, bodyParser.json(), (req, res) => {
-    logger.info('[OAuth] client registration request', { body: req.body });
-
-    // Accept any registration, auto-approve
-    const clientId = AUTH_CONFIG.PREFIXES.CLIENT_ID + randomUUID();
-
-    logger.info('[OAuth] client registration success', { clientId });
-    res.status(201).json({
-      client_id: clientId,
-      client_id_issued_at: Math.floor(Date.now() / 1000),
-      token_endpoint_auth_method: 'none',
-      ...req.body,
-    });
-  });
+  return false;
 }
+
+/**
+ * OAuth Dashboard - Shows all services and their OAuth status
+ */
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const serverManager = ServerManager.current;
+    const clients = serverManager.getClients();
+
+    const services = Object.entries(clients).map(([name, clientInfo]) => ({
+      name,
+      status: clientInfo.status,
+      authorizationUrl: clientInfo.authorizationUrl,
+      oauthStartTime: clientInfo.oauthStartTime,
+      lastError: clientInfo.lastError?.message,
+      lastConnected: clientInfo.lastConnected,
+    }));
+
+    const html = generateOAuthDashboard(services, req);
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    logger.error('Error serving OAuth dashboard:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Start OAuth authorization for a specific service
+ */
+const authorizeHandler: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    const { serverName } = req.params;
+    const serverManager = ServerManager.current;
+
+    const clientInfo = serverManager.getClient(serverName);
+    if (!clientInfo) {
+      res.status(404).json({ error: 'Service not found' });
+      return;
+    }
+
+    if (clientInfo.authorizationUrl) {
+      // Redirect to existing authorization URL
+      res.redirect(clientInfo.authorizationUrl);
+      return;
+    } else {
+      // Generate new authorization URL by attempting connection
+      await initiateOAuth(serverName);
+
+      // Get updated client info
+      const updatedClients = serverManager.getClients();
+      const updatedClientInfo = updatedClients[serverName];
+
+      if (updatedClientInfo?.authorizationUrl) {
+        res.redirect(updatedClientInfo.authorizationUrl);
+        return;
+      } else {
+        res.status(500).json({ error: 'Failed to generate OAuth URL' });
+        return;
+      }
+    }
+  } catch (error) {
+    logger.error(`Error starting OAuth for ${req.params.serverName}:`, error);
+    res.status(500).json({ error: 'Failed to start OAuth flow' });
+  }
+};
+
+router.get('/authorize/:serverName', authorizeHandler);
+
+function hasFinishAuth(transport: unknown): transport is { finishAuth: (code: string) => Promise<void> } {
+  return typeof transport === 'object' && transport !== null && typeof (transport as any).finishAuth === 'function';
+}
+
+/**
+ * Handle OAuth callback and trigger reconnection
+ */
+router.get('/callback/:serverName', async (req: Request, res: Response) => {
+  const { serverName } = req.params;
+  const { code, error } = req.query;
+  try {
+    if (error) {
+      logger.error(`OAuth error for ${serverName}:`, error);
+      return res.redirect(`/oauth?error=${encodeURIComponent(String(error))}`);
+    }
+
+    if (!code) {
+      logger.error(`OAuth callback missing authorization code for ${serverName}`);
+      return res.redirect(`/oauth?error=missing_code`);
+    }
+
+    const serverManager = ServerManager.current;
+
+    const clientInfo = serverManager.getClient(serverName);
+    if (!clientInfo) {
+      logger.error(`Client ${serverName} not found in OAuth callback`);
+      return res.redirect(`/oauth?error=client_not_found`);
+    }
+
+    // Use type guard for transport with finishAuth
+    if (!hasFinishAuth(clientInfo.transport)) {
+      logger.error(`Transport for ${serverName} does not support finishAuth`);
+      return res.redirect(`/oauth?error=invalid_oauth_transport`);
+    }
+
+    // Complete the OAuth flow with the authorization code
+    await clientInfo.transport.finishAuth(String(code));
+
+    clientInfo.status = ClientStatus.Connected;
+    clientInfo.lastConnected = new Date();
+    clientInfo.lastError = undefined;
+
+    // Redirect back to dashboard with success
+    res.redirect('/oauth?success=1');
+  } catch (error) {
+    logger.error(`Error handling OAuth callback for ${serverName}:`, error);
+    res.redirect(`/oauth?error=callback_failed`);
+  }
+});
+
+/**
+ * Restart OAuth flow for a service
+ */
+const restartHandler: RequestHandler = async (req: Request, res: Response) => {
+  const { serverName } = req.params;
+  try {
+    const serverManager = ServerManager.current;
+
+    const clientInfo = serverManager.getClient(serverName);
+    if (!clientInfo) {
+      res.status(404).json({ error: 'Service not found' });
+      return;
+    }
+
+    // Clear existing OAuth data and restart flow
+    await restartOAuthFlow(serverName);
+
+    res.json({ success: true, message: 'OAuth flow restarted' });
+  } catch (error) {
+    logger.error(`Error restarting OAuth for ${serverName}:`, error);
+    res.status(500).json({ error: 'Failed to restart OAuth flow' });
+  }
+};
+
+router.post('/restart/:serverName', restartHandler);
+
+/**
+ * Initiate OAuth flow for a service
+ */
+async function initiateOAuth(serverName: string): Promise<void> {
+  const serverManager = ServerManager.current;
+
+  const clientInfo = serverManager.getClient(serverName);
+  if (!clientInfo) {
+    throw new Error(`Service ${serverName} not found`);
+  }
+
+  try {
+    // Create new client and attempt connection to trigger OAuth
+    const newClient = await createClient();
+    await newClient.connect(clientInfo.transport);
+  } catch (error) {
+    if (error instanceof OAuthRequiredError) {
+      // Update client info with OAuth status
+      clientInfo.status = ClientStatus.AwaitingOAuth;
+      clientInfo.oauthStartTime = new Date();
+
+      // Try to get authorization URL from OAuth provider
+      try {
+        const oauthProvider = clientInfo.transport.oauthProvider;
+        if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
+          clientInfo.authorizationUrl = oauthProvider.getAuthorizationUrl();
+        }
+      } catch (urlError) {
+        logger.warn(`Could not extract authorization URL for ${serverName}:`, urlError);
+      }
+
+      logger.info(`OAuth initiated for ${serverName}`);
+    } else {
+      throw error; // Re-throw non-OAuth errors
+    }
+  }
+}
+
+/**
+ * Restart OAuth flow for a service
+ */
+async function restartOAuthFlow(serverName: string): Promise<void> {
+  const serverManager = ServerManager.current;
+
+  const clientInfo = serverManager.getClient(serverName);
+  if (!clientInfo) {
+    throw new Error(`Service ${serverName} not found`);
+  }
+
+  // Clear OAuth state
+  clientInfo.authorizationUrl = undefined;
+  clientInfo.oauthStartTime = undefined;
+  clientInfo.status = ClientStatus.Disconnected;
+
+  // Initiate new OAuth flow
+  await initiateOAuth(serverName);
+}
+
+/**
+ * Generate OAuth dashboard HTML
+ */
+function generateOAuthDashboard(services: any[], req: Request): string {
+  const servicesHtml = services
+    .map((service) => {
+      const statusIcon = getStatusIcon(service.status);
+      const statusText = getStatusText(service.status);
+      const actionButton = getActionButton(service);
+
+      return `
+      <tr>
+        <td>${sanitizeServerNameForContext(service.name, 'html')}</td>
+        <td>${statusIcon} ${statusText}</td>
+        <td>${service.lastConnected ? escapeHtml(new Date(service.lastConnected).toLocaleString()) : 'Never'}</td>
+        <td>${service.lastError ? sanitizeErrorMessage(service.lastError) : '-'}</td>
+        <td>${actionButton}</td>
+      </tr>
+    `;
+    })
+    .join('');
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>1MCP OAuth Management</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; text-align: center; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; font-weight: bold; }
+        .status-connected { color: #28a745; }
+        .status-awaiting { color: #ffc107; }
+        .status-error { color: #dc3545; }
+        .status-disconnected { color: #6c757d; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-block; font-size: 14px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn:hover { opacity: 0.8; }
+        .alert { padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .refresh-btn { float: right; margin-bottom: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>🔐 1MCP OAuth Management</h1>
+
+        ${getAlertHtml(req)}
+
+        <button class="btn btn-primary refresh-btn" onclick="window.location.reload()">🔄 Refresh</button>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Last Connected</th>
+              <th>Error</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${servicesHtml}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 4px;">
+          <h3>Instructions:</h3>
+          <ul>
+            <li><strong>Connected:</strong> Service is working properly (no authentication required)</li>
+            <li><strong>Authorized:</strong> Service is working properly (OAuth authentication completed)</li>
+            <li><strong>Awaiting OAuth:</strong> Click "Authorize" to complete authentication</li>
+            <li><strong>Error:</strong> Check error message and try "Restart OAuth" if needed</li>
+            <li><strong>Disconnected:</strong> Service is not connected</li>
+          </ul>
+        </div>
+      </div>
+
+      <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => window.location.reload(), 30000);
+
+        function restartOAuth(serverName) {
+          fetch(\`/oauth/restart/\${serverName}\`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                window.location.reload();
+              } else {
+                alert('Failed to restart OAuth: ' + (data.error || 'Unknown error'));
+              }
+            })
+            .catch(error => {
+              alert('Failed to restart OAuth: ' + error.message);
+            });
+        }
+      </script>
+    </body>
+    </html>
+  `;
+}
+
+function getStatusIcon(status: string): string {
+  switch (status) {
+    case ClientStatus.Connected:
+      return '✅';
+    case ClientStatus.AwaitingOAuth:
+      return '⏳';
+    case ClientStatus.Error:
+      return '❌';
+    case ClientStatus.Disconnected:
+      return '🔌';
+    default:
+      return '❓';
+  }
+}
+
+function getStatusText(status: string): string {
+  switch (status) {
+    case ClientStatus.Connected:
+      return '<span class="status-connected">Connected</span>';
+    case ClientStatus.AwaitingOAuth:
+      return '<span class="status-awaiting">Awaiting OAuth</span>';
+    case ClientStatus.Error:
+      return '<span class="status-error">Error</span>';
+    case ClientStatus.Disconnected:
+      return '<span class="status-disconnected">Disconnected</span>';
+    default:
+      return '<span class="status-disconnected">Unknown</span>';
+  }
+}
+
+function getActionButton(service: any): string {
+  switch (service.status) {
+    case ClientStatus.Connected:
+      // Check if server requires OAuth based on runtime behavior
+      if (requiresOAuth(service)) {
+        return '<span class="status-connected">✓ Authorized</span>';
+      } else {
+        return '<span class="status-connected">✓ Connected</span>';
+      }
+    case ClientStatus.AwaitingOAuth:
+      return `<a href="/oauth/authorize/${sanitizeUrlParam(service.name)}" class="btn btn-warning">🔐 Authorize</a>`;
+    case ClientStatus.Error:
+    case ClientStatus.Disconnected:
+      return `<button onclick="restartOAuth('${sanitizeServerNameForContext(service.name, 'html')}')" class="btn btn-primary">🔄 Restart OAuth</button>`;
+    default:
+      return `<button onclick="restartOAuth('${sanitizeServerNameForContext(service.name, 'html')}')" class="btn btn-primary">🔄 Start OAuth</button>`;
+  }
+}
+
+function getAlertHtml(req: Request): string {
+  if (req.query.success) {
+    return '<div class="alert alert-success">✅ OAuth authorization completed successfully!</div>';
+  }
+  if (req.query.error) {
+    const error = req.query.error;
+    return `<div class="alert alert-error">❌ OAuth error: ${sanitizeErrorMessage(String(error))}</div>`;
+  }
+  return '';
+}
+
+export default router;

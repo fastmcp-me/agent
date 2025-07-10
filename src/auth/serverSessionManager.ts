@@ -3,42 +3,7 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import logger from '../logger/logger.js';
 import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
-
-/**
- * Represents session data stored for access tokens.
- *
- * Contains all necessary information to validate and manage user sessions
- * including client identification, resource access, and expiration details.
- */
-export interface SessionData {
-  /** The client ID that owns this session */
-  clientId: string;
-  /** The resource this session has access to */
-  resource: string;
-  /** Unix timestamp when this session expires */
-  expires: number;
-  /** Unix timestamp when this session was created */
-  createdAt: number;
-}
-
-/**
- * Represents authorization code data for OAuth 2.1 flow.
- *
- * Contains information about authorization codes used in the OAuth
- * authorization code grant flow, including client and redirect details.
- */
-export interface AuthCodeData {
-  /** The client ID that requested this authorization code */
-  clientId: string;
-  /** The redirect URI where the code should be used */
-  redirectUri: string;
-  /** The resource this code grants access to */
-  resource: string;
-  /** Unix timestamp when this code expires */
-  expires: number;
-  /** Unix timestamp when this code was created */
-  createdAt: number;
-}
+import { SessionData, AuthCodeData } from './sessionTypes.js';
 
 /**
  * SessionManager handles file-based session storage with automatic cleanup.
@@ -60,7 +25,7 @@ export interface AuthCodeData {
  * const session = sessionManager.getSession(sessionId);
  * ```
  */
-export class SessionManager {
+export class ServerSessionManager {
   private sessionStoragePath: string;
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -73,9 +38,19 @@ export class SessionManager {
    * @param sessionStoragePath - Optional custom path for session storage
    */
   constructor(sessionStoragePath?: string) {
-    this.sessionStoragePath = sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SESSION_STORAGE_DIR);
+    this.sessionStoragePath =
+      sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SERVER.SESSION.STORAGE_DIR);
     this.ensureSessionDirectory();
     this.startCleanupInterval();
+  }
+
+  /**
+   * Gets the session storage path.
+   *
+   * @returns The absolute path to the session storage directory
+   */
+  public getSessionStoragePath(): string {
+    return this.sessionStoragePath;
   }
 
   /**
@@ -110,7 +85,7 @@ export class SessionManager {
       throw new Error('Invalid session ID format');
     }
 
-    const fileName = `${AUTH_CONFIG.SESSION_FILE_PREFIX}${sessionId}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const fileName = `${AUTH_CONFIG.SERVER.SESSION.FILE_PREFIX}${sessionId}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -136,7 +111,7 @@ export class SessionManager {
       throw new Error('Invalid authorization code format');
     }
 
-    const fileName = `auth_code_${code}${AUTH_CONFIG.SESSION_FILE_EXTENSION}`;
+    const fileName = `auth_code_${code}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -157,27 +132,39 @@ export class SessionManager {
    * @returns true if valid, false otherwise
    */
   private isValidId(id: string): boolean {
-    // Check minimum length (prefix + UUID)
-    if (!id || id.length < 40) {
+    // Check minimum length (prefix + content)
+    if (!id || id.length < 8) {
       return false;
     }
 
-    // Check for valid prefix
-    const hasValidPrefix =
-      id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.PREFIXES.AUTH_CODE);
+    // Check for valid server-side prefix
+    const hasServerPrefix =
+      id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE);
 
-    if (!hasValidPrefix) {
-      return false;
+    if (hasServerPrefix) {
+      // Validate the UUID portion (after prefix)
+      const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID)
+        ? id.substring(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID.length)
+        : id.substring(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE.length);
+
+      // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(uuidPart);
     }
 
-    // Validate the UUID portion (after prefix)
-    const uuidPart = id.startsWith(AUTH_CONFIG.PREFIXES.SESSION_ID)
-      ? id.substring(AUTH_CONFIG.PREFIXES.SESSION_ID.length)
-      : id.substring(AUTH_CONFIG.PREFIXES.AUTH_CODE.length);
+    // Check for valid client-side OAuth prefix
+    const hasClientPrefix =
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.CLIENT) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.TOKENS) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.VERIFIER) ||
+      id.startsWith(AUTH_CONFIG.CLIENT.PREFIXES.STATE);
 
-    // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(uuidPart);
+    if (hasClientPrefix) {
+      const contentPart = id.substring(4); // All client prefixes are 4 characters
+      return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
+    }
+
+    return false;
   }
 
   /**
@@ -193,7 +180,7 @@ export class SessionManager {
    * @throws Error if session creation fails
    */
   public createSession(clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + randomUUID();
+    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + randomUUID();
     const sessionData: SessionData = {
       clientId,
       resource,
@@ -288,7 +275,7 @@ export class SessionManager {
    * @throws Error if code creation fails
    */
   public createAuthCode(clientId: string, redirectUri: string, resource: string, ttlMs: number): string {
-    const code = AUTH_CONFIG.PREFIXES.AUTH_CODE + randomUUID();
+    const code = AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE + randomUUID();
     const authCodeData: AuthCodeData = {
       clientId,
       redirectUri,
@@ -394,12 +381,19 @@ export class SessionManager {
    * by removing them to prevent future errors.
    */
   private cleanupExpiredSessions(): void {
+    this.cleanupExpiredServerSessions();
+  }
+
+  /**
+   * Cleans up expired server sessions and authorization codes.
+   */
+  private cleanupExpiredServerSessions(): void {
     try {
       const files = fs.readdirSync(this.sessionStoragePath);
       let cleanedCount = 0;
 
       for (const file of files) {
-        if (file.endsWith(AUTH_CONFIG.SESSION_FILE_EXTENSION)) {
+        if (file.endsWith(AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION)) {
           const filePath = path.join(this.sessionStoragePath, file);
           try {
             const data = fs.readFileSync(filePath, 'utf8');
@@ -423,10 +417,10 @@ export class SessionManager {
       }
 
       if (cleanedCount > 0) {
-        logger.info(`Cleaned up ${cleanedCount} expired sessions`);
+        logger.info(`Cleaned up ${cleanedCount} expired server sessions`);
       }
     } catch (error) {
-      logger.error(`Failed to cleanup expired sessions: ${error}`);
+      logger.error(`Failed to cleanup expired server sessions: ${error}`);
     }
   }
 
@@ -455,7 +449,7 @@ export class SessionManager {
    * @throws Error if session creation fails
    */
   public createSessionWithId(tokenId: string, clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.PREFIXES.SESSION_ID + tokenId;
+    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
     const sessionData: SessionData = {
       clientId,
       resource,
@@ -470,6 +464,36 @@ export class SessionManager {
       return sessionId;
     } catch (error) {
       logger.error(`Failed to create session: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a new session with custom data.
+   * Used for OAuth client data storage where arbitrary data needs to be stored.
+   *
+   * @param sessionId - The session ID to use
+   * @param data - The custom data to store
+   * @param ttlMs - Time-to-live in milliseconds
+   * @returns The session ID
+   * @throws Error if session creation fails
+   */
+  public createSessionWithData(sessionId: string, data: string, ttlMs: number): string {
+    const sessionData: SessionData = {
+      clientId: 'oauth-client-data',
+      resource: 'internal',
+      expires: Date.now() + ttlMs,
+      createdAt: Date.now(),
+      data,
+    };
+
+    try {
+      const filePath = this.getSessionFilePath(sessionId);
+      fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
+      logger.info(`Created data session: ${sessionId}`);
+      return sessionId;
+    } catch (error) {
+      logger.error(`Failed to create data session: ${error}`);
       throw error;
     }
   }

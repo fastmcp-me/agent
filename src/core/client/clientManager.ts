@@ -1,18 +1,28 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
 import createClient from './clientFactory.js';
 import logger from '../../logger/logger.js';
 import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
-import { ClientStatus, ClientInfo, Clients, OperationOptions, ServerInfo, ServerCapability } from '../types/index.js';
+import {
+  ClientStatus,
+  ClientInfo,
+  Clients,
+  OperationOptions,
+  ServerInfo,
+  ServerCapability,
+  AuthProviderTransport,
+} from '../types/index.js';
+import { ServerConfigManager } from '../server/serverConfig.js';
 
 /**
  * Creates client instances for all transports with retry logic
  * @param transports Record of transport instances
  * @returns Record of client instances
  */
-export async function createClients(transports: Record<string, Transport>): Promise<Clients> {
+export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<Clients> {
   const clients: Record<string, ClientInfo> = {};
 
   for (const [name, transport] of Object.entries(transports)) {
@@ -21,30 +31,56 @@ export async function createClients(transports: Record<string, Transport>): Prom
       const client = await createClient();
 
       // Connect with retry logic
-      await connectWithRetry(client, transport, name);
+      const connectedClient = await connectWithRetry(client, transport, name);
 
       clients[name] = {
         name,
         transport,
-        client,
+        client: connectedClient,
         status: ClientStatus.Connected,
         lastConnected: new Date(),
       };
       logger.info(`Client created for ${name}`);
 
-      client.onclose = () => {
+      connectedClient.onclose = () => {
         clients[name].status = ClientStatus.Disconnected;
         logger.info(`Client ${name} disconnected`);
       };
     } catch (error) {
-      logger.error(`Failed to create client for ${name}: ${error}`);
-      clients[name] = {
-        name,
-        transport,
-        client: await createClient(),
-        status: ClientStatus.Error,
-        lastError: error instanceof Error ? error : new Error(String(error)),
-      };
+      if (error instanceof OAuthRequiredError) {
+        // Handle OAuth required - set client to AwaitingOAuth status
+        logger.info(`OAuth authorization required for ${name}`);
+
+        // Try to get authorization URL from OAuth provider
+        let authorizationUrl: string | undefined;
+        try {
+          // Extract OAuth provider from transport if available
+          const oauthProvider = transport.oauthProvider;
+          if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
+            authorizationUrl = oauthProvider.getAuthorizationUrl();
+          }
+        } catch (urlError) {
+          logger.warn(`Could not extract authorization URL for ${name}:`, urlError);
+        }
+
+        clients[name] = {
+          name,
+          transport,
+          client: error.client,
+          status: ClientStatus.AwaitingOAuth,
+          authorizationUrl,
+          oauthStartTime: new Date(),
+        };
+      } else {
+        logger.error(`Failed to create client for ${name}: ${error}`);
+        clients[name] = {
+          name,
+          transport,
+          client: await createClient(),
+          status: ClientStatus.Error,
+          lastError: error instanceof Error ? error : new Error(String(error)),
+        };
+      }
     }
   }
 
@@ -52,38 +88,62 @@ export async function createClients(transports: Record<string, Transport>): Prom
 }
 
 /**
- * Connects a client to its transport with retry logic
+ * Connects a client to its transport with retry logic and OAuth support
  * @param client The client to connect
  * @param transport The transport to connect to
  * @param name The name of the client for logging
+ * @returns The connected client (may be a new instance after retries)
  */
-async function connectWithRetry(client: Client, transport: Transport, name: string): Promise<void> {
+async function connectWithRetry(client: Client, transport: Transport, name: string): Promise<Client> {
   let retryDelay = CONNECTION_RETRY.INITIAL_DELAY_MS;
+  let currentClient = client;
 
   for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
     try {
-      await client.connect(transport);
+      await currentClient.connect(transport);
 
-      const sv = await client.getServerVersion();
+      const sv = await currentClient.getServerVersion();
       if (sv?.name === MCP_SERVER_NAME) {
         throw new ClientConnectionError(name, new Error('Aborted to prevent circular dependency'));
       }
 
       logger.info(`Successfully connected to ${name} with server ${sv?.name} version ${sv?.version}`);
-      return;
+      return currentClient;
     } catch (error) {
-      logger.error(`Failed to connect to ${name}: ${error}`);
+      // Handle OAuth authorization flow (managed by SDK)
+      if (error instanceof UnauthorizedError) {
+        const serverConfig = ServerConfigManager.getInstance().getConfig();
+        logger.info(
+          `OAuth authorization required for ${name}. Visit http://localhost:${serverConfig.port}/oauth to authorize`,
+        );
 
-      if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
-        logger.info(`Retrying in ${retryDelay}ms...`);
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-        retryDelay *= 2; // Exponential backoff
-      } else {
-        throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
+        // Throw special error that includes OAuth info
+        throw new OAuthRequiredError(name, currentClient);
+      }
+      // Handle other connection errors
+      else {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error(`Failed to connect to ${name}: ${errorMessage}`);
+
+        if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
+          logger.info(`Retrying in ${retryDelay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          retryDelay *= 2; // Exponential backoff
+
+          // Create a new client for retry to avoid "already started" errors
+          currentClient = await createClient();
+        } else {
+          throw new ClientConnectionError(name, error instanceof Error ? error : new Error(String(error)));
+        }
       }
     }
   }
+
+  // This should never be reached due to the throw in the else block above
+  throw new ClientConnectionError(name, new Error('Max retries exceeded'));
 }
+
+// OAuth authorization flow is now handled by the SDK's built-in implementation
 
 /**
  * Gets a client by name with error handling
@@ -176,4 +236,17 @@ export async function executeServerOperation<T>(
   options: OperationOptions = {},
 ): Promise<T> {
   return executeOperation(() => operation(server), 'server', options);
+}
+
+/**
+ * Custom error class for OAuth authorization required
+ */
+export class OAuthRequiredError extends Error {
+  constructor(
+    public serverName: string,
+    public client: Client,
+  ) {
+    super(`OAuth authorization required for ${serverName}`);
+    this.name = 'OAuthRequiredError';
+  }
 }
