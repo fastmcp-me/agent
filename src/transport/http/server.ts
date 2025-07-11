@@ -90,8 +90,8 @@ export class ExpressServer {
     const issuerUrl = new URL(`http://${host}:${port}`);
 
     const rateLimitConfig: Partial<RateLimitOptions> = {
-      windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
-      max: RATE_LIMIT_CONFIG.OAUTH.MAX,
+      windowMs: this.configManager.getRateLimitWindowMs(),
+      max: this.configManager.getRateLimitMax(),
       message: RATE_LIMIT_CONFIG.OAUTH.MESSAGE,
       standardHeaders: true,
       legacyHeaders: false,
