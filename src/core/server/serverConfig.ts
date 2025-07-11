@@ -20,6 +20,11 @@ export interface ServerConfig {
     windowMs: number;
     max: number;
   };
+  features: {
+    auth: boolean;
+    scopeValidation: boolean;
+    enhancedSecurity: boolean;
+  };
 }
 
 /**
@@ -62,6 +67,11 @@ export class ServerConfigManager {
         windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,
         max: RATE_LIMIT_CONFIG.OAUTH.MAX,
       },
+      features: {
+        auth: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
+        scopeValidation: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
+        enhancedSecurity: false,
+      },
     };
   }
 
@@ -96,6 +106,9 @@ export class ServerConfigManager {
     if (updates.rateLimit) {
       this.config.rateLimit = { ...this.config.rateLimit, ...updates.rateLimit };
     }
+    if (updates.features) {
+      this.config.features = { ...this.config.features, ...updates.features };
+    }
   }
 
   /**
@@ -116,7 +129,7 @@ export class ServerConfigManager {
    * @returns True if OAuth 2.1 authentication is enabled, false otherwise
    */
   public isAuthEnabled(): boolean {
-    return this.config.auth.enabled;
+    return this.config.features.auth;
   }
 
   /**
@@ -171,5 +184,23 @@ export class ServerConfigManager {
    */
   public getRateLimitMax(): number {
     return this.config.rateLimit.max;
+  }
+
+  /**
+   * Checks if scope validation is enabled.
+   *
+   * @returns True if tag-based scope validation is enabled, false otherwise
+   */
+  public isScopeValidationEnabled(): boolean {
+    return this.config.features.scopeValidation;
+  }
+
+  /**
+   * Checks if enhanced security middleware is enabled.
+   *
+   * @returns True if enhanced security middleware is enabled, false otherwise
+   */
+  public isEnhancedSecurityEnabled(): boolean {
+    return this.config.features.enhancedSecurity;
   }
 }

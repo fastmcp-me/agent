@@ -58,7 +58,22 @@ const argv = yargs(hideBin(process.argv))
       default: false,
     },
     auth: {
+      describe: 'Enable authentication (OAuth 2.1) - deprecated, use --enable-auth',
+      type: 'boolean',
+      default: false,
+    },
+    'enable-auth': {
       describe: 'Enable authentication (OAuth 2.1)',
+      type: 'boolean',
+      default: false,
+    },
+    'enable-scope-validation': {
+      describe: 'Enable tag-based scope validation',
+      type: 'boolean',
+      default: undefined,
+    },
+    'enable-enhanced-security': {
+      describe: 'Enable enhanced security middleware',
       type: 'boolean',
       default: false,
     },
@@ -140,11 +155,17 @@ async function main() {
 
     // Configure server settings from CLI arguments
     const serverConfigManager = ServerConfigManager.getInstance();
+
+    // Handle backward compatibility for auth flag
+    const authEnabled = argv['enable-auth'] ?? argv['auth'] ?? false;
+    const scopeValidationEnabled = argv['enable-scope-validation'] ?? authEnabled;
+    const enhancedSecurityEnabled = argv['enable-enhanced-security'] ?? false;
+
     serverConfigManager.updateConfig({
       host: argv.host,
       port: argv.port,
       auth: {
-        enabled: argv['auth'],
+        enabled: authEnabled,
         sessionTtlMinutes: argv['session-ttl'],
         sessionStoragePath: argv['session-storage-path'],
         oauthCodeTtlMs: 60 * 1000, // 1 minute
@@ -153,6 +174,11 @@ async function main() {
       rateLimit: {
         windowMs: argv['rate-limit-window'] * 60 * 1000, // Convert minutes to milliseconds
         max: argv['rate-limit-max'],
+      },
+      features: {
+        auth: authEnabled,
+        scopeValidation: scopeValidationEnabled,
+        enhancedSecurity: enhancedSecurityEnabled,
       },
     });
 

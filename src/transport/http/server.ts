@@ -58,13 +58,16 @@ export class ExpressServer {
    * Sets up Express middleware including CORS, body parsing, and error handling.
    *
    * Configures the basic middleware stack required for the MCP server:
+   * - Enhanced security middleware (conditional based on feature flag)
    * - CORS for cross-origin requests
    * - JSON body parsing
    * - Global error handling
    */
   private setupMiddleware(): void {
-    // Security middleware (must be first)
-    this.app.use(...setupSecurityMiddleware());
+    // Conditionally apply enhanced security middleware (must be first if enabled)
+    if (this.configManager.isEnhancedSecurityEnabled()) {
+      this.app.use(...setupSecurityMiddleware());
+    }
 
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());

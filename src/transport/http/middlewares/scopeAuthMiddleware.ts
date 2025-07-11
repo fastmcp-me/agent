@@ -19,17 +19,28 @@ export interface AuthInfo {
  * Creates a scope validation middleware that uses the SDK's bearer auth middleware
  *
  * This middleware:
- * 1. Uses SDK's requireBearerAuth to verify tokens
+ * 1. Uses SDK's requireBearerAuth to verify tokens (when auth enabled)
  * 2. Validates that requested tags are covered by granted scopes
  * 3. Provides authentication context to downstream handlers
  *
- * When auth is disabled, all tags are allowed.
- * When auth is enabled, only tags covered by granted scopes are allowed.
+ * When scope validation is disabled, all tags are allowed.
+ * When scope validation is enabled:
+ * - If auth is also enabled, validates tokens and scopes
+ * - If auth is disabled, allows all tags (useful for development/testing)
  */
 export function createScopeAuthMiddleware() {
   const serverConfig = ServerConfigManager.getInstance();
 
-  // If auth is disabled, return a pass-through middleware
+  // If scope validation is disabled, return a pass-through middleware
+  if (!serverConfig.isScopeValidationEnabled()) {
+    return (_req: Request, res: Response, next: NextFunction): void => {
+      const requestedTags = res.locals.tags || [];
+      res.locals.validatedTags = requestedTags;
+      next();
+    };
+  }
+
+  // If scope validation is enabled but auth is disabled, allow all tags
   if (!serverConfig.isAuthEnabled()) {
     return (_req: Request, res: Response, next: NextFunction): void => {
       const requestedTags = res.locals.tags || [];
