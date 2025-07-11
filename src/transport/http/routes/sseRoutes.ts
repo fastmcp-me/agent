@@ -5,15 +5,16 @@ import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
+import scopeAuthMiddleware, { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
 export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
-  router.get(SSE_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
+  router.get(SSE_ENDPOINT, tagsExtractor, scopeAuthMiddleware, async (req: Request, res: Response) => {
     try {
       logger.info('[GET] sse', { query: req.query, headers: req.headers });
       const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
 
-      // Use tags from middleware
-      const tags = res.locals.tags;
+      // Use validated tags from scope auth middleware
+      const tags = getValidatedTags(res);
 
       // Connect the transport using the server manager
       await serverManager.connectTransport(transport, transport.sessionId, {

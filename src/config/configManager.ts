@@ -161,6 +161,28 @@ export class ConfigManager extends EventEmitter {
   public getTransportConfig(): Record<string, MCPServerParams> {
     return { ...this.transportConfig };
   }
+
+  /**
+   * Get all available tags from the configured servers
+   * @returns Array of unique tags from all servers
+   */
+  public getAvailableTags(): string[] {
+    const tags = new Set<string>();
+
+    for (const [_serverName, serverParams] of Object.entries(this.transportConfig)) {
+      // Skip disabled servers
+      if (serverParams.disabled) {
+        continue;
+      }
+
+      // Add tags from server configuration
+      if (serverParams.tags && Array.isArray(serverParams.tags)) {
+        serverParams.tags.forEach((tag) => tags.add(tag));
+      }
+    }
+
+    return Array.from(tags).sort();
+  }
 }
 
 export default ConfigManager;

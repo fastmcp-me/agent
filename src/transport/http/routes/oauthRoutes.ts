@@ -13,8 +13,11 @@ import {
   sanitizeErrorMessage,
   sanitizeServerNameForContext,
 } from '../../../utils/sanitization.js';
+import { SDKOAuthServerProvider } from '../../../auth/sdkOAuthServerProvider.js';
+import { validateScopes, auditScopeOperation } from '../../../utils/scopeValidation.js';
+import { sensitiveOperationLimiter } from '../middlewares/securityMiddleware.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Rate limiter for OAuth endpoints
 const createOAuthLimiter = () => {
@@ -198,6 +201,110 @@ const restartHandler: RequestHandler = async (req: Request, res: Response) => {
 };
 
 router.post('/restart/:serverName', restartHandler);
+
+/**
+ * Handle consent form submission for OAuth authorization
+ */
+const consentHandler: RequestHandler = async (req: Request, res: Response) => {
+  try {
+    const {
+      client_id,
+      redirect_uri,
+      code_challenge,
+      code_challenge_method: _code_challenge_method,
+      state,
+      resource,
+      action,
+      scopes,
+    } = req.body;
+
+    // Validate required fields
+    if (!client_id || !redirect_uri || !action) {
+      res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'Missing required parameters',
+      });
+      return;
+    }
+
+    // Get the OAuth server provider
+    const oauthProvider = new SDKOAuthServerProvider();
+    const client = oauthProvider.clientsStore.getClient(client_id);
+
+    if (!client) {
+      res.status(400).json({
+        error: 'invalid_client',
+        error_description: 'Client not found',
+      });
+      return;
+    }
+
+    // Ensure client is properly typed
+    const typedClient = client as import('@modelcontextprotocol/sdk/shared/auth.js').OAuthClientInformationFull;
+
+    if (action === 'deny') {
+      // User denied the authorization
+      auditScopeOperation('authorization_denied', {
+        clientId: client_id,
+        success: false,
+        error: 'User denied authorization',
+      });
+
+      const redirectUrl = new URL(redirect_uri);
+      redirectUrl.searchParams.set('error', 'access_denied');
+      redirectUrl.searchParams.set('error_description', 'User denied the request');
+      if (state) {
+        redirectUrl.searchParams.set('state', state);
+      }
+
+      logger.info(`OAuth authorization denied by user for client ${client_id}`);
+      res.redirect(redirectUrl.toString());
+      return;
+    }
+
+    if (action === 'approve') {
+      // User approved the authorization
+      const selectedScopes = Array.isArray(scopes) ? scopes : scopes ? [scopes] : [];
+
+      // Validate selected scopes
+      const validation = validateScopes(selectedScopes);
+      if (!validation.isValid) {
+        res.status(400).json({
+          error: 'invalid_scope',
+          error_description: `Invalid scopes: ${validation.errors.join(', ')}`,
+        });
+        return;
+      }
+
+      // Reconstruct authorization params for the approve method
+      const authParams = {
+        scopes: selectedScopes,
+        redirectUri: redirect_uri,
+        codeChallenge: code_challenge,
+        state,
+        resource: resource ? new URL(resource) : undefined,
+      };
+
+      // Use the OAuth provider to approve the authorization
+      await oauthProvider.approveAuthorization(typedClient, authParams, validation.validScopes, res);
+      return;
+    }
+
+    // Invalid action
+    res.status(400).json({
+      error: 'invalid_request',
+      error_description: 'Invalid action',
+    });
+  } catch (error) {
+    logger.error('Error handling consent form:', error);
+    res.status(500).json({
+      error: 'server_error',
+      error_description: 'Internal server error',
+    });
+  }
+};
+
+router.post('/consent', sensitiveOperationLimiter, consentHandler);
 
 /**
  * Initiate OAuth flow for a service

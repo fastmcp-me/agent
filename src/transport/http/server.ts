@@ -3,9 +3,9 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import { Options as RateLimitOptions } from 'express-rate-limit';
 import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
-import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../logger/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
+import { setupSecurityMiddleware } from './middlewares/securityMiddleware.js';
 import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
@@ -63,6 +63,9 @@ export class ExpressServer {
    * - Global error handling
    */
   private setupMiddleware(): void {
+    // Security middleware (must be first)
+    this.app.use(...setupSecurityMiddleware());
+
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());
     this.app.use(bodyParser.urlencoded({ extended: true }));
@@ -115,12 +118,8 @@ export class ExpressServer {
     // Setup OAuth management routes (no auth required)
     this.app.use('/oauth', oauthRoutes);
 
-    // Setup MCP transport routes with auth middleware
+    // Setup MCP transport routes (auth is handled per-route via scopeAuthMiddleware)
     const router = express.Router();
-    if (this.configManager.isAuthEnabled()) {
-      // Create auth middleware using SDK's requireBearerAuth
-      router.use(requireBearerAuth({ verifier: this.oauthProvider }));
-    }
     setupStreamableHttpRoutes(router, this.serverManager);
     setupSseRoutes(router, this.serverManager);
     this.app.use(router);

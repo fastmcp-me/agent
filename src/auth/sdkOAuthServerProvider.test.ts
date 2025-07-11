@@ -61,7 +61,10 @@ describe('SDKOAuthProvider', () => {
       try {
         const authInfo = await provider.verifyAccessToken('any-token');
         expect(authInfo.clientId).toBe('anonymous');
-        expect(authInfo.scopes).toEqual([]);
+        // When auth is disabled, all available tags are returned as scopes
+        expect(authInfo.scopes).toEqual(
+          expect.arrayContaining(['tag:context7', 'tag:playwright', 'tag:server-sequential-thinking']),
+        );
       } finally {
         // Restore original method
         configManager.isAuthEnabled = originalIsAuthEnabled;

@@ -12,6 +12,13 @@ import logger from '../logger/logger.js';
 import { ServerSessionManager } from './serverSessionManager.js';
 import { ServerConfigManager } from '../core/server/serverConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
+import {
+  validateScopesAgainstAvailableTags,
+  tagsToScopes,
+  scopesToTags,
+  auditScopeOperation,
+} from '../utils/scopeValidation.js';
+import { ConfigManager } from '../config/configManager.js';
 
 /**
  * File-based OAuth clients store implementation using AUTH_CONFIG settings
@@ -101,44 +108,223 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   }
 
   /**
-   * Handles the authorization request by auto-approving and redirecting
+   * Handles the authorization request with scope validation and user consent
    */
   async authorize(client: OAuthClientInformationFull, params: AuthorizationParams, res: Response): Promise<void> {
     try {
-      // Create authorization code
-      const metadata = {
-        scopes: params.scopes || [],
-        resource: params.resource?.toString() || '',
-        codeChallenge: params.codeChallenge,
-        redirectUri: params.redirectUri,
-      };
+      // Get requested scopes (default to all available tags if none specified)
+      const requestedScopes = params.scopes || [];
+      const configManager = ConfigManager.getInstance();
+      const availableTags = configManager.getAvailableTags();
 
-      const ttlMs = this.configManager.getOAuthCodeTtlMs();
-      const code = this.sessionManager.createAuthCode(
-        client.client_id,
-        params.redirectUri,
-        JSON.stringify(metadata),
-        ttlMs,
-      );
+      // If no scopes requested, default to all available tags
+      const finalScopes = requestedScopes.length > 0 ? requestedScopes : tagsToScopes(availableTags);
 
-      // Build redirect URL
-      const redirectUrl = new URL(params.redirectUri);
-      redirectUrl.searchParams.set('code', code);
-      if (params.state) {
-        redirectUrl.searchParams.set('state', params.state);
+      // Validate requested scopes against available tags
+      const validation = validateScopesAgainstAvailableTags(finalScopes, availableTags);
+
+      if (!validation.isValid) {
+        auditScopeOperation('scope_validation_failed', {
+          clientId: client.client_id,
+          requestedScopes: finalScopes,
+          success: false,
+          error: validation.errors.join(', '),
+        });
+
+        logger.warn(`Invalid scopes requested by client ${client.client_id}`, {
+          requestedScopes: finalScopes,
+          errors: validation.errors,
+        });
+
+        res.status(400).json({
+          error: 'invalid_scope',
+          error_description: `Invalid scopes: ${validation.errors.join(', ')}`,
+        });
+        return;
       }
 
-      logger.info(`OAuth authorization granted for client ${client.client_id}`, {
-        clientId: client.client_id,
-        redirectUri: params.redirectUri,
-        scopes: params.scopes,
-      });
+      // Check if this is a direct authorization (auto-approve) or requires user consent
+      const requiresUserConsent = this.requiresUserConsent(client, finalScopes);
 
-      res.redirect(redirectUrl.toString());
+      if (requiresUserConsent) {
+        // Show consent page
+        await this.renderConsentPage(client, params, finalScopes, availableTags, res);
+      } else {
+        // Auto-approve with validated scopes
+        await this.approveAuthorization(client, params, validation.validScopes, res);
+      }
     } catch (error) {
       logger.error('Authorization error:', error);
       res.status(500).json({ error: 'server_error', error_description: 'Internal server error' });
     }
+  }
+
+  /**
+   * Determines if user consent is required for the authorization
+   */
+  private requiresUserConsent(_client: OAuthClientInformationFull, _scopes: string[]): boolean {
+    // For now, always require user consent for security
+    // In the future, this could be configurable based on client trust level
+    return true;
+  }
+
+  /**
+   * Renders the consent page for scope selection
+   */
+  private async renderConsentPage(
+    client: OAuthClientInformationFull,
+    params: AuthorizationParams,
+    requestedScopes: string[],
+    availableTags: string[],
+    res: Response,
+  ): Promise<void> {
+    const scopeTags = scopesToTags(requestedScopes);
+    const consentPageHtml = this.generateConsentPageHtml(client, params, scopeTags, availableTags);
+
+    // Remove any CSP that might interfere with form submission
+    res.removeHeader('Content-Security-Policy');
+    res.set('Content-Type', 'text/html');
+    res.send(consentPageHtml);
+  }
+
+  /**
+   * Approves the authorization and redirects back to client
+   */
+  public async approveAuthorization(
+    client: OAuthClientInformationFull,
+    params: AuthorizationParams,
+    grantedScopes: string[],
+    res: Response,
+  ): Promise<void> {
+    // Create authorization code with granted scopes
+    const metadata = {
+      scopes: grantedScopes,
+      resource: params.resource?.toString() || '',
+      codeChallenge: params.codeChallenge,
+      redirectUri: params.redirectUri,
+    };
+
+    const ttlMs = this.configManager.getOAuthCodeTtlMs();
+    const code = this.sessionManager.createAuthCode(
+      client.client_id,
+      params.redirectUri,
+      JSON.stringify(metadata),
+      ttlMs,
+    );
+
+    // Build redirect URL
+    const redirectUrl = new URL(params.redirectUri);
+    redirectUrl.searchParams.set('code', code);
+    if (params.state) {
+      redirectUrl.searchParams.set('state', params.state);
+    }
+
+    auditScopeOperation('authorization_granted', {
+      clientId: client.client_id,
+      requestedScopes: params.scopes || [],
+      grantedScopes,
+      success: true,
+    });
+
+    logger.info(`OAuth authorization granted for client ${client.client_id}`, {
+      clientId: client.client_id,
+      redirectUri: params.redirectUri,
+      grantedScopes,
+    });
+
+    res.redirect(redirectUrl.toString());
+  }
+
+  /**
+   * Generates the HTML for the consent page
+   */
+  private generateConsentPageHtml(
+    client: OAuthClientInformationFull,
+    params: AuthorizationParams,
+    requestedTags: string[],
+    availableTags: string[],
+  ): string {
+    const clientName = client.client_name || client.client_id;
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Authorize ${clientName}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 20px; }
+        .app-info { background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .scopes-section { margin-bottom: 25px; }
+        .scope-item { display: flex; align-items: center; margin-bottom: 10px; }
+        .scope-item input { margin-right: 10px; }
+        .scope-item label { flex: 1; }
+        .tag-description { font-size: 0.9em; color: #666; margin-left: 25px; }
+        .buttons { display: flex; gap: 10px; justify-content: flex-end; }
+        .btn { padding: 10px 20px; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; border: none; }
+        .btn-secondary { background: #6c757d; color: white; border: none; }
+        .btn:hover { opacity: 0.9; }
+        .security-notice { background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Authorize Application</h1>
+        
+        <div class="app-info">
+            <strong>${clientName}</strong> is requesting access to your MCP servers.
+        </div>
+        
+        <div class="security-notice">
+            <strong>Security Notice:</strong> Only grant access to server groups that this application needs.
+        </div>
+        
+        <form method="POST" action="/oauth/consent">
+            <input type="hidden" name="client_id" value="${client.client_id}">
+            <input type="hidden" name="redirect_uri" value="${params.redirectUri}">
+            <input type="hidden" name="code_challenge" value="${params.codeChallenge || ''}">
+            <input type="hidden" name="code_challenge_method" value="S256">
+            <input type="hidden" name="state" value="${params.state || ''}">
+            <input type="hidden" name="resource" value="${params.resource?.toString() || ''}">
+            
+            <div class="scopes-section">
+                <h3>Server Access Permissions</h3>
+                <p>Select which server groups this application can access:</p>
+                
+                ${availableTags
+                  .map(
+                    (tag) => `
+                    <div class="scope-item">
+                        <input type="checkbox" 
+                               id="scope_${tag}" 
+                               name="scopes" 
+                               value="tag:${tag}"
+                               ${requestedTags.includes(tag) ? 'checked' : ''}>
+                        <label for="scope_${tag}">
+                            <strong>${tag}</strong> servers
+                        </label>
+                    </div>
+                    <div class="tag-description">
+                        Access servers tagged with "${tag}"
+                    </div>
+                `,
+                  )
+                  .join('')}
+            </div>
+            
+            <div class="buttons">
+                <button type="submit" name="action" value="deny" class="btn btn-secondary">Deny</button>
+                <button type="submit" name="action" value="approve" class="btn btn-primary">Approve</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
+    `;
   }
 
   /**
@@ -239,15 +425,17 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   }
 
   /**
-   * Verifies access token and returns auth info
+   * Verifies access token and returns auth info with granted scopes
    */
   async verifyAccessToken(token: string): Promise<AuthInfo> {
     if (!this.configManager.isAuthEnabled()) {
-      // Auth disabled, return minimal auth info
+      // Auth disabled, return minimal auth info with all available tags as scopes
+      const configManager = ConfigManager.getInstance();
+      const availableTags = configManager.getAvailableTags();
       return {
         token,
         clientId: 'anonymous',
-        scopes: [],
+        scopes: tagsToScopes(availableTags),
       };
     }
 
@@ -264,10 +452,21 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       throw new Error('Invalid or expired access token');
     }
 
+    // Extract scopes from session resource (stored during authorization)
+    let scopes: string[] = [];
+    if (sessionData.resource) {
+      try {
+        const metadata = JSON.parse(sessionData.resource);
+        scopes = metadata.scopes || [];
+      } catch (error) {
+        logger.warn(`Failed to parse session metadata for token ${tokenId}:`, error);
+      }
+    }
+
     return {
       token,
       clientId: sessionData.clientId,
-      scopes: [], // Could be extracted from session data if stored
+      scopes,
       expiresAt: sessionData.expires,
       resource: sessionData.resource ? new URL(sessionData.resource) : undefined,
     };

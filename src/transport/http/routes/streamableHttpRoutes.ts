@@ -6,9 +6,10 @@ import logger from '../../../logger/logger.js';
 import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
+import scopeAuthMiddleware, { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
 export function setupStreamableHttpRoutes(router: Router, serverManager: ServerManager): void {
-  router.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
+  router.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, scopeAuthMiddleware, async (req: Request, res: Response) => {
     try {
       logger.info('[POST] streamable-http', { query: req.query, body: req.body, headers: req.headers });
 
@@ -21,8 +22,8 @@ export function setupStreamableHttpRoutes(router: Router, serverManager: ServerM
           sessionIdGenerator: () => id,
         });
 
-        // Use tags from middleware
-        const tags = res.locals.tags;
+        // Use validated tags from scope auth middleware
+        const tags = getValidatedTags(res);
 
         await serverManager.connectTransport(transport, id, {
           tags,
