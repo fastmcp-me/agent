@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../../logger/logger.js';
 import { ServerConfigManager } from '../../../core/server/serverConfig.js';
 import { SDKOAuthServerProvider } from '../../../auth/sdkOAuthServerProvider.js';
@@ -15,117 +16,109 @@ export interface AuthInfo {
 }
 
 /**
- * Middleware to validate OAuth scopes against requested tags
+ * Creates a scope validation middleware that uses the SDK's bearer auth middleware
  *
  * This middleware:
- * 1. Extracts OAuth token from Authorization header
- * 2. Verifies the token and retrieves granted scopes
- * 3. Validates that requested tags are covered by granted scopes
- * 4. Provides authentication context to downstream handlers
+ * 1. Uses SDK's requireBearerAuth to verify tokens
+ * 2. Validates that requested tags are covered by granted scopes
+ * 3. Provides authentication context to downstream handlers
  *
  * When auth is disabled, all tags are allowed.
  * When auth is enabled, only tags covered by granted scopes are allowed.
  */
-export default function scopeAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function createScopeAuthMiddleware() {
   const serverConfig = ServerConfigManager.getInstance();
 
-  // If auth is disabled, allow all tags
+  // If auth is disabled, return a pass-through middleware
   if (!serverConfig.isAuthEnabled()) {
-    // Convert any requested tags to validated tags for backward compatibility
-    const requestedTags = res.locals.tags || [];
-    res.locals.validatedTags = requestedTags;
-    next();
-    return;
+    return (_req: Request, res: Response, next: NextFunction): void => {
+      const requestedTags = res.locals.tags || [];
+      res.locals.validatedTags = requestedTags;
+      next();
+    };
   }
 
-  try {
-    // Extract token from Authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      auditScopeOperation('missing_authorization', {
-        success: false,
-        error: 'Missing or invalid Authorization header',
+  const oauthProvider = new SDKOAuthServerProvider();
+
+  // Create the SDK's bearer auth middleware
+  const bearerAuthMiddleware = requireBearerAuth({
+    verifier: oauthProvider,
+  });
+
+  // Return a combined middleware that does both auth and scope validation
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // First run the SDK's bearer auth middleware
+      await new Promise<void>((resolve, reject) => {
+        bearerAuthMiddleware(req, res, (err?: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
       });
 
-      res.status(401).json({
-        error: 'unauthorized',
-        error_description: 'Bearer token required',
-      });
-      return;
-    }
+      // If we get here, auth succeeded and req.auth is populated
+      const authInfo = req.auth!;
+      const grantedScopes = authInfo.scopes || [];
+      const grantedTags = scopesToTags(grantedScopes);
 
-    const token = authHeader.slice(7); // Remove 'Bearer ' prefix
+      // Get requested tags from previous middleware (tagsExtractor)
+      const requestedTags = res.locals.tags || [];
 
-    // Verify token and get granted scopes
-    const oauthProvider = new SDKOAuthServerProvider();
-
-    oauthProvider
-      .verifyAccessToken(token)
-      .then((authInfo) => {
-        // Extract granted scopes and convert to tags
-        const grantedScopes = authInfo.scopes || [];
-        const grantedTags = scopesToTags(grantedScopes);
-
-        // Get requested tags from previous middleware (tagsExtractor)
-        const requestedTags = res.locals.tags || [];
-
-        // Validate that all requested tags are covered by granted scopes
-        if (!hasRequiredScopes(grantedScopes, requestedTags)) {
-          auditScopeOperation('insufficient_scopes', {
-            clientId: authInfo.clientId,
-            requestedScopes: requestedTags.map((tag: string) => `tag:${tag}`),
-            grantedScopes,
-            success: false,
-            error: 'Insufficient scopes for requested tags',
-          });
-
-          res.status(403).json({
-            error: 'insufficient_scope',
-            error_description: `Insufficient scopes. Required: ${requestedTags.join(', ')}, Granted: ${grantedTags.join(', ')}`,
-          });
-          return;
-        }
-
-        // Provide authentication context to downstream handlers via res.locals
-        res.locals.auth = {
-          token,
-          clientId: authInfo.clientId,
-          grantedScopes,
-          grantedTags,
-        };
-
-        // Provide validated tags to downstream handlers
-        // If no specific tags requested, use all granted tags
-        res.locals.validatedTags = requestedTags.length > 0 ? requestedTags : grantedTags;
-
-        auditScopeOperation('scope_validation_success', {
+      // Validate that all requested tags are covered by granted scopes
+      if (!hasRequiredScopes(grantedScopes, requestedTags)) {
+        auditScopeOperation('insufficient_scopes', {
           clientId: authInfo.clientId,
           requestedScopes: requestedTags.map((tag: string) => `tag:${tag}`),
           grantedScopes,
-          success: true,
-        });
-
-        next();
-      })
-      .catch((error) => {
-        auditScopeOperation('token_verification_failed', {
           success: false,
-          error: error.message,
+          error: 'Insufficient scopes for requested tags',
         });
 
-        logger.warn('Token verification failed:', error);
-        res.status(401).json({
-          error: 'invalid_token',
-          error_description: 'Invalid or expired access token',
+        res.status(403).json({
+          error: 'insufficient_scope',
+          error_description: `Insufficient scopes. Required: ${requestedTags.join(', ')}, Granted: ${grantedTags.join(', ')}`,
         });
+        return;
+      }
+
+      // Provide authentication context to downstream handlers via res.locals
+      res.locals.auth = {
+        token: req.headers.authorization?.slice(7) || '', // Remove 'Bearer ' prefix
+        clientId: authInfo.clientId,
+        grantedScopes,
+        grantedTags,
+      };
+
+      // Provide validated tags to downstream handlers
+      // If no specific tags requested, use all granted tags
+      res.locals.validatedTags = requestedTags.length > 0 ? requestedTags : grantedTags;
+
+      auditScopeOperation('scope_validation_success', {
+        clientId: authInfo.clientId,
+        requestedScopes: requestedTags.map((tag: string) => `tag:${tag}`),
+        grantedScopes,
+        success: true,
       });
-  } catch (error) {
-    logger.error('Scope auth middleware error:', error);
-    res.status(500).json({
-      error: 'server_error',
-      error_description: 'Internal server error',
-    });
-  }
+
+      next();
+    } catch (error) {
+      logger.error('Scope auth middleware error:', error);
+      res.status(500).json({
+        error: 'server_error',
+        error_description: 'Internal server error',
+      });
+    }
+  };
+}
+
+/**
+ * Default middleware for backward compatibility
+ *
+ * @deprecated Use createScopeAuthMiddleware() instead
+ */
+export default function scopeAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+  const middleware = createScopeAuthMiddleware();
+  middleware(req, res, next);
 }
 
 /**
