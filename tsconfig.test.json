@@ -4,5 +4,5 @@
     "rootDir": "."
   },
   "exclude": ["node_modules", "build"],
-  "include": ["src/**/*.test.ts"]
+  "include": ["src/**/*.test.ts", "test/**/*"]
 }

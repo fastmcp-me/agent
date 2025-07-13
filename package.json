@@ -42,6 +42,9 @@
     }
   },
   "lint-staged": {
+    "*.ts": [
+      "tsc --noEmit --project tsconfig.test.json"
+    ],
     "*.{js,ts}": [
       "eslint --fix",
       "prettier --write"
@@ -51,7 +54,7 @@
     ]
   },
   "scripts": {
-    "dev": "tsc-watch --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --auth\"",
+    "dev": "LOG_LEVEL=debug tsc-watch --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --auth\"",
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "typecheck": "tsc --noEmit --project tsconfig.test.json",
     "prepare": "husky || true",
@@ -62,7 +65,14 @@
     "format": "prettier --write \"src/**/*.{js,ts}\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:watch": "vitest --config vitest.e2e.config.ts",
+    "test:e2e:demo": "vitest run --config vitest.e2e.config.ts src/test/e2e/demo",
+    "test:e2e:stdio": "vitest run --config vitest.e2e.config.ts src/test/e2e/stdio",
+    "test:e2e:http": "vitest run --config vitest.e2e.config.ts src/test/e2e/http",
+    "test:e2e:integration": "vitest run --config vitest.e2e.config.ts src/test/e2e/integration",
+    "test:all": "pnpm run test && pnpm run test:e2e"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.15.0",
@@ -90,6 +100,7 @@
     "@typescript-eslint/eslint-plugin": "^8.27.0",
     "@typescript-eslint/parser": "^8.27.0",
     "@vitest/coverage-v8": "^1.4.0",
+    "axios": "^1.10.0",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.3",

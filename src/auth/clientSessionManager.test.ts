@@ -41,7 +41,7 @@ describe('ClientSessionManager', () => {
     mockFs.existsSync = vi.fn().mockReturnValue(false);
     mockFs.mkdirSync = vi.fn();
     mockFs.writeFileSync = vi.fn();
-    mockFs.readFileSync = vi.fn();
+    mockFs.readFileSync = vi.fn().mockReturnValue('{}');
     mockFs.unlinkSync = vi.fn();
     mockFs.readdirSync = vi.fn().mockReturnValue([]);
   });
