@@ -71,7 +71,7 @@ export function inputValidation(req: Request, res: Response, next: NextFunction)
   // Check for common injection patterns in headers
   const suspiciousPatterns = [
     /\$\(.*\)/, // Command injection
-    /<script.*>/i, // XSS
+    /<script[\s\S]*?>/i, // XSS - matches across newlines
     /javascript:/i, // JavaScript protocol
     /\.\./, // Path traversal
     /\0/, // Null byte injection
