@@ -1,7 +1,7 @@
-import { setupServer } from '../../../src/server.js';
-import { ServerManager } from '../../../src/core/server/serverManager.js';
-import { ConfigManager } from '../../../src/config/configManager.js';
-import logger from '../../../src/logger/logger.js';
+import { setupServer } from '@src/server.js';
+import { ServerManager } from '@src/core/server/serverManager.js';
+import { ConfigManager } from '@src/config/configManager.js';
+import logger from '@src/logger/logger.js';
 
 export class TestServerSetup {
   private serverManager: ServerManager | null = null;

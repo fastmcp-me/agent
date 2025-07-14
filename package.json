@@ -43,7 +43,7 @@
   },
   "lint-staged": {
     "*.ts": [
-      "tsc --noEmit --project tsconfig.test.json"
+      "bash -c 'tsc --noEmit --project tsconfig.test.json'"
     ],
     "*.{js,ts}": [
       "eslint --fix",
@@ -54,10 +54,10 @@
     ]
   },
   "scripts": {
-    "dev": "LOG_LEVEL=debug tsc-watch --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --auth\"",
-    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "dev": "LOG_LEVEL=debug tsc-watch --project tsconfig.build.json --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --auth\"",
+    "build": "tsc --project tsconfig.build.json && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "husky || true",
-    "watch": "tsc --watch",
+    "watch": "tsc --watch --project tsconfig.build.json",
     "inspector": "npx -y @modelcontextprotocol/inspector",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
@@ -109,6 +109,7 @@
     "ts-node": "^10.9.2",
     "tsc-watch": "^6.2.1",
     "typescript": "^5.3.3",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^1.4.0"
   },
   "pnpm": {
