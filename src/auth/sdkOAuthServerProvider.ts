@@ -72,9 +72,13 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
 
   private hashToUuid(input: string): string {
     // Simple hash to UUID conversion (not cryptographically secure, but deterministic)
+    // Limit input length to prevent DoS attacks
+    const maxLength = 1000;
+    const safeInput = input.length > maxLength ? input.substring(0, maxLength) : input;
+
     let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
+    for (let i = 0; i < safeInput.length; i++) {
+      const char = safeInput.charCodeAt(i);
       hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
