@@ -64,13 +64,16 @@ npx -y @1mcp/agent --help
 
 Available options:
 
-- `--transport, -t`: Choose transport type ("stdio" or "http", default: "http")
+- `--transport, -t`: Choose transport type ("stdio", "http", or "sse" - sse is deprecated, default: "http")
 - `--config, -c`: Use a specific config file
 - `--port, -P`: Change HTTP port (default: 3050)
 - `--host, -H`: Change HTTP host (default: localhost)
 - `--tags, -g`: Filter servers by tags (see Tags section below)
 - `--pagination, -p`: Enable pagination for client/server lists (boolean, default: false)
-- `--auth`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `--auth`: Enable authentication (OAuth 2.1) - deprecated, use --enable-auth (boolean, default: false)
+- `--enable-auth`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `--enable-scope-validation`: Enable tag-based scope validation (boolean, default: true)
+- `--enable-enhanced-security`: Enable enhanced security middleware (boolean, default: false)
 - `--session-ttl`: Session expiry time in minutes (number, default: 1440)
 - `--session-storage-path`: Custom session storage directory path (string, default: undefined)
 - `--rate-limit-window`: OAuth rate limit window in minutes (number, default: 15)
@@ -117,13 +120,16 @@ Available image tags:
 
 You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
 
-- `ONE_MCP_TRANSPORT`: Transport type ("stdio" or "http", default: "http")
+- `ONE_MCP_TRANSPORT`: Transport type ("stdio", "http", or "sse" - sse is deprecated, default: "http")
 - `ONE_MCP_PORT`: HTTP port (default: 3050)
 - `ONE_MCP_HOST`: HTTP host (default: "localhost")
 - `ONE_MCP_CONFIG`: Path to config file
 - `ONE_MCP_TAGS`: Comma-separated list of tags to filter servers
 - `ONE_MCP_PAGINATION`: Enable pagination for client/server lists (boolean, default: false)
-- `ONE_MCP_AUTH`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `ONE_MCP_AUTH`: Enable authentication (OAuth 2.1) - deprecated, use ONE_MCP_ENABLE_AUTH (boolean, default: false)
+- `ONE_MCP_ENABLE_AUTH`: Enable authentication (OAuth 2.1) (boolean, default: false)
+- `ONE_MCP_ENABLE_SCOPE_VALIDATION`: Enable tag-based scope validation (boolean, default: true)
+- `ONE_MCP_ENABLE_ENHANCED_SECURITY`: Enable enhanced security middleware (boolean, default: false)
 - `ONE_MCP_SESSION_TTL`: Session expiry time in minutes (number, default: 1440)
 - `ONE_MCP_SESSION_STORAGE_PATH`: Custom session storage directory path (string, default: undefined)
 - `ONE_MCP_RATE_LIMIT_WINDOW`: OAuth rate limit window in minutes (number, default: 15)

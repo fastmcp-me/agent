@@ -22,7 +22,7 @@ const argv = yargs(hideBin(process.argv))
   .options({
     transport: {
       alias: 't',
-      describe: 'Transport type to use (stdio or http)',
+      describe: 'Transport type to use (stdio or http, sse is deprecated)',
       type: 'string',
       choices: ['stdio', 'http', 'sse'],
       default: 'http',
@@ -70,7 +70,7 @@ const argv = yargs(hideBin(process.argv))
     'enable-scope-validation': {
       describe: 'Enable tag-based scope validation',
       type: 'boolean',
-      default: undefined,
+      default: true,
     },
     'enable-enhanced-security': {
       describe: 'Enable enhanced security middleware',
