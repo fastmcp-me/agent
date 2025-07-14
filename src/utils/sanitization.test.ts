@@ -6,6 +6,7 @@ import {
   sanitizeUrlParam,
   sanitizeErrorMessage,
   sanitizeServerNameForContext,
+  sanitizeHeaders,
 } from './sanitization.js';
 
 describe('escapeHtml', () => {
@@ -137,5 +138,78 @@ describe('sanitizeServerNameForContext', () => {
 
   it('should default to filename sanitization', () => {
     expect(sanitizeServerNameForContext(testName, 'unknown' as any)).toBe('my-server_test');
+  });
+});
+
+describe('sanitizeHeaders', () => {
+  it('should redact sensitive headers', () => {
+    const headers = {
+      authorization: 'Bearer token123',
+      'x-auth-token': 'abc123',
+      'x-api-key': 'key123',
+      cookie: 'session=value',
+      'set-cookie': 'session=value; Path=/',
+      'content-type': 'application/json',
+      'user-agent': 'test-agent',
+    };
+
+    const sanitized = sanitizeHeaders(headers);
+
+    expect(sanitized.authorization).toBe('[REDACTED]');
+    expect(sanitized['x-auth-token']).toBe('[REDACTED]');
+    expect(sanitized['x-api-key']).toBe('[REDACTED]');
+    expect(sanitized.cookie).toBe('[REDACTED]');
+    expect(sanitized['set-cookie']).toBe('[REDACTED]');
+    expect(sanitized['content-type']).toBe('application/json');
+    expect(sanitized['user-agent']).toBe('test-agent');
+  });
+
+  it('should handle case insensitive header names', () => {
+    const headers = {
+      Authorization: 'Bearer token123',
+      'X-AUTH-TOKEN': 'abc123',
+      COOKIE: 'session=value',
+      'Content-Type': 'application/json',
+    };
+
+    const sanitized = sanitizeHeaders(headers);
+
+    expect(sanitized.Authorization).toBe('[REDACTED]');
+    expect(sanitized['X-AUTH-TOKEN']).toBe('[REDACTED]');
+    expect(sanitized.COOKIE).toBe('[REDACTED]');
+    expect(sanitized['Content-Type']).toBe('application/json');
+  });
+
+  it('should handle auth header without prefix', () => {
+    const headers = {
+      auth: 'token123',
+      'x-custom-auth': 'value123',
+    };
+
+    const sanitized = sanitizeHeaders(headers);
+
+    expect(sanitized.auth).toBe('[REDACTED]');
+    expect(sanitized['x-custom-auth']).toBe('value123'); // Not in sensitive list
+  });
+
+  it('should handle empty or invalid headers', () => {
+    expect(sanitizeHeaders({})).toEqual({});
+    expect(sanitizeHeaders(null as any)).toEqual({});
+    expect(sanitizeHeaders(undefined as any)).toEqual({});
+    expect(sanitizeHeaders('not-object' as any)).toEqual({});
+  });
+
+  it('should preserve non-sensitive headers', () => {
+    const headers = {
+      'content-type': 'application/json',
+      'user-agent': 'test-agent',
+      'x-request-id': '123',
+      host: 'example.com',
+      accept: 'application/json',
+    };
+
+    const sanitized = sanitizeHeaders(headers);
+
+    expect(sanitized).toEqual(headers);
   });
 });

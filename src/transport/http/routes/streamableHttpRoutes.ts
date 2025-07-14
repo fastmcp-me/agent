@@ -7,11 +7,16 @@ import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import scopeAuthMiddleware, { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
+import { sanitizeHeaders } from '../../../utils/sanitization.js';
 
 export function setupStreamableHttpRoutes(router: Router, serverManager: ServerManager): void {
   router.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, scopeAuthMiddleware, async (req: Request, res: Response) => {
     try {
-      logger.info('[POST] streamable-http', { query: req.query, body: req.body, headers: req.headers });
+      logger.info('[POST] streamable-http', {
+        query: req.query,
+        body: req.body,
+        headers: sanitizeHeaders(req.headers),
+      });
 
       let transport: StreamableHTTPServerTransport;
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -67,7 +72,7 @@ export function setupStreamableHttpRoutes(router: Router, serverManager: ServerM
 
   router.get(STREAMABLE_HTTP_ENDPOINT, async (req: Request, res: Response) => {
     try {
-      logger.info('[GET] streamable-http', { query: req.query, headers: req.headers });
+      logger.info('[GET] streamable-http', { query: req.query, headers: sanitizeHeaders(req.headers) });
 
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       if (!sessionId) {
@@ -99,7 +104,7 @@ export function setupStreamableHttpRoutes(router: Router, serverManager: ServerM
 
   router.delete(STREAMABLE_HTTP_ENDPOINT, async (req: Request, res: Response) => {
     try {
-      logger.info('[DELETE] streamable-http', { query: req.query, headers: req.headers });
+      logger.info('[DELETE] streamable-http', { query: req.query, headers: sanitizeHeaders(req.headers) });
 
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       if (!sessionId) {

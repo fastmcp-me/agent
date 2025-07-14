@@ -6,11 +6,12 @@ import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import scopeAuthMiddleware, { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
+import { sanitizeHeaders } from '../../../utils/sanitization.js';
 
 export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
   router.get(SSE_ENDPOINT, tagsExtractor, scopeAuthMiddleware, async (req: Request, res: Response) => {
     try {
-      logger.info('[GET] sse', { query: req.query, headers: req.headers });
+      logger.info('[GET] sse', { query: req.query, headers: sanitizeHeaders(req.headers) });
       const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
 
       // Use validated tags from scope auth middleware

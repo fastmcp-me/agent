@@ -114,6 +114,33 @@ export function sanitizeErrorMessage(error: string): string {
 }
 
 /**
+ * Sanitizes HTTP headers for safe logging
+ * Redacts sensitive authentication and authorization headers
+ *
+ * @param headers - The headers object to sanitize
+ * @returns Sanitized headers object safe for logging
+ */
+export function sanitizeHeaders(headers: Record<string, any>): Record<string, any> {
+  if (!headers || typeof headers !== 'object') {
+    return {};
+  }
+
+  const sanitized: Record<string, any> = {};
+  const sensitiveHeaders = ['authorization', 'auth', 'x-auth-token', 'x-api-key', 'cookie', 'set-cookie'];
+
+  for (const [key, value] of Object.entries(headers)) {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveHeaders.includes(lowerKey)) {
+      sanitized[key] = '[REDACTED]';
+    } else {
+      sanitized[key] = value;
+    }
+  }
+
+  return sanitized;
+}
+
+/**
  * Comprehensive sanitization for server configuration data
  * Applies appropriate sanitization based on the context
  *
