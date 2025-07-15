@@ -38,6 +38,7 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 - pnpm (recommended) or npm
 - TypeScript 5.3+
 - Git
+- @modelcontextprotocol/sdk ^1.15.0 (automatically installed)
 
 ### Setting Up Your Development Environment
 
@@ -64,7 +65,14 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 4. **Run Tests**
 
    ```bash
-   pnpm test
+   # Run unit tests
+   pnpm test:unit
+
+   # Run E2E tests
+   pnpm test:e2e
+
+   # Run all tests
+   pnpm test:unit && pnpm test:e2e
    ```
 
 5. **Start Development Server**
@@ -99,14 +107,36 @@ agent/
 │   │   ├── http/             # HTTP/Express transport
 │   │   │   ├── server.ts     # Express server implementation
 │   │   │   ├── routes/       # HTTP endpoint handlers
-│   │   │   └── middleware/   # HTTP middleware functions
-│   │   ├── transportFactory.ts # Transport factory pattern
-│   │   └── config.ts         # Transport configuration
+│   │   │   │   ├── oauthRoutes.ts      # OAuth endpoint handlers
+│   │   │   │   ├── sseRoutes.ts        # Server-sent events routes
+│   │   │   │   └── streamableHttpRoutes.ts # HTTP streaming routes
+│   │   │   └── middlewares/  # HTTP middleware functions
+│   │   │       ├── errorHandler.ts     # Error handling middleware
+│   │   │       ├── scopeAuthMiddleware.ts # Scope-based authentication
+│   │   │       ├── securityMiddleware.ts # Security middleware
+│   │   │       └── tagsExtractor.ts    # Tag extraction middleware
+│   │   └── transportFactory.ts # Transport factory pattern
 │   ├── utils/                # Shared utility functions
-│   │   ├── sanitization.ts   # Security sanitization utilities
-│   │   ├── pagination.ts     # Pagination utilities
-│   │   ├── filtering.ts      # Result filtering utilities
-│   │   └── errors.ts         # Error handling utilities
+│   │   ├── clientFiltering.ts # Client filtering utilities
+│   │   ├── errorHandling.ts   # Error handling utilities
+│   │   ├── errorTypes.ts      # Error type definitions
+│   │   ├── pagination.ts      # Result pagination utilities
+│   │   ├── parsing.ts         # Input parsing utilities
+│   │   ├── sanitization.ts    # Security input sanitization
+│   └── e2e/                  # End-to-end tests
+│       ├── demo/             # Infrastructure demonstration tests
+│       ├── fixtures/         # Test server implementations
+│       ├── http/             # HTTP transport integration tests
+│       ├── integration/      # Multi-transport and performance tests
+│       ├── setup/            # Global test setup/teardown
+│       ├── stdio/            # STDIO transport tests
+│       └── utils/            # Test utilities and helpers
+├── docs/                     # Documentation
+│   ├── ARCHITECTURE.md       # Technical architecture documentation
+│   ├── SECURITY.md          # Security guidelines and practices
+│   ├── asserts/             # Documentation assets
+│   └── plans/               # Development planning documents
+│   │   └── scopeValidation.ts # OAuth scope validation
 │   └── types.ts              # Global type definitions
 ├── docs/                     # Documentation
 ├── test/                     # Test files
@@ -209,7 +239,7 @@ A clear description of what actually happened.
 
 - OS: [e.g. macOS 14.0]
 - Node.js version: [e.g. 20.10.0]
-- 1MCP version: [e.g. 0.11.0]
+- 1MCP version: [e.g. 0.12.0]
 - AI Client: [e.g. Claude Desktop, Cursor]
 
 ## Additional Context
@@ -337,11 +367,23 @@ describe('ServerManager', () => {
 });
 ```
 
+5. **Co-located unit tests** - Place unit tests next to source files with `.test.ts` extension
+6. **E2E test fixtures** - Use dedicated test servers in `/test/e2e/fixtures/`
+
 ### Test Types
 
-1. **Unit Tests** - Test individual functions/methods
-2. **Integration Tests** - Test component interactions
-3. **End-to-End Tests** - Test complete workflows
+1. **Unit Tests** - Test individual functions/methods (co-located with source files)
+2. **Integration Tests** - Test component interactions (included in E2E suite)
+3. **End-to-End Tests** - Test complete workflows (separate test directory with fixtures)
+
+### Test Framework
+
+We use **Vitest** as our testing framework:
+
+- **Unit Tests:** Fast, parallel execution with coverage
+- **E2E Tests:** Sequential execution with longer timeouts
+- **Coverage:** V8 provider with HTML/JSON/text reporting
+- **Global Setup:** E2E tests have dedicated setup/teardown infrastructure
 
 ### Testing Best Practices
 
@@ -349,6 +391,23 @@ describe('ServerManager', () => {
 2. **Mock external dependencies** - Use mocks for external services
 3. **Test edge cases** - Include error conditions and boundary cases
 4. **Cleanup** - Clean up resources after tests
+
+### Running Tests
+
+```bash
+# Unit tests (fast, parallel)
+pnpm test:unit
+pnpm test:unit:watch
+pnpm test:unit:coverage
+
+# E2E tests (sequential, with fixtures)
+pnpm test:e2e
+pnpm test:e2e:watch
+pnpm test:e2e:coverage
+
+# Debug with MCP Inspector
+pnpm inspector
+```
 
 ```typescript
 import { vi } from 'vitest';
@@ -425,6 +484,15 @@ async connectToServer(
 4. **Join discussions** - Participate in community discussions
 
 ### Recognition
+
+**Current Version:** 0.12.0
+
+### Development Workflow
+
+1. **Pre-commit hooks** - Husky ensures code quality before commits
+2. **Lint-staged** - Only lint changed files for faster feedback
+3. **Hot-reload** - Development server with automatic rebuild
+4. **Configuration hot-reload** - MCP server configuration updates without restart
 
 We value all contributions, including:
 
