@@ -36,7 +36,7 @@ export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo
 function collectCapabilities(clients: Clients): ServerCapabilities {
   const capabilities: ServerCapabilities = {};
 
-  for (const [name, clientInfo] of Object.entries(clients)) {
+  for (const [name, clientInfo] of clients.entries()) {
     try {
       const serverCapabilities = clientInfo.client.getServerCapabilities() || {};
       logger.debug(`Capabilities from ${name}: ${JSON.stringify(serverCapabilities)}`);

@@ -63,7 +63,7 @@ describe('ServerManager', () => {
     // Setup test data
     mockConfig = { name: 'test-server', version: '1.0.0' };
     mockCapabilities = { capabilities: { test: true } };
-    mockClients = {};
+    mockClients = new Map();
     mockTransports = {};
     mockTransport = {
       // Add any required Transport properties here

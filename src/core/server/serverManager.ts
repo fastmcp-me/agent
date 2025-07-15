@@ -13,7 +13,7 @@ export class ServerManager {
   private serverConfig: { name: string; version: string };
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
-  private clients: Clients = {};
+  private clients: Clients = new Map<string, ClientInfo>();
   private transports: Record<string, Transport> = {};
   private connectionSemaphore: Map<string, Promise<void>> = new Map();
   private disconnectingIds: Set<string> = new Set();
@@ -192,10 +192,7 @@ export class ServerManager {
    * Encapsulates access to prevent prototype pollution and accidental key collisions.
    */
   public getClient(serverName: string): ClientInfo | undefined {
-    if (Object.prototype.hasOwnProperty.call(this.clients, serverName)) {
-      return this.clients[serverName];
-    }
-    return undefined;
+    return this.clients.get(serverName);
   }
 
   public getActiveTransportsCount(): number {

@@ -44,7 +44,7 @@ export interface ClientInfo {
 /**
  * Map of client information indexed by client name
  */
-export type Clients = Record<string, ClientInfo>;
+export type Clients = Map<string, ClientInfo>;
 
 /**
  * Options for client operations

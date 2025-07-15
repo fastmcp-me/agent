@@ -10,7 +10,7 @@ import {
 } from './clientManager.js';
 import createClientFn from './clientFactory.js';
 import logger from '../../logger/logger.js';
-import { ClientStatus, ClientInfo, ServerInfo } from '../types/index.js';
+import { ClientStatus, Clients, ServerInfo } from '../types/index.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError } from '../../utils/errorTypes.js';
 import { MCP_SERVER_NAME, CONNECTION_RETRY } from '../../constants.js';
 
@@ -76,9 +76,9 @@ describe('clientManager', () => {
       await vi.runAllTimersAsync();
       const clients = await clientsPromise;
 
-      expect(clients['test-client']).toBeDefined();
-      expect(clients['test-client'].status).toBe(ClientStatus.Connected);
-      expect(clients['test-client'].transport).toBe(mockTransport);
+      expect(clients.get('test-client')).toBeDefined();
+      expect(clients.get('test-client')!.status).toBe(ClientStatus.Connected);
+      expect(clients.get('test-client')!.transport).toBe(mockTransport);
       expect(logger.info).toHaveBeenCalledWith('Client created for test-client');
     });
 
@@ -95,9 +95,9 @@ describe('clientManager', () => {
 
       const clients = await clientsPromise;
 
-      expect(clients['test-client'].status).toBe(ClientStatus.Error);
-      expect(clients['test-client'].lastError).toBeInstanceOf(ClientConnectionError);
-      expect(clients['test-client'].lastError?.message).toContain('Connection failed');
+      expect(clients.get('test-client')!.status).toBe(ClientStatus.Error);
+      expect(clients.get('test-client')!.lastError).toBeInstanceOf(ClientConnectionError);
+      expect(clients.get('test-client')!.lastError?.message).toContain('Connection failed');
       expect(mockClient.connect).toHaveBeenCalledTimes(CONNECTION_RETRY.MAX_ATTEMPTS);
     });
 
@@ -112,14 +112,14 @@ describe('clientManager', () => {
       await vi.runAllTimersAsync();
       const clients = await clientsPromise;
 
-      expect(clients['test-client'].status).toBe(ClientStatus.Error);
-      expect(clients['test-client'].lastError).toBeInstanceOf(ClientConnectionError);
-      expect(clients['test-client'].lastError?.message).toContain('circular dependency');
+      expect(clients.get('test-client')!.status).toBe(ClientStatus.Error);
+      expect(clients.get('test-client')!.lastError).toBeInstanceOf(ClientConnectionError);
+      expect(clients.get('test-client')!.lastError?.message).toContain('circular dependency');
     });
   });
 
   describe('getClient', () => {
-    let clients: Record<string, ClientInfo>;
+    let clients: Clients;
 
     beforeEach(async () => {
       clients = await createClients(mockTransports);
@@ -188,7 +188,7 @@ describe('clientManager', () => {
   });
 
   describe('executeClientOperation', () => {
-    let clients: Record<string, ClientInfo>;
+    let clients: Clients;
 
     beforeEach(async () => {
       clients = await createClients(mockTransports);
@@ -200,7 +200,7 @@ describe('clientManager', () => {
       const result = await executeClientOperation(clients, 'test-client', operation);
 
       expect(result).toBe('result');
-      expect(operation).toHaveBeenCalledWith(clients['test-client']);
+      expect(operation).toHaveBeenCalledWith(clients.get('test-client'));
     });
 
     it('should throw error for non-existent client', async () => {

@@ -1,5 +1,5 @@
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { Clients } from '../core/types/index.js';
+import { Clients, ClientInfo } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 /**
@@ -13,15 +13,15 @@ export function filterClientsByTags(clients: Clients, tags?: string[]): Clients 
     return clients;
   }
 
-  const filteredClients: Record<string, (typeof clients)[keyof typeof clients]> = {};
+  const filteredClients = new Map<string, ClientInfo>();
   let matchedClients = 0;
 
-  for (const [name, clientInfo] of Object.entries(clients)) {
+  for (const [name, clientInfo] of clients.entries()) {
     const clientTags = clientInfo.transport.tags || [];
     const hasMatchingTags = tags.every((tag) => clientTags.includes(tag));
 
     if (hasMatchingTags) {
-      filteredClients[name] = clientInfo;
+      filteredClients.set(name, clientInfo);
       matchedClients++;
     }
   }
@@ -32,7 +32,7 @@ export function filterClientsByTags(clients: Clients, tags?: string[]): Clients 
     logger.debug(`Found ${matchedClients} clients matching tags: ${tags.join(', ')}`);
   }
 
-  return Object.freeze(filteredClients);
+  return filteredClients;
 }
 
 /**
@@ -42,10 +42,10 @@ export function filterClientsByTags(clients: Clients, tags?: string[]): Clients 
  * @returns Filtered record of client instances
  */
 export function filterClientsByCapabilities(clients: Clients, capabilities: ServerCapabilities): Clients {
-  const filteredClients: Record<string, (typeof clients)[keyof typeof clients]> = {};
+  const filteredClients = new Map<string, ClientInfo>();
   let matchedClients = 0;
 
-  for (const [name, clientInfo] of Object.entries(clients)) {
+  for (const [name, clientInfo] of clients.entries()) {
     const clientCapabilities = clientInfo.capabilities || {};
     const hasMatchingCapabilities = Object.keys(capabilities).every((capability) => {
       const clientCapability = clientCapabilities[capability as keyof ServerCapabilities];
@@ -53,7 +53,7 @@ export function filterClientsByCapabilities(clients: Clients, capabilities: Serv
     });
 
     if (hasMatchingCapabilities) {
-      filteredClients[name] = clientInfo;
+      filteredClients.set(name, clientInfo);
       matchedClients++;
     }
   }
@@ -64,7 +64,7 @@ export function filterClientsByCapabilities(clients: Clients, capabilities: Serv
     logger.debug(`Found ${matchedClients} clients matching capabilities: ${JSON.stringify(capabilities)}`);
   }
 
-  return Object.freeze(filteredClients);
+  return filteredClients;
 }
 
 type ClientFilter = (clients: Clients) => Clients;
@@ -87,15 +87,15 @@ export function filterClients(...filters: ClientFilter[]): ClientFilter {
  */
 export function byCapabilities(requiredCapabilities: ServerCapabilities): ClientFilter {
   return (clients: Clients) => {
-    return Object.entries(clients).reduce((filtered, [name, clientInfo]) => {
+    return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
       const hasCapabilities = Object.keys(requiredCapabilities).every(
         (cap) => clientInfo.capabilities && cap in clientInfo.capabilities,
       );
       if (hasCapabilities) {
-        filtered[name] = clientInfo;
+        filtered.set(name, clientInfo);
       }
       return filtered;
-    }, {} as Clients);
+    }, new Map<string, ClientInfo>());
   };
 }
 
@@ -108,12 +108,12 @@ export function byTags(tags?: string[]): ClientFilter {
   return (clients: Clients) => {
     if (!tags || tags.length === 0) return clients;
 
-    return Object.entries(clients).reduce((filtered, [name, clientInfo]) => {
+    return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
       const hasMatchingTags = tags.every((tag) => clientInfo.transport.tags?.includes(tag));
       if (hasMatchingTags) {
-        filtered[name] = clientInfo;
+        filtered.set(name, clientInfo);
       }
       return filtered;
-    }, {} as Clients);
+    }, new Map<string, ClientInfo>());
   };
 }

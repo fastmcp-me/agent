@@ -28,7 +28,7 @@ export function setupClientToServerNotifications(clients: Clients, serverInfo: S
     PromptListChangedNotificationSchema,
   ];
 
-  for (const [name, clientInfo] of Object.entries(clients)) {
+  for (const [name, clientInfo] of clients.entries()) {
     clientNotificationSchemas.forEach((schema) => {
       clientInfo.client.setNotificationHandler(
         schema,
@@ -72,7 +72,7 @@ export function setupServerToClientNotifications(clients: Clients, serverInfo: S
     RootsListChangedNotificationSchema,
   ];
 
-  for (const [name, clientInfo] of Object.entries(clients)) {
+  for (const [name, clientInfo] of clients.entries()) {
     serverNotificationSchemas.forEach((schema) => {
       serverInfo.server.setNotificationHandler(
         schema,

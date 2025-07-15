@@ -40,7 +40,7 @@ import logger from '../logger/logger.js';
  * @param serverInfo The MCP server instance
  */
 function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
-  Object.entries(clients).forEach(([_, clientInfo]) => {
+  Array.from(clients.entries()).forEach(([_, clientInfo]) => {
     clientInfo.client.setRequestHandler(
       PingRequestSchema,
       withErrorHandling(async () => {
@@ -102,7 +102,7 @@ export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo
     PingRequestSchema,
     withErrorHandling(async () => {
       // Health check all connected upstream clients
-      const healthCheckPromises = Object.entries(clients).map(async ([clientName, clientInfo]) => {
+      const healthCheckPromises = Array.from(clients.entries()).map(async ([clientName, clientInfo]) => {
         if (clientInfo.status === ClientStatus.Connected) {
           try {
             await clientInfo.client.ping();

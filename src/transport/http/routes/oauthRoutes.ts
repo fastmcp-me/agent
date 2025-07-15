@@ -66,7 +66,7 @@ router.get('/', async (req: Request, res: Response) => {
     const serverManager = ServerManager.current;
     const clients = serverManager.getClients();
 
-    const services = Object.entries(clients).map(([name, clientInfo]) => ({
+    const services = Array.from(clients.entries()).map(([name, clientInfo]) => ({
       name,
       status: clientInfo.status,
       authorizationUrl: clientInfo.authorizationUrl,
@@ -108,7 +108,7 @@ const authorizeHandler: RequestHandler = async (req: Request, res: Response) => 
 
       // Get updated client info
       const updatedClients = serverManager.getClients();
-      const updatedClientInfo = updatedClients[serverName];
+      const updatedClientInfo = updatedClients.get(serverName);
 
       if (updatedClientInfo?.authorizationUrl) {
         res.redirect(updatedClientInfo.authorizationUrl);

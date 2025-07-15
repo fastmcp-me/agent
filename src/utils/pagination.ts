@@ -149,12 +149,12 @@ export async function handlePagination<T>(
   enablePagination: boolean,
 ): Promise<PaginationResult<T>> {
   const { cursor, ...clientParams } = params;
-  const clientNames = Object.keys(clients);
+  const clientNames = Array.from(clients.keys());
 
   if (!enablePagination) {
     const allItems = await Promise.all(
       clientNames.map((clientName) =>
-        fetchAllItemsForClient(clients[clientName], clientParams, callClientMethod, transformResult),
+        fetchAllItemsForClient(clients.get(clientName)!, clientParams, callClientMethod, transformResult),
       ),
     );
     return { items: allItems.flat() };
@@ -166,12 +166,12 @@ export async function handlePagination<T>(
   const targetClientName = clientName || clientNames[0];
 
   // Validate that the target client exists
-  const clientInfo = clients[targetClientName];
+  const clientInfo = clients.get(targetClientName);
   if (!clientInfo) {
     logger.warn(`Client '${targetClientName}' not found, falling back to first available client`);
     // Fallback to first available client if the target doesn't exist
     const fallbackClientName = clientNames[0];
-    const fallbackClient = fallbackClientName ? clients[fallbackClientName] : null;
+    const fallbackClient = fallbackClientName ? clients.get(fallbackClientName) : null;
 
     if (!fallbackClient) {
       logger.warn('No clients available for pagination');

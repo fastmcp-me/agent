@@ -20,48 +20,47 @@ describe('Ping Handler', () => {
     };
 
     // Create mock clients collection
-    mockClients = {
-      client1: {
-        name: 'client1',
-        status: ClientStatus.Connected,
-        client: mockClient1,
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as ClientInfo,
-      client2: {
-        name: 'client2',
-        status: ClientStatus.Connected,
-        client: mockClient2,
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as ClientInfo,
-      client3: {
-        name: 'client3',
-        status: ClientStatus.Disconnected,
-        client: { ping: vi.fn() },
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as unknown as ClientInfo,
-    };
+    mockClients = new Map();
+    mockClients.set('client1', {
+      name: 'client1',
+      status: ClientStatus.Connected,
+      client: mockClient1,
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as ClientInfo);
+    mockClients.set('client2', {
+      name: 'client2',
+      status: ClientStatus.Connected,
+      client: mockClient2,
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as ClientInfo);
+    mockClients.set('client3', {
+      name: 'client3',
+      status: ClientStatus.Disconnected,
+      client: { ping: vi.fn() },
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as unknown as ClientInfo);
   });
 
   // Test the core ping handler logic directly
   const createPingHandler = (clients: Clients) => {
     return async () => {
       // Health check all connected upstream clients (replicated from actual implementation)
-      const healthCheckPromises = Object.entries(clients).map(async ([clientName, clientInfo]) => {
+      const healthCheckPromises = Array.from(clients.entries()).map(async ([clientName, clientInfo]) => {
         if (clientInfo.status === ClientStatus.Connected) {
           try {
             await clientInfo.client.ping();
@@ -100,7 +99,7 @@ describe('Ping Handler', () => {
     await pingHandler();
 
     // Client3 is disconnected, so its ping should not be called
-    expect(mockClients['client3'].client.ping).not.toHaveBeenCalled();
+    expect(mockClients.get('client3')!.client.ping).not.toHaveBeenCalled();
   });
 
   it('should handle client ping failures gracefully', async () => {
@@ -126,7 +125,7 @@ describe('Ping Handler', () => {
   });
 
   it('should handle empty clients object', async () => {
-    const emptyClients: Clients = {};
+    const emptyClients: Clients = new Map();
     const pingHandler = createPingHandler(emptyClients);
     const result = await pingHandler();
 
@@ -134,47 +133,46 @@ describe('Ping Handler', () => {
   });
 
   it('should handle clients with different statuses', async () => {
-    const mixedClients: Clients = {
-      connected: {
-        name: 'connected',
-        status: ClientStatus.Connected,
-        client: { ping: vi.fn().mockResolvedValue({}) },
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as unknown as ClientInfo,
-      disconnected: {
-        name: 'disconnected',
-        status: ClientStatus.Disconnected,
-        client: { ping: vi.fn() },
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as unknown as ClientInfo,
-      error: {
-        name: 'error',
-        status: ClientStatus.Error,
-        client: { ping: vi.fn() },
-        transport: {
-          timeout: 5000,
-          start: vi.fn(),
-          send: vi.fn(),
-          close: vi.fn(),
-        },
-      } as unknown as ClientInfo,
-    };
+    const mixedClients: Clients = new Map();
+    mixedClients.set('connected', {
+      name: 'connected',
+      status: ClientStatus.Connected,
+      client: { ping: vi.fn().mockResolvedValue({}) },
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as unknown as ClientInfo);
+    mixedClients.set('disconnected', {
+      name: 'disconnected',
+      status: ClientStatus.Disconnected,
+      client: { ping: vi.fn() },
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as unknown as ClientInfo);
+    mixedClients.set('error', {
+      name: 'error',
+      status: ClientStatus.Error,
+      client: { ping: vi.fn() },
+      transport: {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      },
+    } as unknown as ClientInfo);
 
     const pingHandler = createPingHandler(mixedClients);
     await pingHandler();
 
-    expect(mixedClients['connected'].client.ping).toHaveBeenCalledTimes(1);
-    expect(mixedClients['disconnected'].client.ping).not.toHaveBeenCalled();
-    expect(mixedClients['error'].client.ping).not.toHaveBeenCalled();
+    expect(mixedClients.get('connected')!.client.ping).toHaveBeenCalledTimes(1);
+    expect(mixedClients.get('disconnected')!.client.ping).not.toHaveBeenCalled();
+    expect(mixedClients.get('error')!.client.ping).not.toHaveBeenCalled();
   });
 });

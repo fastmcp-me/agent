@@ -63,7 +63,7 @@ describe('CapabilityManager', () => {
 
   describe('setupCapabilities', () => {
     it('should setup capabilities and handlers for empty clients', async () => {
-      const clients: Clients = {};
+      const clients: Clients = new Map();
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -89,9 +89,8 @@ describe('CapabilityManager', () => {
         transport: {} as any,
       };
 
-      const clients: Clients = {
-        client1: clientInfo,
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', clientInfo);
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -114,20 +113,19 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -153,20 +151,19 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -194,26 +191,25 @@ describe('CapabilityManager', () => {
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(undefined);
       (mockClient3.getServerCapabilities as unknown as MockInstance).mockReturnValue({});
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client3: {
-          name: 'client3',
-          client: mockClient3,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client3', {
+        name: 'client3',
+        client: mockClient3,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -231,20 +227,19 @@ describe('CapabilityManager', () => {
       };
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -293,20 +288,19 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -358,26 +352,25 @@ describe('CapabilityManager', () => {
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
       (mockClient3.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities3);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client3: {
-          name: 'client3',
-          client: mockClient3,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client3', {
+        name: 'client3',
+        client: mockClient3,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -409,20 +402,19 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = {
-        client1: {
-          name: 'client1',
-          client: mockClient1,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-        client2: {
-          name: 'client2',
-          client: mockClient2,
-          status: ClientStatus.Connected,
-          transport: {} as any,
-        },
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', {
+        name: 'client1',
+        client: mockClient1,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
+      clients.set('client2', {
+        name: 'client2',
+        client: mockClient2,
+        status: ClientStatus.Connected,
+        transport: {} as any,
+      });
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -466,10 +458,9 @@ describe('CapabilityManager', () => {
         transport: {} as any,
       };
 
-      const clients: Clients = {
-        client1: clientInfo1,
-        client2: clientInfo2,
-      };
+      const clients: Clients = new Map();
+      clients.set('client1', clientInfo1);
+      clients.set('client2', clientInfo2);
 
       await setupCapabilities(clients, mockServerInfo);
 

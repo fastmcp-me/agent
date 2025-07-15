@@ -23,7 +23,7 @@ import { ServerConfigManager } from '../server/serverConfig.js';
  * @returns Record of client instances
  */
 export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<Clients> {
-  const clients: Record<string, ClientInfo> = {};
+  const clients = new Map<string, ClientInfo>();
 
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
@@ -33,17 +33,20 @@ export async function createClients(transports: Record<string, AuthProviderTrans
       // Connect with retry logic
       const connectedClient = await connectWithRetry(client, transport, name);
 
-      clients[name] = {
+      clients.set(name, {
         name,
         transport,
         client: connectedClient,
         status: ClientStatus.Connected,
         lastConnected: new Date(),
-      };
+      });
       logger.info(`Client created for ${name}`);
 
       connectedClient.onclose = () => {
-        clients[name].status = ClientStatus.Disconnected;
+        const clientInfo = clients.get(name);
+        if (clientInfo) {
+          clientInfo.status = ClientStatus.Disconnected;
+        }
         logger.info(`Client ${name} disconnected`);
       };
     } catch (error) {
@@ -63,28 +66,28 @@ export async function createClients(transports: Record<string, AuthProviderTrans
           logger.warn(`Could not extract authorization URL for ${name}:`, urlError);
         }
 
-        clients[name] = {
+        clients.set(name, {
           name,
           transport,
           client: error.client,
           status: ClientStatus.AwaitingOAuth,
           authorizationUrl,
           oauthStartTime: new Date(),
-        };
+        });
       } else {
         logger.error(`Failed to create client for ${name}: ${error}`);
-        clients[name] = {
+        clients.set(name, {
           name,
           transport,
           client: await createClient(),
           status: ClientStatus.Error,
           lastError: error instanceof Error ? error : new Error(String(error)),
-        };
+        });
       }
     }
   }
 
-  return Object.freeze(clients);
+  return clients;
 }
 
 /**
@@ -153,7 +156,7 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
  * @throws ClientNotFoundError if the client is not found
  */
 export function getClient(clients: Clients, clientName: string): ClientInfo {
-  const client = clients[clientName];
+  const client = clients.get(clientName);
   if (!client) {
     throw new ClientNotFoundError(clientName);
   }
