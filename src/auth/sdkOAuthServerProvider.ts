@@ -72,12 +72,20 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
 
   private hashToUuid(input: string): string {
     // Simple hash to UUID conversion (not cryptographically secure, but deterministic)
+    // Validate input is actually a string to prevent DoS attacks
+    if (typeof input !== 'string') {
+      throw new Error('Input must be a string');
+    }
+
     // Limit input length to prevent DoS attacks
     const maxLength = 1000;
-    const safeInput = input.length > maxLength ? input.substring(0, maxLength) : input;
+    // Use Math.min to ensure we never exceed maxLength, even if length property is malicious
+    const actualLength = Math.min(input.length, maxLength);
+    const safeInput = input.substring(0, actualLength);
 
     let hash = 0;
-    for (let i = 0; i < safeInput.length; i++) {
+    // Use actualLength instead of safeInput.length to avoid potential issues
+    for (let i = 0; i < actualLength; i++) {
       const char = safeInput.charCodeAt(i);
       hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
@@ -278,15 +286,15 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
 <body>
     <div class="container">
         <h1>Authorize Application</h1>
-        
+
         <div class="app-info">
             <strong>${clientName}</strong> is requesting access to your MCP servers.
         </div>
-        
+
         <div class="security-notice">
             <strong>Security Notice:</strong> Only grant access to server groups that this application needs.
         </div>
-        
+
         <form method="POST" action="/oauth/consent">
             <input type="hidden" name="client_id" value="${client.client_id}">
             <input type="hidden" name="redirect_uri" value="${params.redirectUri}">
@@ -294,18 +302,18 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
             <input type="hidden" name="code_challenge_method" value="S256">
             <input type="hidden" name="state" value="${params.state || ''}">
             <input type="hidden" name="resource" value="${params.resource?.toString() || ''}">
-            
+
             <div class="scopes-section">
                 <h3>Server Access Permissions</h3>
                 <p>Select which server groups this application can access:</p>
-                
+
                 ${availableTags
                   .map(
                     (tag) => `
                     <div class="scope-item">
-                        <input type="checkbox" 
-                               id="scope_${tag}" 
-                               name="scopes" 
+                        <input type="checkbox"
+                               id="scope_${tag}"
+                               name="scopes"
                                value="tag:${tag}"
                                ${requestedTags.includes(tag) ? 'checked' : ''}>
                         <label for="scope_${tag}">
@@ -319,7 +327,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
                   )
                   .join('')}
             </div>
-            
+
             <div class="buttons">
                 <button type="submit" name="action" value="deny" class="btn btn-secondary">Deny</button>
                 <button type="submit" name="action" value="approve" class="btn btn-primary">Approve</button>
