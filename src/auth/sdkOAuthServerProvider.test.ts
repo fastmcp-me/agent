@@ -1,9 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { tmpdir } from 'os';
 import path from 'path';
 import fs from 'fs';
 import { SDKOAuthServerProvider } from './sdkOAuthServerProvider.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
+
+// Mock the ConfigManager module
+vi.mock('../config/configManager.js', () => {
+  const mockConfigManager = {
+    getAvailableTags: vi.fn(() => ['context7', 'playwright', 'server-sequential-thinking']),
+    getTransportConfig: vi.fn(() => ({})),
+    startWatching: vi.fn(),
+    stopWatching: vi.fn(),
+  };
+
+  return {
+    ConfigManager: {
+      getInstance: vi.fn(() => mockConfigManager),
+    },
+  };
+});
 
 describe('SDKOAuthProvider', () => {
   let provider: SDKOAuthServerProvider;
