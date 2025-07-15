@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { requireBearerAuth } from '@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js';
 import logger from '../../../logger/logger.js';
-import { ServerConfigManager } from '../../../core/server/serverConfig.js';
+import { AgentConfigManager } from '../../../core/server/agentConfig.js';
 import { SDKOAuthServerProvider } from '../../../auth/sdkOAuthServerProvider.js';
 import { hasRequiredScopes, scopesToTags, auditScopeOperation } from '../../../utils/scopeValidation.js';
 
@@ -29,7 +29,7 @@ export interface AuthInfo {
  * - If auth is disabled, allows all tags (useful for development/testing)
  */
 export function createScopeAuthMiddleware() {
-  const serverConfig = ServerConfigManager.getInstance();
+  const serverConfig = AgentConfigManager.getInstance();
 
   // If scope validation is disabled, return a pass-through middleware
   if (!serverConfig.isScopeValidationEnabled()) {

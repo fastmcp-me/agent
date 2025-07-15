@@ -1,12 +1,12 @@
 import { AUTH_CONFIG, HOST, PORT, RATE_LIMIT_CONFIG } from '../../constants.js';
 
 /**
- * Configuration interface for server-specific settings.
+ * Configuration interface for agent-specific settings.
  *
  * Defines the structure for authentication and session management configuration
  * that can be customized via CLI arguments or environment variables.
  */
-export interface ServerConfig {
+export interface AgentConfig {
   host: string;
   port: number;
   auth: {
@@ -28,24 +28,24 @@ export interface ServerConfig {
 }
 
 /**
- * ServerConfigManager manages server-specific configuration settings.
+ * AgentConfigManager manages agent-specific configuration settings.
  *
  * This singleton class handles authentication and session configuration
  * that differs from the main MCP server configuration. It provides
- * centralized access to server settings with default values and
+ * centralized access to agent settings with default values and
  * runtime configuration updates.
  *
  * @example
  * ```typescript
- * const configManager = ServerConfigManager.getInstance();
+ * const configManager = AgentConfigManager.getInstance();
  * configManager.updateConfig({
  *   auth: { enabled: true, sessionTtlMinutes: 60 }
  * });
  * ```
  */
-export class ServerConfigManager {
-  private static instance: ServerConfigManager;
-  private config: ServerConfig;
+export class AgentConfigManager {
+  private static instance: AgentConfigManager;
+  private config: AgentConfig;
 
   /**
    * Private constructor to enforce singleton pattern.
@@ -76,29 +76,29 @@ export class ServerConfigManager {
   }
 
   /**
-   * Gets the singleton instance of ServerConfigManager.
+   * Gets the singleton instance of AgentConfigManager.
    *
    * Creates a new instance if one doesn't exist, otherwise returns
    * the existing instance to ensure configuration consistency.
    *
-   * @returns The singleton ServerConfigManager instance
+   * @returns The singleton AgentConfigManager instance
    */
-  public static getInstance(): ServerConfigManager {
-    if (!ServerConfigManager.instance) {
-      ServerConfigManager.instance = new ServerConfigManager();
+  public static getInstance(): AgentConfigManager {
+    if (!AgentConfigManager.instance) {
+      AgentConfigManager.instance = new AgentConfigManager();
     }
-    return ServerConfigManager.instance;
+    return AgentConfigManager.instance;
   }
 
   /**
-   * Updates the server configuration with new values.
+   * Updates the agent configuration with new values.
    *
    * Merges the provided updates with existing configuration, allowing
    * partial updates while preserving other settings.
    *
    * @param updates - Partial configuration object with new values
    */
-  public updateConfig(updates: Partial<ServerConfig>): void {
+  public updateConfig(updates: Partial<AgentConfig>): void {
     this.config = { ...this.config, ...updates };
     if (updates.auth) {
       this.config.auth = { ...this.config.auth, ...updates.auth };
@@ -112,14 +112,14 @@ export class ServerConfigManager {
   }
 
   /**
-   * Gets a copy of the current server configuration.
+   * Gets a copy of the current agent configuration.
    *
    * Returns a deep copy to prevent external modification of the
    * internal configuration state.
    *
-   * @returns Current server configuration
+   * @returns Current agent configuration
    */
-  public getConfig(): ServerConfig {
+  public getConfig(): AgentConfig {
     return { ...this.config };
   }
 

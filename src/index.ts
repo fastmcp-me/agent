@@ -10,9 +10,9 @@ import { setupServer } from './server.js';
 import logger, { enableConsoleTransport } from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './core/server/serverManager.js';
-import { ConfigManager } from './config/configManager.js';
+import { McpConfigManager } from './config/mcpConfigManager.js';
 import { ExpressServer } from './transport/http/server.js';
-import { ServerConfigManager } from './core/server/serverConfig.js';
+import { AgentConfigManager } from './core/server/agentConfig.js';
 import { PORT, HOST } from './constants.js';
 
 // Parse command line arguments
@@ -151,10 +151,10 @@ async function main() {
       enableConsoleTransport();
     }
 
-    ConfigManager.getInstance(argv.config);
+    McpConfigManager.getInstance(argv.config);
 
     // Configure server settings from CLI arguments
-    const serverConfigManager = ServerConfigManager.getInstance();
+    const serverConfigManager = AgentConfigManager.getInstance();
 
     // Handle backward compatibility for auth flag
     const authEnabled = argv['enable-auth'] ?? argv['auth'] ?? false;

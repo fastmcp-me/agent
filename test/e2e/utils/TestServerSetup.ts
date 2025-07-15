@@ -1,6 +1,6 @@
 import { setupServer } from '@src/server.js';
 import { ServerManager } from '@src/core/server/serverManager.js';
-import { ConfigManager } from '@src/config/configManager.js';
+import { McpConfigManager } from '@src/config/mcpConfigManager.js';
 import logger from '@src/logger/logger.js';
 
 export class TestServerSetup {
@@ -12,7 +12,7 @@ export class TestServerSetup {
     ServerManager.resetInstance();
 
     // Load the test configuration
-    ConfigManager.getInstance(configPath);
+    McpConfigManager.getInstance(configPath);
 
     // Set up and start the server
     this.serverManager = await setupServer();

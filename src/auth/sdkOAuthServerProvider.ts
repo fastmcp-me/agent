@@ -10,7 +10,7 @@ import type {
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
 import { ServerSessionManager } from './serverSessionManager.js';
-import { ServerConfigManager } from '../core/server/serverConfig.js';
+import { AgentConfigManager } from '../core/server/agentConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
 import {
   validateScopesAgainstAvailableTags,
@@ -18,7 +18,7 @@ import {
   scopesToTags,
   auditScopeOperation,
 } from '../utils/scopeValidation.js';
-import { ConfigManager } from '../config/configManager.js';
+import { McpConfigManager } from '../config/mcpConfigManager.js';
 
 /**
  * File-based OAuth clients store implementation using AUTH_CONFIG settings
@@ -98,12 +98,12 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
  */
 export class SDKOAuthServerProvider implements OAuthServerProvider {
   private sessionManager: ServerSessionManager;
-  private configManager: ServerConfigManager;
+  private configManager: AgentConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
 
   constructor(sessionStoragePath?: string) {
     this.sessionManager = new ServerSessionManager(sessionStoragePath);
-    this.configManager = ServerConfigManager.getInstance();
+    this.configManager = AgentConfigManager.getInstance();
     this._clientsStore = new FileBasedClientsStore(this.sessionManager);
   }
 
@@ -118,7 +118,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     try {
       // Get requested scopes (default to all available tags if none specified)
       const requestedScopes = params.scopes || [];
-      const configManager = ConfigManager.getInstance();
+      const configManager = McpConfigManager.getInstance();
       const availableTags = configManager.getAvailableTags();
 
       // If no scopes requested, default to all available tags
@@ -434,7 +434,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   async verifyAccessToken(token: string): Promise<AuthInfo> {
     if (!this.configManager.isAuthEnabled()) {
       // Auth disabled, return minimal auth info with all available tags as scopes
-      const configManager = ConfigManager.getInstance();
+      const configManager = McpConfigManager.getInstance();
       const availableTags = configManager.getAvailableTags();
       return {
         token,

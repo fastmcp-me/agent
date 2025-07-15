@@ -13,10 +13,10 @@ export enum ConfigChangeEvent {
 }
 
 /**
- * Configuration manager that handles loading, watching, and reloading configuration
+ * MCP configuration manager that handles loading, watching, and reloading MCP server configurations
  */
-export class ConfigManager extends EventEmitter {
-  private static instance: ConfigManager;
+export class McpConfigManager extends EventEmitter {
+  private static instance: McpConfigManager;
   private configWatcher: fs.FSWatcher | null = null;
   private transportConfig: Record<string, MCPServerParams> = {};
   private configFilePath: string;
@@ -35,14 +35,14 @@ export class ConfigManager extends EventEmitter {
   }
 
   /**
-   * Get the singleton instance of ConfigManager
+   * Get the singleton instance of McpConfigManager
    * @param configFilePath - Optional path to the config file
    */
-  public static getInstance(configFilePath?: string): ConfigManager {
-    if (!ConfigManager.instance) {
-      ConfigManager.instance = new ConfigManager(configFilePath);
+  public static getInstance(configFilePath?: string): McpConfigManager {
+    if (!McpConfigManager.instance) {
+      McpConfigManager.instance = new McpConfigManager(configFilePath);
     }
-    return ConfigManager.instance;
+    return McpConfigManager.instance;
   }
 
   /**
@@ -185,4 +185,4 @@ export class ConfigManager extends EventEmitter {
   }
 }
 
-export default ConfigManager;
+export default McpConfigManager;

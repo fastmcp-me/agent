@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { ConfigManager, ConfigChangeEvent } from './configManager.js';
+import { McpConfigManager, ConfigChangeEvent } from './mcpConfigManager.js';
 import { DEFAULT_CONFIG } from '../constants.js';
 import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 
@@ -13,7 +13,7 @@ const testConfig = {
 };
 
 // Helper function to create an event emitter spy
-const createEventEmitterSpy = (instance: ConfigManager) => {
+const createEventEmitterSpy = (instance: McpConfigManager) => {
   return vi.spyOn(instance, 'emit');
 };
 
@@ -43,12 +43,12 @@ vi.mock('../constants.js', () => ({
   getGlobalConfigDir: vi.fn().mockReturnValue('/test'),
 }));
 
-describe('ConfigManager', () => {
+describe('McpConfigManager', () => {
   const testConfigPath = '/test/config.json';
 
   beforeEach(() => {
     // Reset singleton instance
-    (ConfigManager as any).instance = undefined;
+    (McpConfigManager as any).instance = undefined;
     // Default mock implementations
     (fs.existsSync as unknown as MockInstance).mockReturnValue(true);
     (fs.readFileSync as unknown as MockInstance).mockReturnValue(JSON.stringify({ mcpServers: {} }));
@@ -56,13 +56,13 @@ describe('ConfigManager', () => {
 
   describe('getInstance', () => {
     it('should create singleton instance', () => {
-      const instance1 = ConfigManager.getInstance(testConfigPath);
-      const instance2 = ConfigManager.getInstance(testConfigPath);
+      const instance1 = McpConfigManager.getInstance(testConfigPath);
+      const instance2 = McpConfigManager.getInstance(testConfigPath);
       expect(instance1).toBe(instance2);
     });
 
     it('should use provided config path', () => {
-      const instance = ConfigManager.getInstance(testConfigPath);
+      const instance = McpConfigManager.getInstance(testConfigPath);
       expect((instance as any).configFilePath).toBe(testConfigPath);
     });
   });
@@ -73,7 +73,7 @@ describe('ConfigManager', () => {
         .mockReturnValueOnce(false) // Directory doesn't exist
         .mockReturnValueOnce(false); // File doesn't exist
 
-      ConfigManager.getInstance(testConfigPath);
+      McpConfigManager.getInstance(testConfigPath);
 
       expect(fs.mkdirSync).toHaveBeenCalledWith(path.dirname(testConfigPath), { recursive: true });
       expect(fs.writeFileSync).toHaveBeenCalledWith(testConfigPath, JSON.stringify(DEFAULT_CONFIG, null, 2));
@@ -82,7 +82,7 @@ describe('ConfigManager', () => {
 
   describe('config watching', () => {
     it('should start and stop watching config file', () => {
-      const instance = ConfigManager.getInstance(testConfigPath);
+      const instance = McpConfigManager.getInstance(testConfigPath);
 
       instance.startWatching();
       expect(fs.watch).toHaveBeenCalledWith(testConfigPath, expect.any(Function));
@@ -95,7 +95,7 @@ describe('ConfigManager', () => {
       // Use fake timers to control debouncing
       vi.useFakeTimers();
 
-      const instance = ConfigManager.getInstance(testConfigPath);
+      const instance = McpConfigManager.getInstance(testConfigPath);
       const mockWatcher = { close: vi.fn() };
       let watchCallback: Function = () => {};
 
@@ -129,7 +129,7 @@ describe('ConfigManager', () => {
     it('should return copy of transport config', () => {
       (fs.readFileSync as unknown as MockInstance).mockReturnValueOnce(JSON.stringify(testConfig));
 
-      const instance = ConfigManager.getInstance(testConfigPath);
+      const instance = McpConfigManager.getInstance(testConfigPath);
       const config = instance.getTransportConfig();
 
       expect(config).toEqual(testConfig.mcpServers);

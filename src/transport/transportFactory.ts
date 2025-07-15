@@ -10,7 +10,7 @@ import { AuthProviderTransport, transportConfigSchema } from '../core/types/inde
 import { MCPServerParams } from '../core/types/index.js';
 import { OAuthClientConfig, SDKOAuthClientProvider } from '../auth/sdkOAuthClientProvider.js';
 import { AUTH_CONFIG } from '../constants.js';
-import { ServerConfigManager } from '../core/server/serverConfig.js';
+import { AgentConfigManager } from '../core/server/agentConfig.js';
 
 /**
  * Infers transport type from configuration parameters
@@ -47,7 +47,7 @@ function createOAuthProvider(
   name: string,
   validatedTransport: typeof transportConfigSchema._type,
 ): SDKOAuthClientProvider {
-  const { host, port } = ServerConfigManager.getInstance().getConfig();
+  const { host, port } = AgentConfigManager.getInstance().getConfig();
 
   const oauthConfig: OAuthClientConfig = {
     autoRegister: true,

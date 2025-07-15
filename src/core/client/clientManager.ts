@@ -15,7 +15,7 @@ import {
   ServerCapability,
   AuthProviderTransport,
 } from '../types/index.js';
-import { ServerConfigManager } from '../server/serverConfig.js';
+import { AgentConfigManager } from '../server/agentConfig.js';
 
 /**
  * Creates client instances for all transports with retry logic
@@ -115,7 +115,7 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
     } catch (error) {
       // Handle OAuth authorization flow (managed by SDK)
       if (error instanceof UnauthorizedError) {
-        const serverConfig = ServerConfigManager.getInstance().getConfig();
+        const serverConfig = AgentConfigManager.getInstance().getConfig();
         logger.info(
           `OAuth authorization required for ${name}. Visit http://localhost:${serverConfig.port}/oauth to authorize`,
         );

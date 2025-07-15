@@ -34,8 +34,8 @@ vi.mock('../auth/sdkOAuthClientProvider.js', () => ({
   })),
 }));
 
-vi.mock('../core/server/serverConfig.js', () => ({
-  ServerConfigManager: {
+vi.mock('../core/server/agentConfig.js', () => ({
+  AgentConfigManager: {
     getInstance: vi.fn().mockReturnValue({
       getConfig: vi.fn().mockReturnValue({
         host: 'localhost',

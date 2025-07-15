@@ -11,7 +11,7 @@ import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import oauthRoutes from './routes/oauthRoutes.js';
-import { ServerConfigManager } from '../../core/server/serverConfig.js';
+import { AgentConfigManager } from '../../core/server/agentConfig.js';
 import { RATE_LIMIT_CONFIG } from '../../constants.js';
 
 /**
@@ -31,7 +31,7 @@ export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
   private oauthProvider: SDKOAuthServerProvider;
-  private configManager: ServerConfigManager;
+  private configManager: AgentConfigManager;
 
   /**
    * Creates a new ExpressServer instance.
@@ -44,7 +44,7 @@ export class ExpressServer {
   constructor(serverManager: ServerManager) {
     this.app = express();
     this.serverManager = serverManager;
-    this.configManager = ServerConfigManager.getInstance();
+    this.configManager = AgentConfigManager.getInstance();
 
     // Initialize OAuth provider with custom session storage path if configured
     const sessionStoragePath = this.configManager.getSessionStoragePath();

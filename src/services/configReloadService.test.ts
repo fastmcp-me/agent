@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 import { ConfigReloadService } from './configReloadService.js';
-import { ConfigManager, ConfigChangeEvent } from '../config/configManager.js';
+import { McpConfigManager, ConfigChangeEvent } from '../config/mcpConfigManager.js';
 import { createClients } from '../core/client/clientManager.js';
 import { createTransports } from '../transport/transportFactory.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
@@ -8,8 +8,8 @@ import { ServerManager } from '../core/server/serverManager.js';
 import logger from '../logger/logger.js';
 
 // Mock dependencies
-vi.mock('../config/configManager.js', () => ({
-  ConfigManager: {
+vi.mock('../config/mcpConfigManager.js', () => ({
+  McpConfigManager: {
     getInstance: vi.fn(),
   },
   ConfigChangeEvent: {
@@ -80,7 +80,7 @@ describe('ConfigReloadService', () => {
       tags: ['test'],
     };
 
-    (ConfigManager.getInstance as unknown as MockInstance).mockReturnValue(mockConfigManager);
+    (McpConfigManager.getInstance as unknown as MockInstance).mockReturnValue(mockConfigManager);
     (createTransports as unknown as MockInstance).mockReturnValue(mockTransports);
     (createClients as unknown as MockInstance).mockResolvedValue(mockClients);
     (setupCapabilities as unknown as MockInstance).mockResolvedValue(undefined);

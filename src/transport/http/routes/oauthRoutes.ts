@@ -6,7 +6,7 @@ import { ClientStatus } from '../../../core/types/index.js';
 import { OAuthRequiredError } from '../../../core/client/clientManager.js';
 import createClient from '../../../core/client/clientFactory.js';
 import { RATE_LIMIT_CONFIG } from '../../../constants.js';
-import { ServerConfigManager } from '../../../core/server/serverConfig.js';
+import { AgentConfigManager } from '../../../core/server/agentConfig.js';
 import {
   escapeHtml,
   sanitizeUrlParam,
@@ -21,7 +21,7 @@ const router: Router = Router();
 
 // Rate limiter for OAuth endpoints
 const createOAuthLimiter = () => {
-  const serverConfig = ServerConfigManager.getInstance();
+  const serverConfig = AgentConfigManager.getInstance();
   return rateLimit({
     windowMs: serverConfig.getRateLimitWindowMs(),
     max: serverConfig.getRateLimitMax(),

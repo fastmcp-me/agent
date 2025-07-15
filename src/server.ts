@@ -3,7 +3,7 @@ import logger from './logger/logger.js';
 import { createTransports } from './transport/transportFactory.js';
 import { createClients } from './core/client/clientManager.js';
 import { ServerManager } from './core/server/serverManager.js';
-import { ConfigManager } from './config/configManager.js';
+import { McpConfigManager } from './config/mcpConfigManager.js';
 import configReloadService from './services/configReloadService.js';
 
 /**
@@ -11,7 +11,7 @@ import configReloadService from './services/configReloadService.js';
  */
 async function setupServer(): Promise<ServerManager> {
   try {
-    const mcpConfig = ConfigManager.getInstance().getTransportConfig();
+    const mcpConfig = McpConfigManager.getInstance().getTransportConfig();
     // Create transports from configuration
     const transports = createTransports(mcpConfig);
     logger.info(`Created ${Object.keys(transports).length} transports`);
