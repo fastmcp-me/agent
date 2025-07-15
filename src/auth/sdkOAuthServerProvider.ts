@@ -123,6 +123,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Handles the authorization request with scope validation and user consent
    */
   async authorize(client: OAuthClientInformationFull, params: AuthorizationParams, res: Response): Promise<void> {
+    logger.debug('Authorizing client', { clientId: client.client_id, params });
     try {
       // Get requested scopes (default to all available tags if none specified)
       const requestedScopes = params.scopes || [];
@@ -174,7 +175,8 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   /**
    * Determines if user consent is required for the authorization
    */
-  private requiresUserConsent(_client: OAuthClientInformationFull, _scopes: string[]): boolean {
+  private requiresUserConsent(client: OAuthClientInformationFull, scopes: string[]): boolean {
+    logger.debug('Requires user consent', { clientId: client.client_id, scopes });
     // For now, always require user consent for security
     // In the future, this could be configurable based on client trust level
     return true;
@@ -208,6 +210,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     grantedScopes: string[],
     res: Response,
   ): Promise<void> {
+    logger.debug('Approving authorization', { clientId: client.client_id, params, grantedScopes });
     // Create authorization code with granted scopes
     const metadata = {
       scopes: grantedScopes,
@@ -343,6 +346,8 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Retrieves the PKCE challenge for an authorization code
    */
   async challengeForAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<string> {
+    logger.debug('Challenge for authorization code', { clientId: client.client_id, authorizationCode });
+
     const codeData = this.sessionManager.getAuthCode(authorizationCode);
     if (!codeData || codeData.clientId !== client.client_id) {
       throw new Error('Invalid authorization code');
@@ -368,6 +373,13 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     redirectUri?: string,
     resource?: URL,
   ): Promise<OAuthTokens> {
+    logger.debug('Exchanging authorization code', {
+      clientId: client.client_id,
+      authorizationCode,
+      redirectUri,
+      resource,
+    });
+
     const codeData = this.sessionManager.getAuthCode(authorizationCode);
     if (!codeData) {
       throw new Error('Invalid or expired authorization code');
@@ -440,6 +452,8 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Verifies access token and returns auth info with granted scopes
    */
   async verifyAccessToken(token: string): Promise<AuthInfo> {
+    logger.debug('Verifying access token', { token });
+
     if (!this.configManager.isAuthEnabled()) {
       // Auth disabled, return minimal auth info with all available tags as scopes
       const configManager = McpConfigManager.getInstance();
@@ -488,6 +502,8 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Revokes a token
    */
   async revokeToken(client: OAuthClientInformationFull, request: OAuthTokenRevocationRequest): Promise<void> {
+    logger.debug('Revoking token', { clientId: client.client_id, request });
+
     const token = request.token;
 
     // Strip prefix if present
