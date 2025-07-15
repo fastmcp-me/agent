@@ -5,8 +5,8 @@ import fs from 'fs';
 import { SDKOAuthServerProvider } from './sdkOAuthServerProvider.js';
 import type { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
 
-// Mock the ConfigManager module
-vi.mock('../config/configManager.js', () => {
+// Mock the McpConfigManager module
+vi.mock('../config/mcpConfigManager.js', () => {
   const mockConfigManager = {
     getAvailableTags: vi.fn(() => ['context7', 'playwright', 'server-sequential-thinking']),
     getTransportConfig: vi.fn(() => ({})),
@@ -15,7 +15,7 @@ vi.mock('../config/configManager.js', () => {
   };
 
   return {
-    ConfigManager: {
+    McpConfigManager: {
       getInstance: vi.fn(() => mockConfigManager),
     },
   };
