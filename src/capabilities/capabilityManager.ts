@@ -5,7 +5,7 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { Clients, ServerInfo } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection } from '../core/types/index.js';
 
 /**
  * Collects capabilities from all clients and registers them with the server
@@ -14,7 +14,7 @@ import { Clients, ServerInfo } from '../core/types/index.js';
  * @param tags Array of tags to filter clients by
  * @returns The combined server capabilities
  */
-export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo) {
+export async function setupCapabilities(clients: OutboundConnections, serverInfo: InboundConnection) {
   // Collect capabilities from all clients
   const capabilities = collectCapabilities(clients);
 
@@ -33,7 +33,7 @@ export async function setupCapabilities(clients: Clients, serverInfo: ServerInfo
  * @param clients Record of client instances
  * @returns The combined server capabilities
  */
-function collectCapabilities(clients: Clients): ServerCapabilities {
+function collectCapabilities(clients: OutboundConnections): ServerCapabilities {
   const capabilities: ServerCapabilities = {};
 
   for (const [name, clientInfo] of clients.entries()) {

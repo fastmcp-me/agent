@@ -1,5 +1,5 @@
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { Clients, ClientInfo } from '../core/types/index.js';
+import { OutboundConnections, OutboundConnection } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 /**
@@ -8,12 +8,12 @@ import logger from '../logger/logger.js';
  * @param tags Array of tags to filter by
  * @returns Filtered record of client instances
  */
-export function filterClientsByTags(clients: Clients, tags?: string[]): Clients {
+export function filterClientsByTags(clients: OutboundConnections, tags?: string[]): OutboundConnections {
   if (!tags || tags.length === 0) {
     return clients;
   }
 
-  const filteredClients = new Map<string, ClientInfo>();
+  const filteredClients = new Map<string, OutboundConnection>();
   let matchedClients = 0;
 
   for (const [name, clientInfo] of clients.entries()) {
@@ -41,8 +41,11 @@ export function filterClientsByTags(clients: Clients, tags?: string[]): Clients 
  * @param capabilities Object containing capabilities to filter by
  * @returns Filtered record of client instances
  */
-export function filterClientsByCapabilities(clients: Clients, capabilities: ServerCapabilities): Clients {
-  const filteredClients = new Map<string, ClientInfo>();
+export function filterClientsByCapabilities(
+  clients: OutboundConnections,
+  capabilities: ServerCapabilities,
+): OutboundConnections {
+  const filteredClients = new Map<string, OutboundConnection>();
   let matchedClients = 0;
 
   for (const [name, clientInfo] of clients.entries()) {
@@ -67,7 +70,7 @@ export function filterClientsByCapabilities(clients: Clients, capabilities: Serv
   return filteredClients;
 }
 
-type ClientFilter = (clients: Clients) => Clients;
+type ClientFilter = (clients: OutboundConnections) => OutboundConnections;
 
 /**
  * Filters clients by multiple criteria
@@ -75,7 +78,7 @@ type ClientFilter = (clients: Clients) => Clients;
  * @returns Filtered record of client instances
  */
 export function filterClients(...filters: ClientFilter[]): ClientFilter {
-  return (clients: Clients) => {
+  return (clients: OutboundConnections) => {
     return filters.reduce((filteredClients, filter) => filter(filteredClients), clients);
   };
 }
@@ -86,7 +89,7 @@ export function filterClients(...filters: ClientFilter[]): ClientFilter {
  * @returns Filtered record of client instances
  */
 export function byCapabilities(requiredCapabilities: ServerCapabilities): ClientFilter {
-  return (clients: Clients) => {
+  return (clients: OutboundConnections) => {
     return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
       const hasCapabilities = Object.keys(requiredCapabilities).every(
         (cap) => clientInfo.capabilities && cap in clientInfo.capabilities,
@@ -95,7 +98,7 @@ export function byCapabilities(requiredCapabilities: ServerCapabilities): Client
         filtered.set(name, clientInfo);
       }
       return filtered;
-    }, new Map<string, ClientInfo>());
+    }, new Map<string, OutboundConnection>());
   };
 }
 
@@ -105,7 +108,7 @@ export function byCapabilities(requiredCapabilities: ServerCapabilities): Client
  * @returns Filtered record of client instances
  */
 export function byTags(tags?: string[]): ClientFilter {
-  return (clients: Clients) => {
+  return (clients: OutboundConnections) => {
     if (!tags || tags.length === 0) return clients;
 
     return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
@@ -114,6 +117,6 @@ export function byTags(tags?: string[]): ClientFilter {
         filtered.set(name, clientInfo);
       }
       return filtered;
-    }, new Map<string, ClientInfo>());
+    }, new Map<string, OutboundConnection>());
   };
 }

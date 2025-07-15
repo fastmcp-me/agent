@@ -11,13 +11,13 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
-import { Clients, ServerInfo, ClientStatus } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection, ClientStatus } from '../core/types/index.js';
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-export function setupClientToServerNotifications(clients: Clients, serverInfo: ServerInfo): void {
+export function setupClientToServerNotifications(clients: OutboundConnections, serverInfo: InboundConnection): void {
   const clientNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -64,7 +64,7 @@ export function setupClientToServerNotifications(clients: Clients, serverInfo: S
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-export function setupServerToClientNotifications(clients: Clients, serverInfo: ServerInfo): void {
+export function setupServerToClientNotifications(clients: OutboundConnections, serverInfo: InboundConnection): void {
   const serverNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,

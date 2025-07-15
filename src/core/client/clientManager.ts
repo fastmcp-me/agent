@@ -8,10 +8,10 @@ import { CONNECTION_RETRY, MCP_SERVER_NAME } from '../../constants.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError, CapabilityError } from '../../utils/errorTypes.js';
 import {
   ClientStatus,
-  ClientInfo,
-  Clients,
+  OutboundConnection,
+  OutboundConnections,
   OperationOptions,
-  ServerInfo,
+  InboundConnection,
   ServerCapability,
   AuthProviderTransport,
 } from '../types/index.js';
@@ -22,8 +22,8 @@ import { ServerConfigManager } from '../server/serverConfig.js';
  * @param transports Record of transport instances
  * @returns Record of client instances
  */
-export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<Clients> {
-  const clients = new Map<string, ClientInfo>();
+export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<OutboundConnections> {
+  const clients = new Map<string, OutboundConnection>();
 
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
@@ -155,7 +155,7 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
  * @returns The client instance
  * @throws ClientNotFoundError if the client is not found
  */
-export function getClient(clients: Clients, clientName: string): ClientInfo {
+export function getClient(clients: OutboundConnections, clientName: string): OutboundConnection {
   const client = clients.get(clientName);
   if (!client) {
     throw new ClientNotFoundError(clientName);
@@ -212,9 +212,9 @@ export async function executeOperation<T>(
  * @param requiredCapability The capability required for this operation
  */
 export async function executeClientOperation<T>(
-  clients: Clients,
+  clients: OutboundConnections,
   clientName: string,
-  operation: (clientInfo: ClientInfo) => Promise<T>,
+  operation: (clientInfo: OutboundConnection) => Promise<T>,
   options: OperationOptions = {},
   requiredCapability?: ServerCapability,
 ): Promise<T> {
@@ -234,8 +234,8 @@ export async function executeClientOperation<T>(
  * @param options Operation options including timeout and retry settings
  */
 export async function executeServerOperation<T>(
-  server: ServerInfo,
-  operation: (server: ServerInfo) => Promise<T>,
+  server: InboundConnection,
+  operation: (server: InboundConnection) => Promise<T>,
   options: OperationOptions = {},
 ): Promise<T> {
   return executeOperation(() => operation(server), 'server', options);

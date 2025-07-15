@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { Clients, AuthProviderTransport } from '../core/types/index.js';
+import { OutboundConnections, AuthProviderTransport } from '../core/types/index.js';
 import {
   filterClients,
   byCapabilities,
@@ -17,7 +17,7 @@ describe('Client Filtering Utils', () => {
     tags,
   });
 
-  const mockClients: Clients = new Map();
+  const mockClients: OutboundConnections = new Map();
   mockClients.set('client1', {
     name: 'client1',
     capabilities: {

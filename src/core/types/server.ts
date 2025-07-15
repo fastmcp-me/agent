@@ -1,15 +1,15 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
 
-export interface ServerInfoExtra {
+export interface InboundConnectionConfig {
   readonly tags?: string[];
   readonly enablePagination?: boolean;
 }
 
 /**
- * Server information including tags
+ * Inbound connection information including server instance and configuration
  */
-export interface ServerInfo extends ServerInfoExtra {
+export interface InboundConnection extends InboundConnectionConfig {
   readonly server: Server;
 }
 

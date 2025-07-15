@@ -25,9 +25,9 @@ export interface AuthProviderTransport extends EnhancedTransport {
 }
 
 /**
- * Complete client information including transport, status and history
+ * Complete outbound connection information including transport, status and history
  */
-export interface ClientInfo {
+export interface OutboundConnection {
   readonly name: string;
   readonly transport: AuthProviderTransport;
   client: Client;
@@ -42,9 +42,9 @@ export interface ClientInfo {
 }
 
 /**
- * Map of client information indexed by client name
+ * Map of outbound connections indexed by connection name
  */
-export type Clients = Map<string, ClientInfo>;
+export type OutboundConnections = Map<string, OutboundConnection>;
 
 /**
  * Options for client operations

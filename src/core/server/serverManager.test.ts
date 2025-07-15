@@ -6,7 +6,7 @@ import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
-import { Clients } from '../types/index.js';
+import { OutboundConnections } from '../types/index.js';
 
 // Mock dependencies
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
@@ -48,7 +48,7 @@ vi.mock('../../logger/mcpLoggingEnhancer.js', () => ({
 describe('ServerManager', () => {
   let mockConfig: { name: string; version: string };
   let mockCapabilities: { capabilities: Record<string, unknown> };
-  let mockClients: Clients;
+  let mockClients: OutboundConnections;
   let mockTransports: Record<string, Transport>;
   let mockTransport: Transport;
   let mockServer: Server;

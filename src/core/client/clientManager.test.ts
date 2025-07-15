@@ -10,7 +10,7 @@ import {
 } from './clientManager.js';
 import createClientFn from './clientFactory.js';
 import logger from '../../logger/logger.js';
-import { ClientStatus, Clients, ServerInfo } from '../types/index.js';
+import { ClientStatus, OutboundConnections, InboundConnection } from '../types/index.js';
 import { ClientConnectionError, ClientNotFoundError, MCPError } from '../../utils/errorTypes.js';
 import { MCP_SERVER_NAME, CONNECTION_RETRY } from '../../constants.js';
 
@@ -119,7 +119,7 @@ describe('clientManager', () => {
   });
 
   describe('getClient', () => {
-    let clients: Clients;
+    let clients: OutboundConnections;
 
     beforeEach(async () => {
       clients = await createClients(mockTransports);
@@ -188,7 +188,7 @@ describe('clientManager', () => {
   });
 
   describe('executeClientOperation', () => {
-    let clients: Clients;
+    let clients: OutboundConnections;
 
     beforeEach(async () => {
       clients = await createClients(mockTransports);
@@ -211,14 +211,14 @@ describe('clientManager', () => {
   });
 
   describe('executeServerOperation', () => {
-    let mockServer: ServerInfo;
+    let mockServer: InboundConnection;
 
     beforeEach(() => {
       mockServer = {
         server: {
           request: vi.fn().mockResolvedValue('result'),
         },
-      } as unknown as ServerInfo;
+      } as unknown as InboundConnection;
     });
 
     it('should execute server operation successfully', async () => {

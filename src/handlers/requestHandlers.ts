@@ -30,7 +30,7 @@ import { executeClientOperation, executeServerOperation } from '../core/client/c
 import { parseUri } from '../utils/parsing.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
-import { Clients, ServerInfo, ClientStatus } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection, ClientStatus } from '../core/types/index.js';
 import { handlePagination } from '../utils/pagination.js';
 import logger from '../logger/logger.js';
 
@@ -39,19 +39,19 @@ import logger from '../logger/logger.js';
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
+function registerServerRequestHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   Array.from(clients.entries()).forEach(([_, clientInfo]) => {
     clientInfo.client.setRequestHandler(
       PingRequestSchema,
       withErrorHandling(async () => {
-        return executeServerOperation(serverInfo, (_server: ServerInfo) => _server.server.ping());
+        return executeServerOperation(serverInfo, (_server: InboundConnection) => _server.server.ping());
       }, 'Error pinging'),
     );
 
     clientInfo.client.setRequestHandler(
       CreateMessageRequestSchema,
       withErrorHandling(async (request: CreateMessageRequest) => {
-        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
           _server.server.createMessage(request.params, {
             timeout: clientInfo.transport.timeout,
           }),
@@ -62,7 +62,7 @@ function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo)
     clientInfo.client.setRequestHandler(
       ElicitRequestSchema,
       withErrorHandling(async (request: ElicitRequest) => {
-        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
           _server.server.elicitInput(request.params, {
             timeout: clientInfo.transport.timeout,
           }),
@@ -73,7 +73,7 @@ function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo)
     clientInfo.client.setRequestHandler(
       ListRootsRequestSchema,
       withErrorHandling(async (request: ListRootsRequest) => {
-        return executeServerOperation(serverInfo, (_server: ServerInfo) =>
+        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
           _server.server.listRoots(request.params, {
             timeout: clientInfo.transport.timeout,
           }),
@@ -90,7 +90,7 @@ function registerServerRequestHandlers(clients: Clients, serverInfo: ServerInfo)
  * @param capabilities The server capabilities
  * @param tags Array of tags to filter clients by
  */
-export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo): void {
+export function registerRequestHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   // Register logging level handler
   serverInfo.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
     setLogLevel(request.params.level);
@@ -142,7 +142,7 @@ export function registerRequestHandlers(clients: Clients, serverInfo: ServerInfo
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): void {
+function registerResourceHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   // List Resources handler
   serverInfo.server.setRequestHandler(
     ListResourcesRequestSchema,
@@ -251,7 +251,7 @@ function registerResourceHandlers(clients: Clients, serverInfo: ServerInfo): voi
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
+function registerToolHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   // List Tools handler
   serverInfo.server.setRequestHandler(
     ListToolsRequestSchema,
@@ -299,7 +299,7 @@ function registerToolHandlers(clients: Clients, serverInfo: ServerInfo): void {
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void {
+function registerPromptHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   // List Prompts handler
   serverInfo.server.setRequestHandler(
     ListPromptsRequestSchema,
@@ -343,7 +343,7 @@ function registerPromptHandlers(clients: Clients, serverInfo: ServerInfo): void 
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerCompletionHandlers(clients: Clients, serverInfo: ServerInfo): void {
+function registerCompletionHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
   serverInfo.server.setRequestHandler(
     CompleteRequestSchema,
     withErrorHandling(async (request: CompleteRequest) => {

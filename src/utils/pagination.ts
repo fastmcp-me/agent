@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { Resource, ResourceTemplate, Tool, Prompt } from '@modelcontextprotocol/sdk/types.js';
-import { ClientInfo, Clients } from '../core/types/index.js';
+import { OutboundConnection, OutboundConnections } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 interface PaginationParams {
@@ -111,10 +111,10 @@ export function encodeCursor(clientName: string, nextCursor: string = ''): strin
 }
 
 async function fetchAllItemsForClient<T>(
-  clientInfo: ClientInfo,
+  clientInfo: OutboundConnection,
   params: PaginationParams,
   callClientMethod: (client: Client, params: unknown, opts: RequestOptions) => Promise<PaginationResponse>,
-  transformResult: (client: ClientInfo, result: PaginationResponse) => T[],
+  transformResult: (client: OutboundConnection, result: PaginationResponse) => T[],
 ): Promise<T[]> {
   logger.info(`Fetching all items for client ${clientInfo.name}`);
 
@@ -142,10 +142,10 @@ function getNextClientCursor(currentClientName: string, clientNames: string[]): 
 }
 
 export async function handlePagination<T>(
-  clients: Clients,
+  clients: OutboundConnections,
   params: PaginationParams,
   callClientMethod: (client: Client, params: unknown, opts: RequestOptions) => Promise<PaginationResponse>,
-  transformResult: (client: ClientInfo, result: PaginationResponse) => T[],
+  transformResult: (client: OutboundConnection, result: PaginationResponse) => T[],
   enablePagination: boolean,
 ): Promise<PaginationResult<T>> {
   const { cursor, ...clientParams } = params;

@@ -4,16 +4,16 @@ import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
-import { Clients, ServerInfo, ServerInfoExtra } from '../types/index.js';
-import type { ClientInfo } from '../types/client.js';
+import { OutboundConnections, InboundConnection, InboundConnectionConfig } from '../types/index.js';
+import type { OutboundConnection } from '../types/client.js';
 
 export class ServerManager {
   private static instance: ServerManager;
-  private servers: Map<string, ServerInfo> = new Map();
+  private servers: Map<string, InboundConnection> = new Map();
   private serverConfig: { name: string; version: string };
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
-  private clients: Clients = new Map<string, ClientInfo>();
+  private clients: OutboundConnections = new Map<string, OutboundConnection>();
   private transports: Record<string, Transport> = {};
   private connectionSemaphore: Map<string, Promise<void>> = new Map();
   private disconnectingIds: Set<string> = new Set();
@@ -21,7 +21,7 @@ export class ServerManager {
   private constructor(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: Clients,
+    clients: OutboundConnections,
     transports: Record<string, Transport>,
   ) {
     this.serverConfig = config;
@@ -33,7 +33,7 @@ export class ServerManager {
   public static getOrCreateInstance(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: Clients,
+    clients: OutboundConnections,
     transports: Record<string, Transport>,
   ): ServerManager {
     if (!ServerManager.instance) {
@@ -60,7 +60,7 @@ export class ServerManager {
     ServerManager.instance = undefined as any;
   }
 
-  public async connectTransport(transport: Transport, sessionId: string, opts: ServerInfoExtra): Promise<void> {
+  public async connectTransport(transport: Transport, sessionId: string, opts: InboundConnectionConfig): Promise<void> {
     // Check if a connection is already in progress for this session
     const existingConnection = this.connectionSemaphore.get(sessionId);
     if (existingConnection) {
@@ -87,7 +87,11 @@ export class ServerManager {
     }
   }
 
-  private async performConnection(transport: Transport, sessionId: string, opts: ServerInfoExtra): Promise<void> {
+  private async performConnection(
+    transport: Transport,
+    sessionId: string,
+    opts: InboundConnectionConfig,
+  ): Promise<void> {
     // Set connection timeout
     const connectionTimeoutMs = 30000; // 30 seconds
 
@@ -107,12 +111,12 @@ export class ServerManager {
     }
   }
 
-  private async doConnect(transport: Transport, sessionId: string, opts: ServerInfoExtra): Promise<void> {
+  private async doConnect(transport: Transport, sessionId: string, opts: InboundConnectionConfig): Promise<void> {
     // Create a new server instance for this transport
     const server = new Server(this.serverConfig, this.serverCapabilities);
 
     // Create server info object first
-    const serverInfo: ServerInfo = {
+    const serverInfo: InboundConnection = {
       server,
       ...opts,
     };
@@ -183,7 +187,7 @@ export class ServerManager {
     return this.transports;
   }
 
-  public getClients(): Clients {
+  public getClients(): OutboundConnections {
     return this.clients;
   }
 
@@ -191,7 +195,7 @@ export class ServerManager {
    * Safely get a client by name. Returns undefined if not found or not an own property.
    * Encapsulates access to prevent prototype pollution and accidental key collisions.
    */
-  public getClient(serverName: string): ClientInfo | undefined {
+  public getClient(serverName: string): OutboundConnection | undefined {
     return this.clients.get(serverName);
   }
 
@@ -199,11 +203,11 @@ export class ServerManager {
     return this.servers.size;
   }
 
-  public getServer(sessionId: string): ServerInfo | undefined {
+  public getServer(sessionId: string): InboundConnection | undefined {
     return this.servers.get(sessionId);
   }
 
-  public updateClientsAndTransports(newClients: Clients, newTransports: Record<string, Transport>): void {
+  public updateClientsAndTransports(newClients: OutboundConnections, newTransports: Record<string, Transport>): void {
     this.clients = newClients;
     this.transports = newTransports;
   }

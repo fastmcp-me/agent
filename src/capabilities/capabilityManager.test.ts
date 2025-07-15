@@ -8,7 +8,7 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { Clients, ServerInfo, ClientInfo, ClientStatus } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection, OutboundConnection, ClientStatus } from '../core/types/index.js';
 
 // Mock dependencies
 vi.mock('../logger/logger.js', () => ({
@@ -31,7 +31,7 @@ vi.mock('../handlers/requestHandlers.js', () => ({
 }));
 
 describe('CapabilityManager', () => {
-  let mockServerInfo: ServerInfo;
+  let mockServerInfo: InboundConnection;
   let mockClient1: Client;
   let mockClient2: Client;
   let mockClient3: Client;
@@ -63,7 +63,7 @@ describe('CapabilityManager', () => {
 
   describe('setupCapabilities', () => {
     it('should setup capabilities and handlers for empty clients', async () => {
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
 
       const result = await setupCapabilities(clients, mockServerInfo);
 
@@ -82,14 +82,14 @@ describe('CapabilityManager', () => {
 
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(mockCapabilities);
 
-      const clientInfo: ClientInfo = {
+      const clientInfo: OutboundConnection = {
         name: 'client1',
         client: mockClient1,
         status: ClientStatus.Connected,
         transport: {} as any,
       };
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', clientInfo);
 
       const result = await setupCapabilities(clients, mockServerInfo);
@@ -113,7 +113,7 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -151,7 +151,7 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -191,7 +191,7 @@ describe('CapabilityManager', () => {
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(undefined);
       (mockClient3.getServerCapabilities as unknown as MockInstance).mockReturnValue({});
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -227,7 +227,7 @@ describe('CapabilityManager', () => {
       };
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -288,7 +288,7 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -352,7 +352,7 @@ describe('CapabilityManager', () => {
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
       (mockClient3.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities3);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -402,7 +402,7 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', {
         name: 'client1',
         client: mockClient1,
@@ -444,21 +444,21 @@ describe('CapabilityManager', () => {
       (mockClient1.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities1);
       (mockClient2.getServerCapabilities as unknown as MockInstance).mockReturnValue(capabilities2);
 
-      const clientInfo1: ClientInfo = {
+      const clientInfo1: OutboundConnection = {
         name: 'client1',
         client: mockClient1,
         status: ClientStatus.Connected,
         transport: {} as any,
       };
 
-      const clientInfo2: ClientInfo = {
+      const clientInfo2: OutboundConnection = {
         name: 'client2',
         client: mockClient2,
         status: ClientStatus.Connected,
         transport: {} as any,
       };
 
-      const clients: Clients = new Map();
+      const clients: OutboundConnections = new Map();
       clients.set('client1', clientInfo1);
       clients.set('client2', clientInfo2);
 

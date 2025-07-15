@@ -1,6 +1,6 @@
 import logger from '../logger/logger.js';
 import { ConfigChangeEvent, ConfigManager } from '../config/configManager.js';
-import { MCPServerParams, ServerInfo, EnhancedTransport } from '../core/types/index.js';
+import { MCPServerParams, InboundConnection, EnhancedTransport } from '../core/types/index.js';
 import { createClients } from '../core/client/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { createTransports } from '../transport/transportFactory.js';
@@ -11,7 +11,7 @@ import { ServerManager } from '../core/server/serverManager.js';
  */
 export class ConfigReloadService {
   private static instance: ConfigReloadService;
-  private serverInstances: Map<string, ServerInfo> = new Map();
+  private serverInstances: Map<string, InboundConnection> = new Map();
   private currentTransports: Record<string, EnhancedTransport> = {};
   private isReloading = false;
 
@@ -112,7 +112,7 @@ export class ConfigReloadService {
    * @param sessionId The session ID for this server instance
    * @param serverInfo The MCP server instance
    */
-  public updateServerInfo(sessionId: string, serverInfo: ServerInfo): void {
+  public updateServerInfo(sessionId: string, serverInfo: InboundConnection): void {
     this.serverInstances.set(sessionId, serverInfo);
     logger.debug(`Updated server info for session ${sessionId} in config reload service`);
   }

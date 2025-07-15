@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ClientStatus, type Clients, type ClientInfo } from '../core/types/index.js';
+import { ClientStatus, type OutboundConnections, type OutboundConnection } from '../core/types/index.js';
 
 // Create a focused test for the ping handler functionality
 describe('Ping Handler', () => {
-  let mockClients: Clients;
+  let mockClients: OutboundConnections;
   let mockClient1: any;
   let mockClient2: any;
 
@@ -31,7 +31,7 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as ClientInfo);
+    } as OutboundConnection);
     mockClients.set('client2', {
       name: 'client2',
       status: ClientStatus.Connected,
@@ -42,7 +42,7 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as ClientInfo);
+    } as OutboundConnection);
     mockClients.set('client3', {
       name: 'client3',
       status: ClientStatus.Disconnected,
@@ -53,11 +53,11 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as unknown as ClientInfo);
+    } as unknown as OutboundConnection);
   });
 
   // Test the core ping handler logic directly
-  const createPingHandler = (clients: Clients) => {
+  const createPingHandler = (clients: OutboundConnections) => {
     return async () => {
       // Health check all connected upstream clients (replicated from actual implementation)
       const healthCheckPromises = Array.from(clients.entries()).map(async ([clientName, clientInfo]) => {
@@ -125,7 +125,7 @@ describe('Ping Handler', () => {
   });
 
   it('should handle empty clients object', async () => {
-    const emptyClients: Clients = new Map();
+    const emptyClients: OutboundConnections = new Map();
     const pingHandler = createPingHandler(emptyClients);
     const result = await pingHandler();
 
@@ -133,7 +133,7 @@ describe('Ping Handler', () => {
   });
 
   it('should handle clients with different statuses', async () => {
-    const mixedClients: Clients = new Map();
+    const mixedClients: OutboundConnections = new Map();
     mixedClients.set('connected', {
       name: 'connected',
       status: ClientStatus.Connected,
@@ -144,7 +144,7 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as unknown as ClientInfo);
+    } as unknown as OutboundConnection);
     mixedClients.set('disconnected', {
       name: 'disconnected',
       status: ClientStatus.Disconnected,
@@ -155,7 +155,7 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as unknown as ClientInfo);
+    } as unknown as OutboundConnection);
     mixedClients.set('error', {
       name: 'error',
       status: ClientStatus.Error,
@@ -166,7 +166,7 @@ describe('Ping Handler', () => {
         send: vi.fn(),
         close: vi.fn(),
       },
-    } as unknown as ClientInfo);
+    } as unknown as OutboundConnection);
 
     const pingHandler = createPingHandler(mixedClients);
     await pingHandler();
