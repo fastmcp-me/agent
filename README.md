@@ -64,33 +64,25 @@ npx -y @1mcp/agent --help
 
 Available options:
 
-- `--transport, -t`: Choose transport type ("stdio", "http", or "sse" - sse is deprecated, default: "http")
-- `--config, -c`: Use a specific config file
-- `--port, -P`: Change HTTP port (default: 3050)
-- `--host, -H`: Change HTTP host (default: localhost)
-- `--tags, -g`: Filter servers by tags (see Tags section below)
-- `--pagination, -p`: Enable pagination for client/server lists (boolean, default: false)
-- `--auth`: Enable authentication (OAuth 2.1) - deprecated, use --enable-auth (boolean, default: false)
-- `--enable-auth`: Enable authentication (OAuth 2.1) (boolean, default: false)
-- `--enable-scope-validation`: Enable tag-based scope validation (boolean, default: true)
-- `--enable-enhanced-security`: Enable enhanced security middleware (boolean, default: false)
-- `--session-ttl`: Session expiry time in minutes (number, default: 1440)
-- `--session-storage-path`: Custom session storage directory path (string, default: undefined)
-- `--rate-limit-window`: OAuth rate limit window in minutes (number, default: 15)
-- `--rate-limit-max`: Maximum requests per OAuth rate limit window (number, default: 100)
-- `--help, -h`: Show help
+| Option (CLI)                 | Environment Variable               | Description                                           |  Default  | Deprecated? |
+| :--------------------------- | :--------------------------------- | :---------------------------------------------------- | :-------: | :---------: |
+| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")     |  "http"   |             |
+| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                            |           |             |
+| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                      |   3050    |             |
+| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                      | localhost |             |
+| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                |           |             |
+| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)   |   false   |             |
+| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1)                     |   false   |     Yes     |
+| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                     |   false   |             |
+| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)           |   true    |             |
+| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)         |   false   |             |
+| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)               |   1440    |             |
+| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)        |           |             |
+| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)           |    15     |             |
+| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number) |    100    |             |
+| `--help`, `-h`               |                                    | Show help                                             |           |             |
 
-Example with environment variables:
-
-```bash
-# Using environment variables
-ONE_MCP_PORT=3051 ONE_MCP_TAGS=network,filesystem npx -y @1mcp/agent
-
-# Or in your shell configuration
-export ONE_MCP_PORT=3051
-export ONE_MCP_TAGS=network,filesystem
-npx -y @1mcp/agent
-```
+> 💡 **Note:** Deprecated options are provided for backward compatibility. Prefer using the non-deprecated options for new configurations.
 
 ## Docker
 
@@ -116,26 +108,7 @@ Available image tags:
 - `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
 - `sha-<commit>`: Specific commit
 
-### Environment Variables
-
-You can configure 1MCP using environment variables prefixed with `ONE_MCP_`:
-
-- `ONE_MCP_TRANSPORT`: Transport type ("stdio", "http", or "sse" - sse is deprecated, default: "http")
-- `ONE_MCP_PORT`: HTTP port (default: 3050)
-- `ONE_MCP_HOST`: HTTP host (default: "localhost")
-- `ONE_MCP_CONFIG`: Path to config file
-- `ONE_MCP_TAGS`: Comma-separated list of tags to filter servers
-- `ONE_MCP_PAGINATION`: Enable pagination for client/server lists (boolean, default: false)
-- `ONE_MCP_AUTH`: Enable authentication (OAuth 2.1) - deprecated, use ONE_MCP_ENABLE_AUTH (boolean, default: false)
-- `ONE_MCP_ENABLE_AUTH`: Enable authentication (OAuth 2.1) (boolean, default: false)
-- `ONE_MCP_ENABLE_SCOPE_VALIDATION`: Enable tag-based scope validation (boolean, default: true)
-- `ONE_MCP_ENABLE_ENHANCED_SECURITY`: Enable enhanced security middleware (boolean, default: false)
-- `ONE_MCP_SESSION_TTL`: Session expiry time in minutes (number, default: 1440)
-- `ONE_MCP_SESSION_STORAGE_PATH`: Custom session storage directory path (string, default: undefined)
-- `ONE_MCP_RATE_LIMIT_WINDOW`: OAuth rate limit window in minutes (number, default: 15)
-- `ONE_MCP_RATE_LIMIT_MAX`: Maximum requests per OAuth rate limit window (number, default: 100)
-
-Example with environment variables:
+Example:
 
 ```bash
 docker run -p 3051:3051 \
