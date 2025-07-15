@@ -5,10 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [unreleased]
+## [0.13.0] - 2025-07-15
 
 ### 🚀 Features
-
 - Add debug logging for authorization and token management processes by @xizhibei
 - Implement sanitizeHeaders utility for safe logging by @xizhibei
 - Enhance E2E testing framework with new configurations and utilities by @xizhibei
@@ -27,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Contributor Covenant Code of Conduct by @xizhibei
 
 ### 🐛 Bug Fixes
-
 - Improve XSS detection in input validation middleware by @xizhibei
 - Limit input length in hashToUuid to prevent DoS attacks by @xizhibei
 - Update dev script to enable authentication flag by @xizhibei
@@ -35,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refine transport type inference based on URL suffix by @xizhibei
 
 ### 💼 Other
-
 - Merge pull request #71 from 1mcp-app/dependabot/npm_and_yarn/eslint/js-9.31.0 by @xizhibei in [#71](https://github.com/1mcp-app/agent/pull/71)
 - Merge pull request #72 from 1mcp-app/dependabot/npm_and_yarn/tsc-watch-7.1.1 by @xizhibei in [#72](https://github.com/1mcp-app/agent/pull/72)
 - Merge pull request #73 from 1mcp-app/dependabot/npm_and_yarn/globals-16.3.0 by @xizhibei in [#73](https://github.com/1mcp-app/agent/pull/73)
@@ -45,7 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge branch 'main' into oauth by @xizhibei
 
 ### 🚜 Refactor
-
 - Enhance input validation in hashToUuid method to prevent DoS attacks by @xizhibei
 - Update mock from ConfigManager to McpConfigManager in SDKOAuthServerProvider tests by @xizhibei
 - Replace ConfigManager with McpConfigManager and introduce AgentConfigManager by @xizhibei
@@ -65,25 +61,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename SDKOAuthProvider to SDKOAuthServerProvider by @xizhibei
 
 ### 📚 Documentation
-
+- Update CONTRIBUTING.md with enhanced testing guidelines and project structure by @xizhibei
 - Add CONTRIBUTING.md to guide community contributions by @xizhibei
 - Update README and CLI options for authentication and transport types by @xizhibei
 - Update authentication and rate limiting features by @xizhibei
 
 ### 🧪 Testing
-
 - Mock ConfigManager in SDKOAuthServerProvider tests by @xizhibei
 - Add unit tests for SDKOAuthClientProvider by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
+- Update CHANGELOG.md for upcoming release by @xizhibei
 - Update TypeScript configuration and improve path handling by @xizhibei
 - Update package.json scripts and GitHub Actions workflow by @xizhibei
+
 
 ## [0.12.0] - 2025-07-08
 
 ### 🚀 Features
-
 - Add error handling for missing streamable HTTP sessions by @xizhibei
 - Implement ping handler for client health checks by @xizhibei
 - Add Vitest support and type checking script by @xizhibei
@@ -99,17 +94,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add glama.json configuration file for maintainers by @xizhibei
 
 ### 🚜 Refactor
-
 - Preserve original notification structure while modifying parameters by @xizhibei
 
 ### 🧪 Testing
-
 - Add vitest framework for client filtering tests by @xizhibei
+
 
 ## [0.11.0] - 2025-06-26
 
 ### 🚀 Features
-
 - Add source-map-support for improved error stack traces by @xizhibei
 - Add rate limiting for OAuth endpoints and update package dependencies by @xizhibei
 - Enhance session management by adding path traversal validation for session IDs and auth codes by @xizhibei
@@ -123,93 +116,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add ElicitRequest and PingRequest handlers to improve client-server interaction by @xizhibei
 
 ### 🐛 Bug Fixes
-
 - For code scanning alert no. 4: Uncontrolled data used in path expression by @xizhibei in [#62](https://github.com/1mcp-app/agent/pull/62)
 
 ### 🚜 Refactor
-
 - Update access token generation to use UUIDs and improve session management by @xizhibei
 
 ### 📚 Documentation
-
 - Update README to include new options for pagination, authentication, and session management by @xizhibei
 - Add section on debugging and source maps to README by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
 - Remove deprecated Docker build workflow and integrate into main workflow by @xizhibei
+
 
 ## [0.10.3] - 2025-06-11
 
 ### 🚜 Refactor
-
 - Replace getInstance with getOrCreateInstance in tests for singleton behavior by @xizhibei
+
 
 ## [0.10.2] - 2025-06-11
 
 ### 🐛 Bug Fixes
-
 - Mcp client disconnect after reload by @xizhibei
 - Restore status property in ClientInfo and update client disconnection handling by @xizhibei
+
 
 ## [0.10.1] - 2025-06-10
 
 ### 🐛 Bug Fixes
-
 - Infer transport type if missing and update validation logic by @xizhibei
+
 
 ## [0.10.0] - 2025-06-10
 
 ### 🚀 Features
-
 - Add support for 'streamableHttp' transport type and refactor transport creation logic by @xizhibei
 - Add pagination support to transport connection and related handlers by @xizhibei
 
 ### 🐛 Bug Fixes
-
 - Prevent duplicate listeners and increase max listeners for transport config changes by @xizhibei
 
 ### 🚜 Refactor
-
 - Streamline resource and template listing with pagination support by @xizhibei
 - Replace ERROR_CODES with ErrorCode in various files for improved error handling consistency by @xizhibei
+
 
 ## [0.9.0] - 2025-05-06
 
 ### 💼 Other
-
 - Streamable http transport by @xizhibei in [#34](https://github.com/1mcp-app/agent/pull/34)
 
 ### ⚙️ Miscellaneous Tasks
-
 - Update Docker build workflow conditions to include branch checks by @xizhibei
+
 
 ## [0.8.2] - 2025-05-03
 
 ### 🐛 Bug Fixes
-
 - Update RequestHandlerExtra type to support generic parameters by @xizhibei
+
 
 ## [0.8.1] - 2025-05-03
 
 ### ⚙️ Miscellaneous Tasks
-
 - Remove branch restriction from Docker build workflow for improved flexibility by @xizhibei
+
 
 ## [0.8.0] - 2025-04-14
 
 ### 🚀 Features
-
 - Add Smithery.ai configuration file with command and schema definitions by @xizhibei
 - Enable environment variable parsing with ONE_MCP prefix by @xizhibei
 - Integrate client capabilities into createClient function and define server/client capabilities in constants by @xizhibei
 
 ### 🐛 Bug Fixes
-
 - Enhance logging capabilities with console transport and MCP transport integration by @xizhibei
 
 ### 💼 Other
-
 - Vitest by @xizhibei in [#19](https://github.com/1mcp-app/agent/pull/19)
 - Merge pull request #14 from 1mcp-app/dependabot/npm_and_yarn/typescript-5.8.3 by @xizhibei in [#14](https://github.com/1mcp-app/agent/pull/14)
 - Merge pull request #15 from 1mcp-app/dependabot/npm_and_yarn/express-5.1.0 by @xizhibei in [#15](https://github.com/1mcp-app/agent/pull/15)
@@ -223,40 +207,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge pull request #9 from 1mcp-app/dependabot/npm_and_yarn/typescript-eslint/eslint-plugin-8.29.0 by @xizhibei in [#9](https://github.com/1mcp-app/agent/pull/9)
 
 ### 🚜 Refactor
-
 - Enhance MCP transport integration and logging setup by @xizhibei
 
 ### 📚 Documentation
-
 - Add badges, Docker instructions, and environment variable configuration examples by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
 - Update Docker build workflow to trigger on successful completion of the "Publish Package" workflow and enhance image metadata by @xizhibei
 - Add GitHub Actions workflow for building and pushing Docker images by @xizhibei
 - Add Dockerfile and .dockerignore for containerization by @xizhibei
 - Consolidate release process by removing old release.yml and integrating steps into main.yml by @xizhibei
 
 ## New Contributors
-
-- @github-actions[bot] made their first contribution
+* @github-actions[bot] made their first contribution
 
 ## [0.7.0] - 2025-03-27
 
 ### ⚙️ Miscellaneous Tasks
-
 - Create temporary branch for changelog and version updates before pushing to main by @xizhibei
+
 
 ## [0.6.0] - 2025-03-26
 
 ### ⚙️ Miscellaneous Tasks
-
 - Update release workflows to trigger on version tags and successful completion of publish job by @xizhibei
+
 
 ## [0.5.0] - 2025-03-26
 
 ### 🚀 Features
-
 - Dynamically set MCP_SERVER_VERSION from package.json, improving version management and consistency by @xizhibei
 - Enhance logging setup by adding SSEServerTransport support and configuring console transport for visibility, improving logging flexibility based on server type by @xizhibei
 - Add comprehensive tests for clientManager and introduce utility functions for client filtering, enhancing test coverage and maintainability by @xizhibei
@@ -264,7 +243,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhance client capability management by adding filtering functions and updating request handlers to utilize capabilities, improving client interaction and resource management by @xizhibei
 
 ### 💼 Other
-
 - Merge pull request #3 from 1mcp-app/dependabot/npm_and_yarn/eslint/js-9.23.0 by @xizhibei in [#3](https://github.com/1mcp-app/agent/pull/3)
 - Merge pull request #4 from 1mcp-app/dependabot/npm_and_yarn/ts-jest-29.3.0 by @xizhibei in [#4](https://github.com/1mcp-app/agent/pull/4)
 - Merge pull request #5 from 1mcp-app/dependabot/npm_and_yarn/types/express-5.0.1 by @xizhibei in [#5](https://github.com/1mcp-app/agent/pull/5)
@@ -272,11 +250,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge pull request #7 from 1mcp-app/dependabot/npm_and_yarn/eslint-plugin-prettier-5.2.4 by @xizhibei in [#7](https://github.com/1mcp-app/agent/pull/7)
 
 ### 🚜 Refactor
-
 - Remove log directory creation logic from logger setup, simplifying initialization process by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
 - Automate version updates for MCP_SERVER_VERSION and package.json in changelog process by @xizhibei
 - Add git-cliff configuration and automate changelog generation in workflows by @xizhibei
 - Update inspector command in package.json for simplified usage and adjust README instructions accordingly by @xizhibei
@@ -284,16 +260,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add author and bugs section to package.json for improved metadata and issue tracking by @xizhibei
 - Add keywords for better discoverability and update homepage URL to GitHub repository by @xizhibei
 
+
 ## [0.4.0] - 2025-03-23
 
 ### ⚙️ Miscellaneous Tasks
-
 - Update package and server version to 0.4.0 for consistency across project by @xizhibei
+
 
 ## [0.3.0] - 2025-03-23
 
 ### 🚀 Features
-
 - Add HOST configuration for ExpressServer, allowing customizable host settings for SSE transport by @xizhibei
 - Implement comprehensive Jest tests for ServerManager, covering transport connection, disconnection, and management methods to ensure robust functionality and error handling by @xizhibei
 - Add Jest configuration and initial tests for ConfigManager, enhancing test coverage and ensuring proper functionality of configuration management by @xizhibei
@@ -303,7 +279,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for client filtering by tags in transport connections, enhancing server-client interaction and flexibility by @xizhibei
 
 ### 🚜 Refactor
-
 - Remove redundant file transport configurations from logger setup, simplifying logging structure and improving maintainability by @xizhibei
 - Streamline transport handling in ServerManager and related components, enhancing type safety and maintainability by replacing ClientTransports with a more generic EnhancedTransport interface by @xizhibei
 - Update configManager export and improve import structure in configReloadService for better clarity and maintainability by @xizhibei
@@ -312,13 +287,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Update client management to use structured types for clients and transports, enhancing type safety and maintainability across the application by @xizhibei
 
 ### 📚 Documentation
-
 - Update transport options and add tags section for server filtering, enhancing configuration clarity and usage examples by @xizhibei
+
 
 ## [0.2.0] - 2025-03-19
 
 ### 🚀 Features
-
 - Extend transport configuration to support 'http' type, enhancing transport options for improved flexibility by @xizhibei
 - Implement global configuration management with dynamic path resolution and default config creation by @xizhibei
 - Add Zod schema for transport configuration validation, improving error handling and flexibility in transport creation by @xizhibei
@@ -332,24 +306,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhance configuration reload logic with improved transport handling by @xizhibei
 
 ### 🚜 Refactor
-
 - Enhance logging middleware with Zod schemas for request and notification validation, improving type safety and error handling by @xizhibei
 - Update transport configuration types from MCPTransport to MCPServerParams, enhancing flexibility for transport creation and error handling by @xizhibei
 - Restructure logger imports to use dedicated logger directory and enhance logging capabilities across the application by @xizhibei
 - Remove defaultMeta from logger and update loggerName in MCP transport to '1mcp' by @xizhibei
 
 ### 📚 Documentation
-
 - Update quick start guide and configuration details, enhancing clarity on server setup and usage instructions by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
 - Bump version to 0.2.0 and update README for enhanced transport options and configuration management by @xizhibei
+
 
 ## [0.1.0] - 2025-03-16
 
 ### 🚀 Features
-
 - Create dependabot.yml by @xizhibei
 - Integrate husky and lint-staged for improved pre-commit checks. by @xizhibei
 - Add .node-version file and GitHub Actions workflow for package publishing. Introduced a version file for Node.js setup and created a CI workflow to automate package publishing to npm and GitHub Package Registry upon release events. Updated package.json to include repository information and publish configuration. by @xizhibei
@@ -363,37 +334,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add application constants for server configuration and error handling by @xizhibei
 
 ### 🐛 Bug Fixes
-
 - Ensure callback is invoked when not connected to maintain log integrity. This change prevents potential log loss by calling the callback function when the transport is not connected. by @xizhibei
 
 ### 💼 Other
-
 - Merge pull request #1 from 1mcp-app/dependabot/npm_and_yarn/modelcontextprotocol/sdk-1.7.0 by @xizhibei in [#1](https://github.com/1mcp-app/agent/pull/1)
 - Merge pull request #2 from 1mcp-app/dependabot/npm_and_yarn/types/node-22.13.10 by @xizhibei in [#2](https://github.com/1mcp-app/agent/pull/2)
 - Enhance transport handling and connection logic. Introduced dynamic transport loading from mcp.json, improved retry logic with exponential backoff for client connections, and updated logging to include JSON stringification of notifications. by @xizhibei
 
 ### 🚜 Refactor
-
 - Improve client connection logic with enhanced error handling and exponential backoff. Updated logging for connection attempts and added error handling for client creation failures. by @xizhibei
 
 ### 📚 Documentation
-
 - Update project overview and features, enhance server configuration details, and switch to pnpm for dependency management by @xizhibei
 
 ### 🎨 Styling
-
 - Update tab width from 4 to 2 spaces for consistency across the codebase. by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
-
 - Add .editorconfig for consistent coding styles and update .gitignore to include additional files and directories by @xizhibei
 
 ## New Contributors
+* @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
+* @dependabot[bot] made their first contribution
 
-- @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
-- @dependabot[bot] made their first contribution
-
-[unreleased]: https://github.com/1mcp-app/agent/compare/v0.12.0..HEAD
+[0.13.0]: https://github.com/1mcp-app/agent/compare/v0.12.0..v0.13.0
 [0.12.0]: https://github.com/1mcp-app/agent/compare/v0.11.0..v0.12.0
 [0.11.0]: https://github.com/1mcp-app/agent/compare/v0.10.3..v0.11.0
 [0.10.3]: https://github.com/1mcp-app/agent/compare/v0.10.2..v0.10.3
