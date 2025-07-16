@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.1] - 2025-07-16
+
+### 🚀 Features
+- Introduce client session management repository and file storage service by @xizhibei
+- Enhance OAuth session management and client data handling by @xizhibei
+
+### 🐛 Bug Fixes
+- Remove FILE_PREFIX from AUTH_CONFIG session settings by @xizhibei
+- Update tag filtering logic to match any tag and enhance test coverage by @xizhibei
+
+### 💼 Other
+- Merge pull request #76 from 1mcp-app/fix/oauth by @xizhibei in [#76](https://github.com/1mcp-app/agent/pull/76)
+
+### 🚜 Refactor
+- Migrate to new repository architecture for OAuth storage by @xizhibei
+
+### 🧪 Testing
+- Enhance ClientSessionRepository tests for FILE_PREFIX handling by @xizhibei
+
+
 ## [0.13.0] - 2025-07-15
 
 ### 🚀 Features
@@ -357,6 +377,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.13.1]: https://github.com/1mcp-app/agent/compare/v0.13.0..v0.13.1
 [0.13.0]: https://github.com/1mcp-app/agent/compare/v0.12.0..v0.13.0
 [0.12.0]: https://github.com/1mcp-app/agent/compare/v0.11.0..v0.12.0
 [0.11.0]: https://github.com/1mcp-app/agent/compare/v0.10.3..v0.11.0
