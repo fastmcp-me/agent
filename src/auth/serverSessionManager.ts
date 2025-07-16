@@ -3,7 +3,8 @@ import path from 'path';
 import { randomUUID } from 'node:crypto';
 import logger from '../logger/logger.js';
 import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
-import { SessionData, AuthCodeData } from './sessionTypes.js';
+import { SessionData, AuthCodeData, ClientData, AuthRequestData } from './sessionTypes.js';
+import { OAuthClientInformationFull } from '@modelcontextprotocol/sdk/shared/auth.js';
 
 /**
  * SessionManager handles file-based session storage with automatic cleanup.
@@ -38,8 +39,7 @@ export class ServerSessionManager {
    * @param sessionStoragePath - Optional custom path for session storage
    */
   constructor(sessionStoragePath?: string) {
-    this.sessionStoragePath =
-      sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SERVER.SESSION.STORAGE_DIR);
+    this.sessionStoragePath = sessionStoragePath || path.join(getGlobalConfigDir(), AUTH_CONFIG.SERVER.STORAGE.DIR);
     this.ensureSessionDirectory();
     this.startCleanupInterval();
   }
@@ -85,7 +85,7 @@ export class ServerSessionManager {
       throw new Error('Invalid session ID format');
     }
 
-    const fileName = `${AUTH_CONFIG.SERVER.SESSION.FILE_PREFIX}${sessionId}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
+    const fileName = `${AUTH_CONFIG.SERVER.SESSION.FILE_PREFIX}${sessionId}${AUTH_CONFIG.SERVER.STORAGE.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -111,7 +111,7 @@ export class ServerSessionManager {
       throw new Error('Invalid authorization code format');
     }
 
-    const fileName = `auth_code_${code}${AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION}`;
+    const fileName = `${AUTH_CONFIG.SERVER.AUTH_CODE.FILE_PREFIX}${code}${AUTH_CONFIG.SERVER.STORAGE.FILE_EXTENSION}`;
     const filePath = path.resolve(this.sessionStoragePath, fileName);
 
     // Additional security check: ensure resolved path is within session storage
@@ -120,6 +120,32 @@ export class ServerSessionManager {
 
     if (!normalizedFilePath.startsWith(normalizedStoragePath + path.sep)) {
       throw new Error('Invalid authorization code path: outside storage directory');
+    }
+
+    return filePath;
+  }
+
+  /**
+   * Gets the file path for an authorization request.
+   *
+   * @param authRequestId - The authorization request identifier
+   * @returns Full file path for the auth request file
+   */
+  private getAuthRequestFilePath(authRequestId: string): string {
+    // Validate auth request ID format first
+    if (!this.isValidId(authRequestId)) {
+      throw new Error('Invalid authorization request ID format');
+    }
+
+    const fileName = `${AUTH_CONFIG.SERVER.AUTH_REQUEST.FILE_PREFIX}${authRequestId}${AUTH_CONFIG.SERVER.STORAGE.FILE_EXTENSION}`;
+    const filePath = path.resolve(this.sessionStoragePath, fileName);
+
+    // Additional security check: ensure resolved path is within session storage
+    const normalizedStoragePath = path.resolve(this.sessionStoragePath);
+    const normalizedFilePath = path.resolve(filePath);
+
+    if (!normalizedFilePath.startsWith(normalizedStoragePath + path.sep)) {
+      throw new Error('Invalid authorization request path: outside storage directory');
     }
 
     return filePath;
@@ -139,13 +165,13 @@ export class ServerSessionManager {
 
     // Check for valid server-side prefix
     const hasServerPrefix =
-      id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID) || id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE);
+      id.startsWith(AUTH_CONFIG.SERVER.SESSION.ID_PREFIX) || id.startsWith(AUTH_CONFIG.SERVER.AUTH_CODE.ID_PREFIX);
 
     if (hasServerPrefix) {
       // Validate the UUID portion (after prefix)
-      const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID)
-        ? id.substring(AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID.length)
-        : id.substring(AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE.length);
+      const uuidPart = id.startsWith(AUTH_CONFIG.SERVER.SESSION.ID_PREFIX)
+        ? id.substring(AUTH_CONFIG.SERVER.SESSION.ID_PREFIX.length)
+        : id.substring(AUTH_CONFIG.SERVER.AUTH_CODE.ID_PREFIX.length);
 
       // UUID v4 format: 8-4-4-4-12 hexadecimal digits with hyphens
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -175,15 +201,17 @@ export class ServerSessionManager {
    *
    * @param clientId - The client identifier
    * @param resource - The resource this session can access
+   * @param scopes - The scopes this session grants access to
    * @param ttlMs - Time-to-live in milliseconds
    * @returns The generated session ID with prefix
    * @throws Error if session creation fails
    */
-  public createSession(clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + randomUUID();
+  public createSession(clientId: string, resource: string, scopes: string[], ttlMs: number): string {
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + randomUUID();
     const sessionData: SessionData = {
       clientId,
       resource,
+      scopes,
       expires: Date.now() + ttlMs,
       createdAt: Date.now(),
     };
@@ -270,16 +298,27 @@ export class ServerSessionManager {
    * @param clientId - The client identifier
    * @param redirectUri - The redirect URI for this code
    * @param resource - The resource this code grants access to
+   * @param scopes - The scopes this code grants access to
    * @param ttlMs - Time-to-live in milliseconds
+   * @param codeChallenge - Optional PKCE code challenge for OAuth 2.1 security
    * @returns The generated authorization code with prefix
    * @throws Error if code creation fails
    */
-  public createAuthCode(clientId: string, redirectUri: string, resource: string, ttlMs: number): string {
-    const code = AUTH_CONFIG.SERVER.PREFIXES.AUTH_CODE + randomUUID();
+  public createAuthCode(
+    clientId: string,
+    redirectUri: string,
+    resource: string,
+    scopes: string[],
+    ttlMs: number,
+    codeChallenge?: string,
+  ): string {
+    const code = AUTH_CONFIG.SERVER.AUTH_CODE.ID_PREFIX + randomUUID();
     const authCodeData: AuthCodeData = {
       clientId,
       redirectUri,
       resource,
+      scopes,
+      codeChallenge,
       expires: Date.now() + ttlMs,
       createdAt: Date.now(),
     };
@@ -393,7 +432,7 @@ export class ServerSessionManager {
       let cleanedCount = 0;
 
       for (const file of files) {
-        if (file.endsWith(AUTH_CONFIG.SERVER.SESSION.FILE_EXTENSION)) {
+        if (file.endsWith(AUTH_CONFIG.SERVER.STORAGE.FILE_EXTENSION)) {
           const filePath = path.join(this.sessionStoragePath, file);
           try {
             const data = fs.readFileSync(filePath, 'utf8');
@@ -444,15 +483,23 @@ export class ServerSessionManager {
    * @param tokenId - The raw UUID to use for the session (no prefix)
    * @param clientId - The client identifier
    * @param resource - The resource this session can access
+   * @param scopes - The scopes this session grants access to
    * @param ttlMs - Time-to-live in milliseconds
    * @returns The generated session ID with prefix
    * @throws Error if session creation fails
    */
-  public createSessionWithId(tokenId: string, clientId: string, resource: string, ttlMs: number): string {
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
+  public createSessionWithId(
+    tokenId: string,
+    clientId: string,
+    resource: string,
+    scopes: string[],
+    ttlMs: number,
+  ): string {
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
     const sessionData: SessionData = {
       clientId,
       resource,
+      scopes,
       expires: Date.now() + ttlMs,
       createdAt: Date.now(),
     };
@@ -469,6 +516,54 @@ export class ServerSessionManager {
   }
 
   /**
+   * Deletes client data by client ID.
+   *
+   * Removes the client data file from the filesystem if it exists.
+   *
+   * @param clientId - The client identifier to delete
+   * @returns True if client data was deleted, false if it didn't exist
+   */
+  public deleteClientData(clientId: string): boolean {
+    if (!this.isValidId(clientId)) {
+      logger.warn(`Rejected deleteClientData with invalid clientId: ${clientId}`);
+      return false;
+    }
+    const filePath = this.getSessionFilePath(clientId);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Retrieves client data by client ID.
+   *
+   * Reads the client data file and validates expiration. If the client data
+   * is expired, it's automatically deleted and null is returned.
+   *
+   * @param clientId - The client identifier to retrieve
+   * @returns Client data if valid and not expired, null otherwise
+   */
+  public getClientData(clientId: string): OAuthClientInformationFull | null {
+    const filePath = this.getSessionFilePath(clientId);
+    if (!this.isValidId(clientId)) {
+      logger.warn(`Rejected getClientData with invalid clientId: ${clientId}`);
+      return null;
+    }
+    if (!fs.existsSync(filePath)) {
+      return null;
+    }
+    const data = fs.readFileSync(filePath, 'utf8');
+    const clientData: ClientData = JSON.parse(data);
+    if (clientData.expires < Date.now()) {
+      this.deleteClientData(clientId);
+      return null;
+    }
+    return clientData;
+  }
+
+  /**
    * Creates a new session with custom data.
    * Used for OAuth client data storage where arbitrary data needs to be stored.
    *
@@ -478,23 +573,125 @@ export class ServerSessionManager {
    * @returns The session ID
    * @throws Error if session creation fails
    */
-  public createSessionWithData(sessionId: string, data: string, ttlMs: number): string {
-    const sessionData: SessionData = {
-      clientId: 'oauth-client-data',
-      resource: 'internal',
-      expires: Date.now() + ttlMs,
-      createdAt: Date.now(),
-      data,
-    };
-
+  public saveClientData(clientId: string, data: OAuthClientInformationFull, ttlMs: number): string {
     try {
-      const filePath = this.getSessionFilePath(sessionId);
-      fs.writeFileSync(filePath, JSON.stringify(sessionData, null, 2));
-      logger.info(`Created data session: ${sessionId}`);
-      return sessionId;
+      const clientData: ClientData = {
+        ...data,
+        expires: data.client_secret_expires_at ? data.client_secret_expires_at * 1000 : Date.now() + ttlMs,
+        createdAt: data.client_id_issued_at ? data.client_id_issued_at * 1000 : Date.now(),
+      };
+      const filePath = this.getSessionFilePath(clientId);
+      fs.writeFileSync(filePath, JSON.stringify(clientData, null, 2));
+      logger.info(`Created client data: ${clientId}`);
+      return clientId;
     } catch (error) {
       logger.error(`Failed to create data session: ${error}`);
       throw error;
+    }
+  }
+
+  /**
+   * Creates a temporary authorization request for the consent flow.
+   *
+   * Stores the authorization parameters including code challenge to be
+   * retrieved when the consent form is submitted.
+   *
+   * @param clientId - The client identifier
+   * @param redirectUri - The redirect URI for this request
+   * @param codeChallenge - Optional PKCE code challenge
+   * @param state - Optional state parameter
+   * @param resource - Optional resource parameter
+   * @param scopes - Optional scopes array
+   * @param ttlMs - Time-to-live in milliseconds
+   * @returns The generated authorization request ID
+   * @throws Error if request creation fails
+   */
+  public createAuthRequest(
+    clientId: string,
+    redirectUri: string,
+    codeChallenge?: string,
+    state?: string,
+    resource?: string,
+    scopes?: string[],
+    ttlMs: number = AUTH_CONFIG.SERVER.AUTH_REQUEST.TTL_MS,
+  ): string {
+    const authRequestId = AUTH_CONFIG.SERVER.AUTH_REQUEST.ID_PREFIX + randomUUID();
+    const authRequestData: AuthRequestData = {
+      clientId,
+      redirectUri,
+      codeChallenge,
+      state,
+      resource,
+      scopes,
+      expires: Date.now() + ttlMs,
+      createdAt: Date.now(),
+    };
+
+    try {
+      const filePath = this.getAuthRequestFilePath(authRequestId);
+      fs.writeFileSync(filePath, JSON.stringify(authRequestData, null, 2));
+      logger.info(`Created auth request: ${authRequestId} for client: ${clientId}`);
+      return authRequestId;
+    } catch (error) {
+      logger.error(`Failed to create auth request: ${error}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves authorization request data by request ID.
+   *
+   * @param authRequestId - The authorization request identifier
+   * @returns Auth request data if valid and not expired, null otherwise
+   */
+  public getAuthRequest(authRequestId: string): AuthRequestData | null {
+    if (!this.isValidId(authRequestId)) {
+      logger.warn(`Rejected getAuthRequest with invalid ID: ${authRequestId}`);
+      return null;
+    }
+    try {
+      const filePath = this.getAuthRequestFilePath(authRequestId);
+      if (!fs.existsSync(filePath)) {
+        return null;
+      }
+
+      const data = fs.readFileSync(filePath, 'utf8');
+      const authRequestData: AuthRequestData = JSON.parse(data);
+
+      if (authRequestData.expires < Date.now()) {
+        this.deleteAuthRequest(authRequestId);
+        return null;
+      }
+
+      return authRequestData;
+    } catch (error) {
+      logger.error(`Failed to read auth request ${authRequestId}: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Deletes an authorization request by ID.
+   *
+   * @param authRequestId - The authorization request identifier
+   * @returns True if request was deleted, false if it didn't exist
+   */
+  public deleteAuthRequest(authRequestId: string): boolean {
+    if (!this.isValidId(authRequestId)) {
+      logger.warn(`Rejected deleteAuthRequest with invalid ID: ${authRequestId}`);
+      return false;
+    }
+    try {
+      const filePath = this.getAuthRequestFilePath(authRequestId);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        logger.info(`Deleted auth request: ${authRequestId}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      logger.error(`Failed to delete auth request ${authRequestId}: ${error}`);
+      return false;
     }
   }
 }

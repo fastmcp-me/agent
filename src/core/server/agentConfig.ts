@@ -60,8 +60,8 @@ export class AgentConfigManager {
       auth: {
         enabled: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
         sessionTtlMinutes: AUTH_CONFIG.SERVER.SESSION.TTL_MINUTES,
-        oauthCodeTtlMs: AUTH_CONFIG.SERVER.OAUTH.CODE_TTL_MS,
-        oauthTokenTtlMs: AUTH_CONFIG.SERVER.OAUTH.TOKEN_TTL_MS,
+        oauthCodeTtlMs: AUTH_CONFIG.SERVER.AUTH_CODE.TTL_MS,
+        oauthTokenTtlMs: AUTH_CONFIG.SERVER.TOKEN.TTL_MS,
       },
       rateLimit: {
         windowMs: RATE_LIMIT_CONFIG.OAUTH.WINDOW_MS,

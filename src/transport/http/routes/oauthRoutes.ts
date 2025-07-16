@@ -207,19 +207,10 @@ router.post('/restart/:serverName', restartHandler);
  */
 const consentHandler: RequestHandler = async (req: Request, res: Response) => {
   try {
-    const {
-      client_id,
-      redirect_uri,
-      code_challenge,
-      code_challenge_method: _code_challenge_method,
-      state,
-      resource,
-      action,
-      scopes,
-    } = req.body;
+    const { auth_request_id, action, scopes } = req.body;
 
     // Validate required fields
-    if (!client_id || !redirect_uri || !action) {
+    if (!auth_request_id || !action) {
       res.status(400).json({
         error: 'invalid_request',
         error_description: 'Missing required parameters',
@@ -227,9 +218,19 @@ const consentHandler: RequestHandler = async (req: Request, res: Response) => {
       return;
     }
 
-    // Get the OAuth server provider
+    // Get the OAuth server provider and retrieve the authorization request
     const oauthProvider = new SDKOAuthServerProvider();
-    const client = oauthProvider.clientsStore.getClient(client_id);
+    const authRequest = oauthProvider.sessionManager.getAuthRequest(auth_request_id);
+
+    if (!authRequest) {
+      res.status(400).json({
+        error: 'invalid_request',
+        error_description: 'Invalid or expired authorization request',
+      });
+      return;
+    }
+
+    const client = oauthProvider.clientsStore.getClient(authRequest.clientId);
 
     if (!client) {
       res.status(400).json({
@@ -245,19 +246,22 @@ const consentHandler: RequestHandler = async (req: Request, res: Response) => {
     if (action === 'deny') {
       // User denied the authorization
       auditScopeOperation('authorization_denied', {
-        clientId: client_id,
+        clientId: authRequest.clientId,
         success: false,
         error: 'User denied authorization',
       });
 
-      const redirectUrl = new URL(redirect_uri);
+      // Clean up the authorization request
+      oauthProvider.sessionManager.deleteAuthRequest(auth_request_id);
+
+      const redirectUrl = new URL(authRequest.redirectUri);
       redirectUrl.searchParams.set('error', 'access_denied');
       redirectUrl.searchParams.set('error_description', 'User denied the request');
-      if (state) {
-        redirectUrl.searchParams.set('state', state);
+      if (authRequest.state) {
+        redirectUrl.searchParams.set('state', authRequest.state);
       }
 
-      logger.info(`OAuth authorization denied by user for client ${client_id}`);
+      logger.info(`OAuth authorization denied by user for client ${authRequest.clientId}`);
       res.redirect(redirectUrl.toString());
       return;
     }
@@ -276,14 +280,17 @@ const consentHandler: RequestHandler = async (req: Request, res: Response) => {
         return;
       }
 
-      // Reconstruct authorization params for the approve method
+      // Reconstruct authorization params from the stored auth request
       const authParams = {
         scopes: selectedScopes,
-        redirectUri: redirect_uri,
-        codeChallenge: code_challenge,
-        state,
-        resource: resource ? new URL(resource) : undefined,
+        redirectUri: authRequest.redirectUri,
+        codeChallenge: authRequest.codeChallenge || '',
+        state: authRequest.state,
+        resource: authRequest.resource ? new URL(authRequest.resource) : undefined,
       };
+
+      // Clean up the authorization request before proceeding
+      oauthProvider.sessionManager.deleteAuthRequest(auth_request_id);
 
       // Use the OAuth provider to approve the authorization
       await oauthProvider.approveAuthorization(typedClient, authParams, validation.validScopes, res);

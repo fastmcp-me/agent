@@ -30,20 +30,19 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
     this.sessionManager = sessionManager;
   }
 
+  getClientKey(clientId: string): string {
+    return `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${clientId}`;
+  }
+
   getClient(clientId: string): OAuthClientInformationFull | undefined {
     const clientKey = this.getClientKey(clientId);
-    const clientSession = this.sessionManager.getSession(clientKey);
+    const clientData = this.sessionManager.getClientData(clientKey);
 
-    if (!clientSession?.data) {
+    if (!clientData) {
       return undefined;
     }
 
-    try {
-      return JSON.parse(clientSession.data) as OAuthClientInformationFull;
-    } catch (error) {
-      logger.error(`Failed to parse client data for ${clientId}:`, error);
-      return undefined;
-    }
+    return clientData;
   }
 
   registerClient(client: OAuthClientInformationFull): OAuthClientInformationFull {
@@ -52,49 +51,13 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
     const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.TTL_MS;
 
     try {
-      this.sessionManager.createSessionWithData(clientKey, JSON.stringify(client), ttlMs);
+      this.sessionManager.saveClientData(clientKey, client, ttlMs);
       logger.info(`Registered OAuth client: ${client.client_id}`);
       return client;
     } catch (error) {
       logger.error(`Failed to register client ${client.client_id}:`, error);
       throw error;
     }
-  }
-
-  private getClientKey(clientId: string): string {
-    // Create a deterministic UUID-like key from the client ID for consistent retrieval
-    // We need to ensure this passes the session ID validation which expects sess- + UUID format
-    const hashInput = `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${clientId}`;
-    // Generate a deterministic UUID-like string using a simple hash
-    const hash = this.hashToUuid(hashInput);
-    return `sess-${hash}`;
-  }
-
-  private hashToUuid(input: string): string {
-    // Simple hash to UUID conversion (not cryptographically secure, but deterministic)
-    // Validate input is actually a string to prevent DoS attacks
-    if (typeof input !== 'string') {
-      throw new Error('Input must be a string');
-    }
-
-    // Limit input length to prevent DoS attacks
-    const maxLength = 1000;
-    // Use Math.min to ensure we never exceed maxLength, even if length property is malicious
-    const actualLength = Math.min(input.length, maxLength);
-    const safeInput = input.substring(0, actualLength);
-
-    let hash = 0;
-    // Use actualLength instead of safeInput.length to avoid potential issues
-    for (let i = 0; i < actualLength; i++) {
-      const char = safeInput.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-
-    // Convert hash to a UUID-like format
-    const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-    const uuid = `${hashStr.slice(0, 8)}-${hashStr.slice(0, 4)}-4${hashStr.slice(1, 4)}-8${hashStr.slice(4, 7)}-${hashStr.repeat(3).slice(0, 12)}`;
-    return uuid;
   }
 }
 
@@ -105,7 +68,7 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
  * while maintaining compatibility with the existing session storage system.
  */
 export class SDKOAuthServerProvider implements OAuthServerProvider {
-  private sessionManager: ServerSessionManager;
+  public sessionManager: ServerSessionManager;
   private configManager: AgentConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
 
@@ -192,8 +155,18 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     availableTags: string[],
     res: Response,
   ): Promise<void> {
+    // Create temporary authorization request to store the code challenge securely
+    const authRequestId = this.sessionManager.createAuthRequest(
+      client.client_id,
+      params.redirectUri,
+      params.codeChallenge,
+      params.state,
+      params.resource?.toString(),
+      requestedScopes,
+    );
+
     const scopeTags = scopesToTags(requestedScopes);
-    const consentPageHtml = this.generateConsentPageHtml(client, params, scopeTags, availableTags);
+    const consentPageHtml = this.generateConsentPageHtml(client, authRequestId, scopeTags, availableTags);
 
     // Remove any CSP that might interfere with form submission
     res.removeHeader('Content-Security-Policy');
@@ -212,19 +185,14 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   ): Promise<void> {
     logger.debug('Approving authorization', { clientId: client.client_id, params, grantedScopes });
     // Create authorization code with granted scopes
-    const metadata = {
-      scopes: grantedScopes,
-      resource: params.resource?.toString() || '',
-      codeChallenge: params.codeChallenge,
-      redirectUri: params.redirectUri,
-    };
-
     const ttlMs = this.configManager.getOAuthCodeTtlMs();
     const code = this.sessionManager.createAuthCode(
       client.client_id,
       params.redirectUri,
-      JSON.stringify(metadata),
+      params.resource?.toString() || '',
+      grantedScopes,
       ttlMs,
+      params.codeChallenge,
     );
 
     // Build redirect URL
@@ -255,7 +223,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    */
   private generateConsentPageHtml(
     client: OAuthClientInformationFull,
-    params: AuthorizationParams,
+    authRequestId: string,
     requestedTags: string[],
     availableTags: string[],
   ): string {
@@ -299,12 +267,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
         </div>
 
         <form method="POST" action="/oauth/consent">
-            <input type="hidden" name="client_id" value="${client.client_id}">
-            <input type="hidden" name="redirect_uri" value="${params.redirectUri}">
-            <input type="hidden" name="code_challenge" value="${params.codeChallenge || ''}">
-            <input type="hidden" name="code_challenge_method" value="S256">
-            <input type="hidden" name="state" value="${params.state || ''}">
-            <input type="hidden" name="resource" value="${params.resource?.toString() || ''}">
+            <input type="hidden" name="auth_request_id" value="${authRequestId}">
 
             <div class="scopes-section">
                 <h3>Server Access Permissions</h3>
@@ -353,12 +316,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       throw new Error('Invalid authorization code');
     }
 
-    try {
-      const metadata = JSON.parse(codeData.resource);
-      return metadata.codeChallenge || '';
-    } catch (_e) {
-      return '';
-    }
+    return codeData.codeChallenge || '';
   }
 
   /**
@@ -395,17 +353,8 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       throw new Error('Redirect URI mismatch');
     }
 
-    // Parse metadata to check PKCE and other parameters
-    let metadata: any = {};
-    try {
-      metadata = JSON.parse(codeData.resource);
-    } catch (_e) {
-      // Legacy format, treat as plain resource string
-      metadata = { resource: codeData.resource };
-    }
-
     // Validate resource if provided
-    if (resource && metadata.resource && metadata.resource !== resource.toString()) {
+    if (resource && codeData.resource && codeData.resource !== resource.toString()) {
       throw new Error('Resource mismatch');
     }
 
@@ -414,17 +363,17 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
 
     // Create access token
     const tokenId = randomUUID();
-    const accessToken = AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN + tokenId;
+    const accessToken = AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX + tokenId;
     const ttlMs = this.configManager.getOAuthTokenTtlMs();
 
     // Store session for token validation
-    this.sessionManager.createSessionWithId(tokenId, client.client_id, metadata.resource || '', ttlMs);
+    this.sessionManager.createSessionWithId(tokenId, client.client_id, codeData.resource || '', codeData.scopes, ttlMs);
 
     const tokens: OAuthTokens = {
       access_token: accessToken,
       token_type: 'Bearer',
       expires_in: Math.floor(ttlMs / 1000),
-      scope: metadata.scopes ? metadata.scopes.join(' ') : '',
+      scope: codeData.scopes ? codeData.scopes.join(' ') : '',
     };
 
     logger.info(`Exchanged authorization code for access token`, {
@@ -466,33 +415,22 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     }
 
     // Strip prefix if present
-    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN)
-      ? token.slice(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN.length)
+    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX)
+      ? token.slice(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX.length)
       : token;
 
     // Get session data
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
     const sessionData = this.sessionManager.getSession(sessionId);
 
     if (!sessionData) {
       throw new Error('Invalid or expired access token');
     }
 
-    // Extract scopes from session resource (stored during authorization)
-    let scopes: string[] = [];
-    if (sessionData.resource) {
-      try {
-        const metadata = JSON.parse(sessionData.resource);
-        scopes = metadata.scopes || [];
-      } catch (error) {
-        logger.warn(`Failed to parse session metadata for token ${tokenId}:`, error);
-      }
-    }
-
     return {
       token,
       clientId: sessionData.clientId,
-      scopes,
+      scopes: sessionData.scopes,
       expiresAt: sessionData.expires,
       resource: sessionData.resource ? new URL(sessionData.resource) : undefined,
     };
@@ -507,11 +445,11 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     const token = request.token;
 
     // Strip prefix if present
-    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN)
-      ? token.slice(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN.length)
+    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX)
+      ? token.slice(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX.length)
       : token;
 
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
     const success = this.sessionManager.deleteSession(sessionId);
 
     if (success) {

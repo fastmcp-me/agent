@@ -62,7 +62,7 @@ describe('ServerSessionManager', () => {
     const resource = 'test-resource';
     const ttlMs = 60000; // 1 minute
 
-    const sessionId = sessionManager.createSession(clientId, resource, ttlMs);
+    const sessionId = sessionManager.createSession(clientId, resource, [], ttlMs);
 
     expect(sessionId).toBeDefined();
     expect(typeof sessionId).toBe('string');
@@ -109,7 +109,7 @@ describe('ServerSessionManager', () => {
     const resource = 'test-resource';
     const ttlMs = 60000; // 1 minute
 
-    const code = sessionManager.createAuthCode(clientId, redirectUri, resource, ttlMs);
+    const code = sessionManager.createAuthCode(clientId, redirectUri, resource, [], ttlMs);
 
     expect(code).toBeDefined();
     expect(typeof code).toBe('string');
@@ -296,7 +296,7 @@ describe('ServerSessionManager', () => {
       });
 
       expect(() => {
-        sessionManager.createSession('test-client', 'test-resource', 60000);
+        sessionManager.createSession('test-client', 'test-resource', [], 60000);
       }).toThrow('Disk full');
     });
 
@@ -306,7 +306,7 @@ describe('ServerSessionManager', () => {
       });
 
       expect(() => {
-        sessionManager.createAuthCode('test-client', 'http://localhost', 'test-resource', 60000);
+        sessionManager.createAuthCode('test-client', 'http://localhost', 'test-resource', [], 60000);
       }).toThrow('Disk full');
     });
   });
@@ -632,7 +632,7 @@ describe('ServerSessionManager', () => {
     });
 
     it('should handle zero TTL for session creation', () => {
-      const sessionId = sessionManager.createSession('test-client', 'test-resource', 0);
+      const sessionId = sessionManager.createSession('test-client', 'test-resource', [], 0);
 
       expect(sessionId).toBeDefined();
       expect(sessionId).toMatch(/^sess-/);
@@ -640,7 +640,7 @@ describe('ServerSessionManager', () => {
     });
 
     it('should handle negative TTL for auth code creation', () => {
-      const code = sessionManager.createAuthCode('test-client', 'http://localhost', 'test-resource', -1000);
+      const code = sessionManager.createAuthCode('test-client', 'http://localhost', 'test-resource', [], -1000);
 
       expect(code).toBeDefined();
       expect(code).toMatch(/^code-/);
@@ -649,7 +649,7 @@ describe('ServerSessionManager', () => {
 
     it('should handle very large TTL values', () => {
       const largeTTL = Number.MAX_SAFE_INTEGER;
-      const sessionId = sessionManager.createSession('test-client', 'test-resource', largeTTL);
+      const sessionId = sessionManager.createSession('test-client', 'test-resource', [], largeTTL);
 
       expect(sessionId).toBeDefined();
       expect(sessionId).toMatch(/^sess-/);
