@@ -61,21 +61,43 @@ export const AUTH_CONFIG = {
   // Server-side authentication
   SERVER: {
     DEFAULT_ENABLED: false,
-    SESSION: {
-      TTL_MINUTES: 24 * 60, // 24 hours
-      STORAGE_DIR: 'sessions',
-      FILE_PREFIX: 'session_',
+
+    // File storage configuration
+    STORAGE: {
+      DIR: 'sessions',
       FILE_EXTENSION: '.json',
     },
-    OAUTH: {
-      CODE_TTL_MS: 60 * 1000, // 1 minute
-      TOKEN_TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
+
+    // Session management
+    SESSION: {
+      TTL_MINUTES: 24 * 60, // 24 hours
+      ID_PREFIX: 'sess-',
+      FILE_PREFIX: 'session_',
     },
-    PREFIXES: {
-      SESSION_ID: 'sess-',
-      ACCESS_TOKEN: 'tk-',
-      AUTH_CODE: 'code-',
-      CLIENT_ID: 'client-',
+
+    // OAuth authorization codes (permanent, for token exchange)
+    AUTH_CODE: {
+      TTL_MS: 60 * 1000, // 1 minute
+      ID_PREFIX: 'code-',
+      FILE_PREFIX: 'auth_code_',
+    },
+
+    // OAuth authorization requests (temporary, for consent flow)
+    AUTH_REQUEST: {
+      TTL_MS: 10 * 60 * 1000, // 10 minutes
+      ID_PREFIX: 'code-', // Same as auth codes for compatibility
+      FILE_PREFIX: 'auth_request_',
+    },
+
+    // OAuth tokens
+    TOKEN: {
+      TTL_MS: 24 * 60 * 60 * 1000, // 24 hours
+      ID_PREFIX: 'tk-',
+    },
+
+    // Client management
+    CLIENT: {
+      ID_PREFIX: 'client-',
     },
   },
 
@@ -88,6 +110,11 @@ export const AUTH_CONFIG = {
       DEFAULT_TOKEN_EXPIRY_SECONDS: 3600, // 1 hour
       DEFAULT_CALLBACK_PATH: '/oauth/callback',
       DEFAULT_SCOPES: [],
+    },
+    SESSION: {
+      TTL_MS: 30 * 24 * 60 * 60 * 1000, // 30 days
+      ID_PREFIX: 'oauth_',
+      FILE_PREFIX: '',
     },
     PREFIXES: {
       CLIENT: 'cli_',

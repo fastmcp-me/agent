@@ -6,9 +6,11 @@ import type {
   OAuthTokens,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { ClientSessionManager } from './clientSessionManager.js';
-import { AUTH_CONFIG } from '../constants.js';
+import { ClientSessionRepository } from './storage/clientSessionRepository.js';
+import { FileStorageService } from './storage/fileStorageService.js';
+import { AUTH_CONFIG, getGlobalConfigDir } from '../constants.js';
 import { ClientSessionData } from './sessionTypes.js';
+import path from 'path';
 
 /**
  * OAuth client configuration for connecting to downstream MCP servers
@@ -33,7 +35,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   private _tokens?: OAuthTokens;
   private _codeVerifier?: string;
   private _state?: string;
-  private sessionManager: ClientSessionManager;
+  private sessionRepository: ClientSessionRepository;
   private serverName: string;
   private config: OAuthClientConfig;
   private _authorizationUrl?: string;
@@ -41,7 +43,11 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
   constructor(serverName: string, config: OAuthClientConfig, sessionStoragePath?: string) {
     this.serverName = serverName;
     this.config = config;
-    this.sessionManager = new ClientSessionManager(sessionStoragePath);
+
+    // Create FileStorageService and ClientSessionRepository
+    const storagePath = sessionStoragePath || path.join(getGlobalConfigDir(), 'clientSessions');
+    const fileStorage = new FileStorageService(storagePath);
+    this.sessionRepository = new ClientSessionRepository(fileStorage);
 
     // Set up client metadata for registration with better defaults
     this._clientMetadata = {
@@ -162,7 +168,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
    * Load persisted OAuth data from unified client session storage
    */
   private loadPersistedData(): void {
-    const clientSession = this.sessionManager.getClientSession(this.serverName);
+    const clientSession = this.sessionRepository.get(this.serverName);
 
     if (clientSession) {
       // Load client info
@@ -218,7 +224,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
       createdAt: Date.now(),
     };
 
-    this.sessionManager.createClientSession(this.serverName, clientSessionData);
+    this.sessionRepository.save(this.serverName, clientSessionData, maxTtl);
   }
 
   /**

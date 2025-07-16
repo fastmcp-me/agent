@@ -18,7 +18,7 @@ export function filterClientsByTags(clients: OutboundConnections, tags?: string[
 
   for (const [name, clientInfo] of clients.entries()) {
     const clientTags = clientInfo.transport.tags || [];
-    const hasMatchingTags = tags.every((tag) => clientTags.includes(tag));
+    const hasMatchingTags = clientTags.some((clientTag) => tags.includes(clientTag));
 
     if (hasMatchingTags) {
       filteredClients.set(name, clientInfo);
@@ -79,7 +79,29 @@ type ClientFilter = (clients: OutboundConnections) => OutboundConnections;
  */
 export function filterClients(...filters: ClientFilter[]): ClientFilter {
   return (clients: OutboundConnections) => {
-    return filters.reduce((filteredClients, filter) => filter(filteredClients), clients);
+    logger.debug(`filterClients: Starting with ${clients.size} clients`, {
+      clientNames: Array.from(clients.keys()),
+      filterCount: filters.length,
+    });
+
+    const result = filters.reduce((filteredClients, filter, index) => {
+      const beforeCount = filteredClients.size;
+      const afterFiltering = filter(filteredClients);
+      const afterCount = afterFiltering.size;
+
+      logger.debug(`filterClients: Filter ${index} reduced clients from ${beforeCount} to ${afterCount}`, {
+        beforeNames: Array.from(filteredClients.keys()),
+        afterNames: Array.from(afterFiltering.keys()),
+      });
+
+      return afterFiltering;
+    }, clients);
+
+    logger.debug(`filterClients: Final result has ${result.size} clients`, {
+      finalNames: Array.from(result.keys()),
+    });
+
+    return result;
   };
 }
 
@@ -90,10 +112,20 @@ export function filterClients(...filters: ClientFilter[]): ClientFilter {
  */
 export function byCapabilities(requiredCapabilities: ServerCapabilities): ClientFilter {
   return (clients: OutboundConnections) => {
+    const requiredCaps = Object.keys(requiredCapabilities);
+    logger.debug(`byCapabilities: Filtering for capabilities: ${requiredCaps.join(', ')}`);
+
     return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
-      const hasCapabilities = Object.keys(requiredCapabilities).every(
-        (cap) => clientInfo.capabilities && cap in clientInfo.capabilities,
-      );
+      const clientCaps = clientInfo.capabilities ? Object.keys(clientInfo.capabilities) : [];
+      const hasCapabilities = requiredCaps.every((cap) => clientInfo.capabilities && cap in clientInfo.capabilities);
+
+      logger.debug(`byCapabilities: Client ${name}`, {
+        clientCapabilities: clientCaps,
+        requiredCapabilities: requiredCaps,
+        hasCapabilities,
+        clientCapabilitiesObject: clientInfo.capabilities,
+      });
+
       if (hasCapabilities) {
         filtered.set(name, clientInfo);
       }
@@ -109,10 +141,23 @@ export function byCapabilities(requiredCapabilities: ServerCapabilities): Client
  */
 export function byTags(tags?: string[]): ClientFilter {
   return (clients: OutboundConnections) => {
-    if (!tags || tags.length === 0) return clients;
+    logger.debug(`byTags: Filtering for tags: ${tags ? tags.join(', ') : 'none'}`);
+
+    if (!tags || tags.length === 0) {
+      logger.debug('byTags: No tags specified, returning all clients');
+      return clients;
+    }
 
     return Array.from(clients.entries()).reduce((filtered, [name, clientInfo]) => {
-      const hasMatchingTags = tags.every((tag) => clientInfo.transport.tags?.includes(tag));
+      const clientTags = clientInfo.transport.tags || [];
+      const hasMatchingTags = clientTags.some((clientTag) => tags.includes(clientTag));
+
+      logger.debug(`byTags: Client ${name}`, {
+        clientTags,
+        requiredTags: tags,
+        hasMatchingTags,
+      });
+
       if (hasMatchingTags) {
         filtered.set(name, clientInfo);
       }

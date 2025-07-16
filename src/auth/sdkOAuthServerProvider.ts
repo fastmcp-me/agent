@@ -9,7 +9,7 @@ import type {
   OAuthTokenRevocationRequest,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { ServerSessionManager } from './serverSessionManager.js';
+import { OAuthStorageService } from './storage/oauthStorageService.js';
 import { AgentConfigManager } from '../core/server/agentConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
 import {
@@ -21,29 +21,28 @@ import {
 import { McpConfigManager } from '../config/mcpConfigManager.js';
 
 /**
- * File-based OAuth clients store implementation using AUTH_CONFIG settings
+ * File-based OAuth clients store implementation using the new repository architecture
  */
 class FileBasedClientsStore implements OAuthRegisteredClientsStore {
-  private sessionManager: ServerSessionManager;
+  private oauthStorage: OAuthStorageService;
 
-  constructor(sessionManager: ServerSessionManager) {
-    this.sessionManager = sessionManager;
+  constructor(oauthStorage: OAuthStorageService) {
+    this.oauthStorage = oauthStorage;
+  }
+
+  getClientKey(clientId: string): string {
+    return `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${clientId}`;
   }
 
   getClient(clientId: string): OAuthClientInformationFull | undefined {
     const clientKey = this.getClientKey(clientId);
-    const clientSession = this.sessionManager.getSession(clientKey);
+    const clientData = this.oauthStorage.clientDataRepository.get(clientKey);
 
-    if (!clientSession?.data) {
+    if (!clientData) {
       return undefined;
     }
 
-    try {
-      return JSON.parse(clientSession.data) as OAuthClientInformationFull;
-    } catch (error) {
-      logger.error(`Failed to parse client data for ${clientId}:`, error);
-      return undefined;
-    }
+    return clientData;
   }
 
   registerClient(client: OAuthClientInformationFull): OAuthClientInformationFull {
@@ -52,7 +51,7 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
     const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.TTL_MS;
 
     try {
-      this.sessionManager.createSessionWithData(clientKey, JSON.stringify(client), ttlMs);
+      this.oauthStorage.clientDataRepository.save(clientKey, client, ttlMs);
       logger.info(`Registered OAuth client: ${client.client_id}`);
       return client;
     } catch (error) {
@@ -60,59 +59,23 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
       throw error;
     }
   }
-
-  private getClientKey(clientId: string): string {
-    // Create a deterministic UUID-like key from the client ID for consistent retrieval
-    // We need to ensure this passes the session ID validation which expects sess- + UUID format
-    const hashInput = `${AUTH_CONFIG.CLIENT.PREFIXES.CLIENT}${clientId}`;
-    // Generate a deterministic UUID-like string using a simple hash
-    const hash = this.hashToUuid(hashInput);
-    return `sess-${hash}`;
-  }
-
-  private hashToUuid(input: string): string {
-    // Simple hash to UUID conversion (not cryptographically secure, but deterministic)
-    // Validate input is actually a string to prevent DoS attacks
-    if (typeof input !== 'string') {
-      throw new Error('Input must be a string');
-    }
-
-    // Limit input length to prevent DoS attacks
-    const maxLength = 1000;
-    // Use Math.min to ensure we never exceed maxLength, even if length property is malicious
-    const actualLength = Math.min(input.length, maxLength);
-    const safeInput = input.substring(0, actualLength);
-
-    let hash = 0;
-    // Use actualLength instead of safeInput.length to avoid potential issues
-    for (let i = 0; i < actualLength; i++) {
-      const char = safeInput.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-
-    // Convert hash to a UUID-like format
-    const hashStr = Math.abs(hash).toString(16).padStart(8, '0');
-    const uuid = `${hashStr.slice(0, 8)}-${hashStr.slice(0, 4)}-4${hashStr.slice(1, 4)}-8${hashStr.slice(4, 7)}-${hashStr.repeat(3).slice(0, 12)}`;
-    return uuid;
-  }
 }
 
 /**
- * Implementation of SDK's OAuthServerProvider interface using existing SessionManager.
+ * Implementation of SDK's OAuthServerProvider interface using the new repository architecture.
  *
  * This provider implements OAuth 2.1 server functionality using the MCP SDK's interfaces
- * while maintaining compatibility with the existing session storage system.
+ * with the new layered storage architecture for better separation of concerns.
  */
 export class SDKOAuthServerProvider implements OAuthServerProvider {
-  private sessionManager: ServerSessionManager;
+  public oauthStorage: OAuthStorageService;
   private configManager: AgentConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
 
   constructor(sessionStoragePath?: string) {
-    this.sessionManager = new ServerSessionManager(sessionStoragePath);
+    this.oauthStorage = new OAuthStorageService(sessionStoragePath);
     this.configManager = AgentConfigManager.getInstance();
-    this._clientsStore = new FileBasedClientsStore(this.sessionManager);
+    this._clientsStore = new FileBasedClientsStore(this.oauthStorage);
   }
 
   get clientsStore(): OAuthRegisteredClientsStore {
@@ -192,8 +155,18 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     availableTags: string[],
     res: Response,
   ): Promise<void> {
+    // Create temporary authorization request to store the code challenge securely
+    const authRequestId = this.oauthStorage.createAuthorizationRequest(
+      client.client_id,
+      params.redirectUri,
+      params.codeChallenge,
+      params.state,
+      params.resource?.toString(),
+      requestedScopes,
+    );
+
     const scopeTags = scopesToTags(requestedScopes);
-    const consentPageHtml = this.generateConsentPageHtml(client, params, scopeTags, availableTags);
+    const consentPageHtml = this.generateConsentPageHtml(client, authRequestId, scopeTags, availableTags);
 
     // Remove any CSP that might interfere with form submission
     res.removeHeader('Content-Security-Policy');
@@ -212,19 +185,14 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   ): Promise<void> {
     logger.debug('Approving authorization', { clientId: client.client_id, params, grantedScopes });
     // Create authorization code with granted scopes
-    const metadata = {
-      scopes: grantedScopes,
-      resource: params.resource?.toString() || '',
-      codeChallenge: params.codeChallenge,
-      redirectUri: params.redirectUri,
-    };
-
     const ttlMs = this.configManager.getOAuthCodeTtlMs();
-    const code = this.sessionManager.createAuthCode(
+    const code = this.oauthStorage.authCodeRepository.create(
       client.client_id,
       params.redirectUri,
-      JSON.stringify(metadata),
+      params.resource?.toString() || '',
+      grantedScopes,
       ttlMs,
+      params.codeChallenge,
     );
 
     // Build redirect URL
@@ -255,7 +223,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    */
   private generateConsentPageHtml(
     client: OAuthClientInformationFull,
-    params: AuthorizationParams,
+    authRequestId: string,
     requestedTags: string[],
     availableTags: string[],
   ): string {
@@ -299,12 +267,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
         </div>
 
         <form method="POST" action="/oauth/consent">
-            <input type="hidden" name="client_id" value="${client.client_id}">
-            <input type="hidden" name="redirect_uri" value="${params.redirectUri}">
-            <input type="hidden" name="code_challenge" value="${params.codeChallenge || ''}">
-            <input type="hidden" name="code_challenge_method" value="S256">
-            <input type="hidden" name="state" value="${params.state || ''}">
-            <input type="hidden" name="resource" value="${params.resource?.toString() || ''}">
+            <input type="hidden" name="auth_request_id" value="${authRequestId}">
 
             <div class="scopes-section">
                 <h3>Server Access Permissions</h3>
@@ -348,17 +311,12 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   async challengeForAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<string> {
     logger.debug('Challenge for authorization code', { clientId: client.client_id, authorizationCode });
 
-    const codeData = this.sessionManager.getAuthCode(authorizationCode);
+    const codeData = this.oauthStorage.authCodeRepository.get(authorizationCode);
     if (!codeData || codeData.clientId !== client.client_id) {
       throw new Error('Invalid authorization code');
     }
 
-    try {
-      const metadata = JSON.parse(codeData.resource);
-      return metadata.codeChallenge || '';
-    } catch (_e) {
-      return '';
-    }
+    return codeData.codeChallenge || '';
   }
 
   /**
@@ -380,7 +338,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       resource,
     });
 
-    const codeData = this.sessionManager.getAuthCode(authorizationCode);
+    const codeData = this.oauthStorage.authCodeRepository.get(authorizationCode);
     if (!codeData) {
       throw new Error('Invalid or expired authorization code');
     }
@@ -395,36 +353,33 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       throw new Error('Redirect URI mismatch');
     }
 
-    // Parse metadata to check PKCE and other parameters
-    let metadata: any = {};
-    try {
-      metadata = JSON.parse(codeData.resource);
-    } catch (_e) {
-      // Legacy format, treat as plain resource string
-      metadata = { resource: codeData.resource };
-    }
-
     // Validate resource if provided
-    if (resource && metadata.resource && metadata.resource !== resource.toString()) {
+    if (resource && codeData.resource && codeData.resource !== resource.toString()) {
       throw new Error('Resource mismatch');
     }
 
     // Delete the authorization code (one-time use)
-    this.sessionManager.deleteAuthCode(authorizationCode);
+    this.oauthStorage.authCodeRepository.delete(authorizationCode);
 
     // Create access token
     const tokenId = randomUUID();
-    const accessToken = AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN + tokenId;
+    const accessToken = AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX + tokenId;
     const ttlMs = this.configManager.getOAuthTokenTtlMs();
 
     // Store session for token validation
-    this.sessionManager.createSessionWithId(tokenId, client.client_id, metadata.resource || '', ttlMs);
+    this.oauthStorage.sessionRepository.createWithId(
+      tokenId,
+      client.client_id,
+      codeData.resource || '',
+      codeData.scopes,
+      ttlMs,
+    );
 
     const tokens: OAuthTokens = {
       access_token: accessToken,
       token_type: 'Bearer',
       expires_in: Math.floor(ttlMs / 1000),
-      scope: metadata.scopes ? metadata.scopes.join(' ') : '',
+      scope: codeData.scopes ? codeData.scopes.join(' ') : '',
     };
 
     logger.info(`Exchanged authorization code for access token`, {
@@ -466,33 +421,22 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     }
 
     // Strip prefix if present
-    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN)
-      ? token.slice(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN.length)
+    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX)
+      ? token.slice(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX.length)
       : token;
 
     // Get session data
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
-    const sessionData = this.sessionManager.getSession(sessionId);
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
+    const sessionData = this.oauthStorage.sessionRepository.get(sessionId);
 
     if (!sessionData) {
       throw new Error('Invalid or expired access token');
     }
 
-    // Extract scopes from session resource (stored during authorization)
-    let scopes: string[] = [];
-    if (sessionData.resource) {
-      try {
-        const metadata = JSON.parse(sessionData.resource);
-        scopes = metadata.scopes || [];
-      } catch (error) {
-        logger.warn(`Failed to parse session metadata for token ${tokenId}:`, error);
-      }
-    }
-
     return {
       token,
       clientId: sessionData.clientId,
-      scopes,
+      scopes: sessionData.scopes,
       expiresAt: sessionData.expires,
       resource: sessionData.resource ? new URL(sessionData.resource) : undefined,
     };
@@ -507,12 +451,12 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     const token = request.token;
 
     // Strip prefix if present
-    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN)
-      ? token.slice(AUTH_CONFIG.SERVER.PREFIXES.ACCESS_TOKEN.length)
+    const tokenId = token.startsWith(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX)
+      ? token.slice(AUTH_CONFIG.SERVER.TOKEN.ID_PREFIX.length)
       : token;
 
-    const sessionId = AUTH_CONFIG.SERVER.PREFIXES.SESSION_ID + tokenId;
-    const success = this.sessionManager.deleteSession(sessionId);
+    const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
+    const success = this.oauthStorage.sessionRepository.delete(sessionId);
 
     if (success) {
       logger.info(`Revoked access token for client ${client.client_id}`, {
@@ -525,6 +469,6 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Graceful shutdown
    */
   shutdown(): void {
-    this.sessionManager.shutdown();
+    this.oauthStorage.shutdown();
   }
 }

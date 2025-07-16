@@ -95,9 +95,10 @@ describe('Client Filtering Utils', () => {
       expect(Array.from(filtered.keys())).toEqual(['client1', 'client2', 'clientNoCapabilities']);
     });
 
-    it('should filter clients by multiple tags', () => {
+    it('should filter clients by multiple tags (any match)', () => {
       const filtered = filterClientsByTags(mockClients, ['tag1', 'tag2']);
-      expect(Array.from(filtered.keys())).toEqual(['client1']);
+      // Should include clients that have ANY of the specified tags
+      expect(Array.from(filtered.keys())).toEqual(['client1', 'client2', 'clientNoCapabilities']);
     });
 
     it('should handle clients with no tags', () => {
@@ -126,6 +127,7 @@ describe('Client Filtering Utils', () => {
     it('should handle no matching results', () => {
       const filtered = filterClients(byCapabilities({ resources: {} }), byTags(['tag3']))(mockClients);
 
+      // Only client3 has tag3, but it doesn't have resources capability
       expect(Array.from(filtered.keys())).toHaveLength(0);
     });
   });
@@ -168,6 +170,53 @@ describe('Client Filtering Utils', () => {
       const filter = byTags([]);
       const filtered = filter(mockClients);
       expect(Array.from(filtered.keys())).toEqual(Array.from(mockClients.keys()));
+    });
+  });
+
+  describe('filterClients bug reproduction - zero length results', () => {
+    it('should find clients with tools capability matching any server tag', () => {
+      // Reproduces the bug: filterClients(byCapabilities({ tools: {} }), byTags(serverInfo.tags))(clients)
+      // was returning zero length because tag filtering required ALL tags instead of ANY tag
+      const serverInfoTags = ['tag1']; // Example server tags
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(serverInfoTags))(mockClients);
+
+      // Should find client1 (has tools capability AND tag1)
+      expect(Array.from(filteredClients.keys())).toEqual(['client1']);
+      expect(filteredClients.size).toBeGreaterThan(0);
+    });
+
+    it('should handle edge case with empty clients map', () => {
+      const emptyClients = new Map();
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(['tag1']))(emptyClients);
+
+      expect(Array.from(filteredClients.keys())).toEqual([]);
+      expect(filteredClients.size).toBe(0);
+    });
+
+    it('should handle edge case with no matching tags', () => {
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(['nonexistent-tag']))(mockClients);
+
+      expect(Array.from(filteredClients.keys())).toEqual([]);
+      expect(filteredClients.size).toBe(0);
+    });
+
+    it('should handle edge case with no tools capability', () => {
+      const clientsWithoutTools = new Map();
+      clientsWithoutTools.set('client1', {
+        name: 'client1',
+        capabilities: {
+          resources: {},
+          // No tools capability
+        },
+        transport: createMockTransport(['tag1']),
+        client: {} as any,
+        status: 'connected' as any,
+      });
+
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(['tag1']))(clientsWithoutTools);
+
+      expect(Array.from(filteredClients.keys())).toEqual([]);
+      expect(filteredClients.size).toBe(0);
     });
   });
 });

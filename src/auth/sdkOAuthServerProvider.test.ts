@@ -41,7 +41,7 @@ describe('SDKOAuthProvider', () => {
   });
 
   describe('FileBasedClientsStore', () => {
-    it('should register and retrieve OAuth clients', () => {
+    it('should register and retrieve OAuth clients', async () => {
       const clientInfo: OAuthClientInformationFull = {
         client_id: 'test-client-123',
         client_id_issued_at: Math.floor(Date.now() / 1000),
@@ -57,12 +57,24 @@ describe('SDKOAuthProvider', () => {
       expect(registered).toEqual(clientInfo);
 
       // Retrieve the client
-      const retrieved = provider.clientsStore.getClient('test-client-123');
-      expect(retrieved).toEqual(clientInfo);
+      const retrievedResult = provider.clientsStore.getClient('test-client-123');
+      const retrieved = retrievedResult instanceof Promise ? await retrievedResult : retrievedResult;
+
+      expect(retrieved).toBeDefined();
+      expect(retrieved!.client_id).toBe(clientInfo.client_id);
+      expect(retrieved!.client_name).toBe(clientInfo.client_name);
+      expect(retrieved!.redirect_uris).toEqual(clientInfo.redirect_uris);
+      expect(retrieved!.grant_types).toEqual(clientInfo.grant_types);
+      expect(retrieved!.response_types).toEqual(clientInfo.response_types);
+      expect(retrieved!.token_endpoint_auth_method).toBe(clientInfo.token_endpoint_auth_method);
+      // The retrieved client will have additional fields like createdAt and expires
+      expect(retrieved).toHaveProperty('createdAt');
+      expect(retrieved).toHaveProperty('expires');
     });
 
-    it('should return undefined for non-existent clients', () => {
-      const retrieved = provider.clientsStore.getClient('non-existent-client');
+    it('should return undefined for non-existent clients', async () => {
+      const retrievedResult = provider.clientsStore.getClient('non-existent-client');
+      const retrieved = retrievedResult instanceof Promise ? await retrievedResult : retrievedResult;
       expect(retrieved).toBeUndefined();
     });
   });

@@ -2,12 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import type { OAuthClientInformationFull, OAuthTokens } from '@modelcontextprotocol/sdk/shared/auth.js';
 import { SDKOAuthClientProvider, OAuthClientConfig } from './sdkOAuthClientProvider.js';
-import { ClientSessionManager } from './clientSessionManager.js';
+import { ClientSessionRepository } from './storage/clientSessionRepository.js';
+import { FileStorageService } from './storage/fileStorageService.js';
 import { ClientSessionData } from './sessionTypes.js';
 
 // Mock dependencies
 vi.mock('node:crypto');
-vi.mock('./clientSessionManager.js');
+vi.mock('./storage/clientSessionRepository.js');
+vi.mock('./storage/fileStorageService.js');
 vi.mock('../logger/logger.js', () => ({
   default: {
     info: vi.fn(),
@@ -26,11 +28,13 @@ vi.mock('../constants.js', () => ({
       },
     },
   },
+  getGlobalConfigDir: vi.fn(() => '/mock/config/dir'),
 }));
 
 describe('SDKOAuthClientProvider', () => {
   let provider: SDKOAuthClientProvider;
-  let mockClientSessionManager: any;
+  let mockClientSessionRepository: any;
+  let mockFileStorageService: any;
   let mockRandomUUID: any;
 
   const mockConfig: OAuthClientConfig = {
@@ -61,17 +65,26 @@ describe('SDKOAuthClientProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Mock ClientSessionManager
-    mockClientSessionManager = {
-      getClientSession: vi.fn(),
-      createClientSession: vi.fn(),
-      deleteClientSession: vi.fn(),
-      cleanupExpiredClientSessions: vi.fn(),
-      listClientSessions: vi.fn(),
-      getClientSessionStoragePath: vi.fn().mockReturnValue('/mock/path'),
+    // Mock FileStorageService
+    mockFileStorageService = {
+      writeData: vi.fn(),
+      readData: vi.fn(),
+      deleteData: vi.fn(),
+      listFiles: vi.fn(),
+      shutdown: vi.fn(),
     } as any;
 
-    (ClientSessionManager as any).mockImplementation(() => mockClientSessionManager);
+    (FileStorageService as any).mockImplementation(() => mockFileStorageService);
+
+    // Mock ClientSessionRepository
+    mockClientSessionRepository = {
+      get: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+      list: vi.fn(),
+    } as any;
+
+    (ClientSessionRepository as any).mockImplementation(() => mockClientSessionRepository);
 
     // Mock randomUUID
     mockRandomUUID = randomUUID as any;
@@ -111,7 +124,7 @@ describe('SDKOAuthClientProvider', () => {
     it('should initialize with custom session storage path', () => {
       provider = new SDKOAuthClientProvider('test-server', mockConfig, '/custom/path');
 
-      expect(ClientSessionManager).toHaveBeenCalledWith('/custom/path');
+      expect(FileStorageService).toHaveBeenCalledWith('/custom/path');
     });
 
     it('should load persisted data on initialization', () => {
@@ -125,18 +138,18 @@ describe('SDKOAuthClientProvider', () => {
         createdAt: Date.now(),
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       provider = new SDKOAuthClientProvider('test-server', mockConfig);
 
-      expect(mockClientSessionManager.getClientSession).toHaveBeenCalledWith('test-server');
+      expect(mockClientSessionRepository.get).toHaveBeenCalledWith('test-server');
       expect(provider.clientInformation()).toEqual(mockClientInfo);
       expect(provider.tokens()).toEqual(mockTokens);
       expect(provider.codeVerifier()).toBe('test-verifier');
     });
 
     it('should handle missing session data gracefully', () => {
-      mockClientSessionManager.getClientSession.mockReturnValue(null);
+      mockClientSessionRepository.get.mockReturnValue(null);
 
       provider = new SDKOAuthClientProvider('test-server', mockConfig);
 
@@ -155,12 +168,13 @@ describe('SDKOAuthClientProvider', () => {
       provider.saveClientInformation(mockClientInfo);
 
       expect(provider.clientInformation()).toEqual(mockClientInfo);
-      expect(mockClientSessionManager.createClientSession).toHaveBeenCalledWith(
+      expect(mockClientSessionRepository.save).toHaveBeenCalledWith(
         'test-server',
         expect.objectContaining({
           serverName: 'test-server',
           clientInfo: JSON.stringify(mockClientInfo),
         }),
+        expect.any(Number),
       );
     });
 
@@ -178,12 +192,13 @@ describe('SDKOAuthClientProvider', () => {
       provider.saveTokens(mockTokens);
 
       expect(provider.tokens()).toEqual(mockTokens);
-      expect(mockClientSessionManager.createClientSession).toHaveBeenCalledWith(
+      expect(mockClientSessionRepository.save).toHaveBeenCalledWith(
         'test-server',
         expect.objectContaining({
           serverName: 'test-server',
           tokens: JSON.stringify(mockTokens),
         }),
+        expect.any(Number),
       );
     });
 
@@ -200,7 +215,7 @@ describe('SDKOAuthClientProvider', () => {
         createdAt: Date.now(),
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       // Mock the private isTokenExpired method to return true
       const testProvider = new SDKOAuthClientProvider('test-server', mockConfig);
@@ -246,12 +261,13 @@ describe('SDKOAuthClientProvider', () => {
       provider.saveCodeVerifier('test-code-verifier');
 
       expect(provider.codeVerifier()).toBe('test-code-verifier');
-      expect(mockClientSessionManager.createClientSession).toHaveBeenCalledWith(
+      expect(mockClientSessionRepository.save).toHaveBeenCalledWith(
         'test-server',
         expect.objectContaining({
           serverName: 'test-server',
           codeVerifier: 'test-code-verifier',
         }),
+        expect.any(Number),
       );
     });
 
@@ -270,12 +286,13 @@ describe('SDKOAuthClientProvider', () => {
 
       expect(state).toBe('mock-uuid-1234');
       expect(mockRandomUUID).toHaveBeenCalled();
-      expect(mockClientSessionManager.createClientSession).toHaveBeenCalledWith(
+      expect(mockClientSessionRepository.save).toHaveBeenCalledWith(
         'test-server',
         expect.objectContaining({
           serverName: 'test-server',
           state: 'mock-uuid-1234',
         }),
+        expect.any(Number),
       );
     });
 
@@ -295,7 +312,7 @@ describe('SDKOAuthClientProvider', () => {
         createdAt: Date.now(),
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       const testProvider = new SDKOAuthClientProvider('test-server', mockConfig);
       const state = testProvider.state();
@@ -348,7 +365,7 @@ describe('SDKOAuthClientProvider', () => {
       provider.saveTokens(tokensWithExpiry);
       provider.saveCodeVerifier('test-verifier');
 
-      const lastCall = mockClientSessionManager.createClientSession.mock.calls.slice(-1)[0];
+      const lastCall = mockClientSessionRepository.save.mock.calls.slice(-1)[0];
       const sessionData = lastCall[1] as ClientSessionData;
 
       expect(sessionData.serverName).toBe('test-server');
@@ -368,7 +385,7 @@ describe('SDKOAuthClientProvider', () => {
 
       provider.saveTokens(tokensWithoutExpiry);
 
-      const lastCall = mockClientSessionManager.createClientSession.mock.calls.slice(-1)[0];
+      const lastCall = mockClientSessionRepository.save.mock.calls.slice(-1)[0];
       const sessionData = lastCall[1] as ClientSessionData;
 
       // Should use default TTL (30 days)
@@ -390,7 +407,7 @@ describe('SDKOAuthClientProvider', () => {
       provider.shutdown();
 
       // Should persist data without verifier and state
-      const lastCall = mockClientSessionManager.createClientSession.mock.calls.slice(-1)[0];
+      const lastCall = mockClientSessionRepository.save.mock.calls.slice(-1)[0];
       const sessionData = lastCall[1] as ClientSessionData;
 
       expect(sessionData.codeVerifier).toBeUndefined();
@@ -403,7 +420,7 @@ describe('SDKOAuthClientProvider', () => {
 
       provider.shutdown();
 
-      const lastCall = mockClientSessionManager.createClientSession.mock.calls.slice(-1)[0];
+      const lastCall = mockClientSessionRepository.save.mock.calls.slice(-1)[0];
       const sessionData = lastCall[1] as ClientSessionData;
 
       expect(sessionData.clientInfo).toBe(JSON.stringify(mockClientInfo));
@@ -420,7 +437,7 @@ describe('SDKOAuthClientProvider', () => {
         createdAt: Date.now(),
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       // Current implementation throws on invalid JSON
       expect(() => {
@@ -436,7 +453,7 @@ describe('SDKOAuthClientProvider', () => {
         createdAt: Date.now(),
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       // Current implementation throws on invalid JSON
       expect(() => {
@@ -452,7 +469,7 @@ describe('SDKOAuthClientProvider', () => {
         // All optional fields are undefined
       };
 
-      mockClientSessionManager.getClientSession.mockReturnValue(mockSessionData);
+      mockClientSessionRepository.get.mockReturnValue(mockSessionData);
 
       provider = new SDKOAuthClientProvider('test-server', mockConfig);
 

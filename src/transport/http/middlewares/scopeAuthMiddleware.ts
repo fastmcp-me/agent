@@ -28,7 +28,7 @@ export interface AuthInfo {
  * - If auth is also enabled, validates tokens and scopes
  * - If auth is disabled, allows all tags (useful for development/testing)
  */
-export function createScopeAuthMiddleware() {
+export function createScopeAuthMiddleware(oauthProvider?: SDKOAuthServerProvider) {
   const serverConfig = AgentConfigManager.getInstance();
 
   // If scope validation is disabled, return a pass-through middleware
@@ -49,11 +49,11 @@ export function createScopeAuthMiddleware() {
     };
   }
 
-  const oauthProvider = new SDKOAuthServerProvider();
+  const provider = oauthProvider || new SDKOAuthServerProvider();
 
   // Create the SDK's bearer auth middleware
   const bearerAuthMiddleware = requireBearerAuth({
-    verifier: oauthProvider,
+    verifier: provider,
   });
 
   // Return a combined middleware that does both auth and scope validation
@@ -123,16 +123,6 @@ export function createScopeAuthMiddleware() {
 }
 
 /**
- * Default middleware for backward compatibility
- *
- * @deprecated Use createScopeAuthMiddleware() instead
- */
-export default function scopeAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
-  const middleware = createScopeAuthMiddleware();
-  middleware(req, res, next);
-}
-
-/**
  * Utility function to get validated tags from response locals
  *
  * This should be used by downstream handlers instead of directly accessing res.locals.tags
@@ -161,3 +151,6 @@ export function getAuthInfo(res: Response): AuthInfo | undefined {
 
   return res.locals.auth;
 }
+
+// Default export for backward compatibility (creates a new provider instance)
+export default createScopeAuthMiddleware();
