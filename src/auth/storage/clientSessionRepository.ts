@@ -96,24 +96,27 @@ export class ClientSessionRepository {
    * @returns Array of server names that have client sessions
    */
   list(): string[] {
-    // Get all files that match the client session pattern
-    const files = this.storage.listFiles(AUTH_CONFIG.CLIENT.SESSION.FILE_PREFIX);
+    // Concatenate FILE_PREFIX and ID_PREFIX to get the full prefix pattern
+    const fullPrefix = AUTH_CONFIG.CLIENT.SESSION.FILE_PREFIX + AUTH_CONFIG.CLIENT.SESSION.ID_PREFIX;
+
+    // Get all files that match the full prefix pattern
+    const files = this.storage.listFiles(fullPrefix);
 
     // Extract server names from file names
     return files
-      .filter((file) => file.startsWith(AUTH_CONFIG.CLIENT.SESSION.FILE_PREFIX))
       .map((file) => {
-        // Remove prefix and .json suffix to get the session ID
-        const withoutPrefix = file.substring(AUTH_CONFIG.CLIENT.SESSION.FILE_PREFIX.length);
-        const sessionId = withoutPrefix.endsWith('.json')
-          ? withoutPrefix.substring(0, withoutPrefix.length - 5)
-          : withoutPrefix;
+        // Remove full prefix and .json suffix to get the server name
+        let serverName = file;
 
-        // Extract server name from session ID by removing the ID prefix
-        if (sessionId.startsWith(AUTH_CONFIG.CLIENT.SESSION.ID_PREFIX)) {
-          return sessionId.substring(AUTH_CONFIG.CLIENT.SESSION.ID_PREFIX.length);
+        if (serverName.startsWith(fullPrefix)) {
+          serverName = serverName.substring(fullPrefix.length);
         }
-        return sessionId;
+
+        if (serverName.endsWith('.json')) {
+          serverName = serverName.substring(0, serverName.length - 5);
+        }
+
+        return serverName;
       })
       .filter((serverName) => serverName.length > 0);
   }

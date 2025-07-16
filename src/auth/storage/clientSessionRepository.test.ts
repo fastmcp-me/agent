@@ -430,6 +430,38 @@ describe('ClientSessionRepository', () => {
       const result = repository.list();
       expect(result).toEqual([serverName]);
     });
+
+    it('should work correctly with non-empty FILE_PREFIX', () => {
+      // Temporarily mock the FILE_PREFIX to test robustness
+      const originalFilePrefix = AUTH_CONFIG.CLIENT.SESSION.FILE_PREFIX;
+      (AUTH_CONFIG.CLIENT.SESSION as any).FILE_PREFIX = 'client_session_';
+
+      try {
+        const serverName = 'test-server';
+        const sessionData: ClientSessionData = {
+          serverName,
+          expires: Date.now() + 3600000,
+          createdAt: Date.now(),
+        };
+
+        // Create a new repository instance to use the modified config
+        const newRepository = new ClientSessionRepository(storage);
+        newRepository.save(serverName, sessionData, 3600000);
+
+        // Create some other files that shouldn't be listed
+        const otherFiles = ['session_other-session.json', 'auth_code_some-code.json', 'random_file.json'];
+        for (const fileName of otherFiles) {
+          const filePath = path.join(tempDir, fileName);
+          fs.writeFileSync(filePath, JSON.stringify({ test: 'data' }));
+        }
+
+        const result = newRepository.list();
+        expect(result).toEqual([serverName]);
+      } finally {
+        // Restore original FILE_PREFIX
+        (AUTH_CONFIG.CLIENT.SESSION as any).FILE_PREFIX = originalFilePrefix;
+      }
+    });
   });
 
   describe('Client Session Data Structure', () => {
