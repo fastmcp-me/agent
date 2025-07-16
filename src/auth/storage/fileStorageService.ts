@@ -107,6 +107,12 @@ export class FileStorageService {
       return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
     }
 
+    // Check for client session prefix
+    if (id.startsWith(AUTH_CONFIG.CLIENT.SESSION.ID_PREFIX)) {
+      const contentPart = id.substring(AUTH_CONFIG.CLIENT.SESSION.ID_PREFIX.length);
+      return contentPart.length > 0 && /^[a-zA-Z0-9_-]+$/.test(contentPart);
+    }
+
     return false;
   }
 
@@ -233,6 +239,36 @@ export class FileStorageService {
     } catch (error) {
       logger.error(`Failed to cleanup expired data: ${error}`);
       return 0;
+    }
+  }
+
+  /**
+   * Lists all files in the storage directory that match a given prefix.
+   *
+   * @param filePrefix - The file prefix to filter by (optional)
+   * @returns Array of file names (without directory path)
+   */
+  listFiles(filePrefix?: string): string[] {
+    try {
+      if (!fs.existsSync(this.storageDir)) {
+        return [];
+      }
+
+      const files = fs.readdirSync(this.storageDir);
+      return files.filter((file) => {
+        if (!file.endsWith('.json')) {
+          return false;
+        }
+
+        if (filePrefix) {
+          return file.startsWith(filePrefix);
+        }
+
+        return true;
+      });
+    } catch (error) {
+      logger.error(`Failed to list files: ${error}`);
+      return [];
     }
   }
 
