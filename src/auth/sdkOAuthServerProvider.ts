@@ -9,7 +9,7 @@ import type {
   OAuthTokenRevocationRequest,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import logger from '../logger/logger.js';
-import { ServerSessionManager } from './serverSessionManager.js';
+import { OAuthStorageService } from './storage/oauthStorageService.js';
 import { AgentConfigManager } from '../core/server/agentConfig.js';
 import { AUTH_CONFIG } from '../constants.js';
 import {
@@ -21,13 +21,13 @@ import {
 import { McpConfigManager } from '../config/mcpConfigManager.js';
 
 /**
- * File-based OAuth clients store implementation using AUTH_CONFIG settings
+ * File-based OAuth clients store implementation using the new repository architecture
  */
 class FileBasedClientsStore implements OAuthRegisteredClientsStore {
-  private sessionManager: ServerSessionManager;
+  private oauthStorage: OAuthStorageService;
 
-  constructor(sessionManager: ServerSessionManager) {
-    this.sessionManager = sessionManager;
+  constructor(oauthStorage: OAuthStorageService) {
+    this.oauthStorage = oauthStorage;
   }
 
   getClientKey(clientId: string): string {
@@ -36,7 +36,7 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
 
   getClient(clientId: string): OAuthClientInformationFull | undefined {
     const clientKey = this.getClientKey(clientId);
-    const clientData = this.sessionManager.getClientData(clientKey);
+    const clientData = this.oauthStorage.clientDataRepository.get(clientKey);
 
     if (!clientData) {
       return undefined;
@@ -51,7 +51,7 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
     const ttlMs = AUTH_CONFIG.CLIENT.OAUTH.TTL_MS;
 
     try {
-      this.sessionManager.saveClientData(clientKey, client, ttlMs);
+      this.oauthStorage.clientDataRepository.save(clientKey, client, ttlMs);
       logger.info(`Registered OAuth client: ${client.client_id}`);
       return client;
     } catch (error) {
@@ -62,20 +62,20 @@ class FileBasedClientsStore implements OAuthRegisteredClientsStore {
 }
 
 /**
- * Implementation of SDK's OAuthServerProvider interface using existing SessionManager.
+ * Implementation of SDK's OAuthServerProvider interface using the new repository architecture.
  *
  * This provider implements OAuth 2.1 server functionality using the MCP SDK's interfaces
- * while maintaining compatibility with the existing session storage system.
+ * with the new layered storage architecture for better separation of concerns.
  */
 export class SDKOAuthServerProvider implements OAuthServerProvider {
-  public sessionManager: ServerSessionManager;
+  public oauthStorage: OAuthStorageService;
   private configManager: AgentConfigManager;
   private _clientsStore: OAuthRegisteredClientsStore;
 
   constructor(sessionStoragePath?: string) {
-    this.sessionManager = new ServerSessionManager(sessionStoragePath);
+    this.oauthStorage = new OAuthStorageService(sessionStoragePath);
     this.configManager = AgentConfigManager.getInstance();
-    this._clientsStore = new FileBasedClientsStore(this.sessionManager);
+    this._clientsStore = new FileBasedClientsStore(this.oauthStorage);
   }
 
   get clientsStore(): OAuthRegisteredClientsStore {
@@ -156,7 +156,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     res: Response,
   ): Promise<void> {
     // Create temporary authorization request to store the code challenge securely
-    const authRequestId = this.sessionManager.createAuthRequest(
+    const authRequestId = this.oauthStorage.createAuthorizationRequest(
       client.client_id,
       params.redirectUri,
       params.codeChallenge,
@@ -186,7 +186,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     logger.debug('Approving authorization', { clientId: client.client_id, params, grantedScopes });
     // Create authorization code with granted scopes
     const ttlMs = this.configManager.getOAuthCodeTtlMs();
-    const code = this.sessionManager.createAuthCode(
+    const code = this.oauthStorage.authCodeRepository.create(
       client.client_id,
       params.redirectUri,
       params.resource?.toString() || '',
@@ -311,7 +311,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
   async challengeForAuthorizationCode(client: OAuthClientInformationFull, authorizationCode: string): Promise<string> {
     logger.debug('Challenge for authorization code', { clientId: client.client_id, authorizationCode });
 
-    const codeData = this.sessionManager.getAuthCode(authorizationCode);
+    const codeData = this.oauthStorage.authCodeRepository.get(authorizationCode);
     if (!codeData || codeData.clientId !== client.client_id) {
       throw new Error('Invalid authorization code');
     }
@@ -338,7 +338,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       resource,
     });
 
-    const codeData = this.sessionManager.getAuthCode(authorizationCode);
+    const codeData = this.oauthStorage.authCodeRepository.get(authorizationCode);
     if (!codeData) {
       throw new Error('Invalid or expired authorization code');
     }
@@ -359,7 +359,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     }
 
     // Delete the authorization code (one-time use)
-    this.sessionManager.deleteAuthCode(authorizationCode);
+    this.oauthStorage.authCodeRepository.delete(authorizationCode);
 
     // Create access token
     const tokenId = randomUUID();
@@ -367,7 +367,13 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
     const ttlMs = this.configManager.getOAuthTokenTtlMs();
 
     // Store session for token validation
-    this.sessionManager.createSessionWithId(tokenId, client.client_id, codeData.resource || '', codeData.scopes, ttlMs);
+    this.oauthStorage.sessionRepository.createWithId(
+      tokenId,
+      client.client_id,
+      codeData.resource || '',
+      codeData.scopes,
+      ttlMs,
+    );
 
     const tokens: OAuthTokens = {
       access_token: accessToken,
@@ -421,7 +427,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
 
     // Get session data
     const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
-    const sessionData = this.sessionManager.getSession(sessionId);
+    const sessionData = this.oauthStorage.sessionRepository.get(sessionId);
 
     if (!sessionData) {
       throw new Error('Invalid or expired access token');
@@ -450,7 +456,7 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
       : token;
 
     const sessionId = AUTH_CONFIG.SERVER.SESSION.ID_PREFIX + tokenId;
-    const success = this.sessionManager.deleteSession(sessionId);
+    const success = this.oauthStorage.sessionRepository.delete(sessionId);
 
     if (success) {
       logger.info(`Revoked access token for client ${client.client_id}`, {
@@ -463,6 +469,6 @@ export class SDKOAuthServerProvider implements OAuthServerProvider {
    * Graceful shutdown
    */
   shutdown(): void {
-    this.sessionManager.shutdown();
+    this.oauthStorage.shutdown();
   }
 }
