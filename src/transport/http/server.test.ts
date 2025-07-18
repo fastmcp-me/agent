@@ -258,11 +258,11 @@ describe('ExpressServer', () => {
       
       // Test with security disabled
       mockConfigManager.isEnhancedSecurityEnabled.mockReturnValue(false);
-      const serverWithoutSecurity = new ExpressServer(mockServerManager);
+      new ExpressServer(mockServerManager);
       
       // Test with security enabled
       mockConfigManager.isEnhancedSecurityEnabled.mockReturnValue(true);
-      const serverWithSecurity = new ExpressServer(mockServerManager);
+      new ExpressServer(mockServerManager);
 
       expect(mockApp.use).toHaveBeenCalled();
     });

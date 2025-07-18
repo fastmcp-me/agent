@@ -18,7 +18,7 @@ vi.mock('../core/client/clientManager.js', () => ({
 }));
 
 vi.mock('../utils/errorHandling.js', () => ({
-  withErrorHandling: vi.fn((handler, errorMessage) => handler),
+  withErrorHandling: vi.fn((handler, _errorMessage) => handler),
 }));
 
 vi.mock('../utils/clientFiltering.js', () => ({
@@ -204,11 +204,11 @@ describe('Request Handlers', () => {
     const createPingHandler = (clients: OutboundConnections) => {
       return async () => {
         // Health check all connected upstream clients (replicated from actual implementation)
-        const healthCheckPromises = Array.from(clients.entries()).map(async ([clientName, clientInfo]) => {
+        const healthCheckPromises = Array.from(clients.entries()).map(async ([_clientName, clientInfo]) => {
           if (clientInfo.status === ClientStatus.Connected) {
             try {
               await clientInfo.client.ping();
-            } catch (error) {
+            } catch (_error) {
               // Silent failure - just log internally without console output
             }
           }

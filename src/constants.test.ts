@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { getGlobalConfigDir, getGlobalConfigPath } from './constants.js';
 
 describe('constants', () => {
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalEnv: typeof process.env;
   let originalPlatform: string;
 
   beforeEach(() => {

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { enhanceServerWithLogging } from './mcpLoggingEnhancer.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
 // Mock logger
 vi.mock('./logger.js', () => ({

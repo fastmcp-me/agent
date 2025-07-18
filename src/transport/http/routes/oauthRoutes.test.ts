@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { Request, Response, Router } from 'express';
 import { ClientStatus } from '../../../core/types/index.js';
 
 // Mock all dependencies
