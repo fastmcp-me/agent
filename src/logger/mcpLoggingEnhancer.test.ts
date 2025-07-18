@@ -51,9 +51,9 @@ describe('MCP Logging Enhancer', () => {
     });
 
     it('should preserve original server methods', () => {
-      const originalSetRequestHandler = mockServer.setRequestHandler;
-      const originalSetNotificationHandler = mockServer.setNotificationHandler;
-      const originalNotification = mockServer.notification;
+      const _originalSetRequestHandler = mockServer.setRequestHandler;
+      const _originalSetNotificationHandler = mockServer.setNotificationHandler;
+      const _originalNotification = mockServer.notification;
 
       enhanceServerWithLogging(mockServer);
 
@@ -182,15 +182,15 @@ describe('MCP Logging Enhancer', () => {
       enhanceServerWithLogging(mockServer);
 
       // Create a mock request handler
-      const mockHandler = vi.fn().mockResolvedValue({ result: 'success' });
-      const mockRequest = { params: { test: 'data' } };
-      const mockExtra = {
+      const _mockHandler = vi.fn().mockResolvedValue({ result: 'success' });
+      const _mockRequest = { params: { test: 'data' } };
+      const _mockExtra = {
         sendNotification: vi.fn(),
         sendRequest: vi.fn(),
       };
 
       // Get the wrapped handler by calling setRequestHandler
-      const mockSchema = {
+      const _mockSchema = {
         _def: {
           shape: () => ({
             method: { _def: { value: 'test/method' } }
@@ -199,7 +199,7 @@ describe('MCP Logging Enhancer', () => {
       };
 
       // Store original to test wrapping
-      const originalSetRequestHandler = mockServer.setRequestHandler;
+      const _originalSetRequestHandler = mockServer.setRequestHandler;
       enhanceServerWithLogging(mockServer);
 
       // The method should be replaced with a wrapper
@@ -210,14 +210,14 @@ describe('MCP Logging Enhancer', () => {
       enhanceServerWithLogging(mockServer);
 
       // Create a mock request handler that throws
-      const mockHandler = vi.fn().mockRejectedValue(new Error('Handler error'));
-      const mockRequest = { params: { test: 'data' } };
-      const mockExtra = {
+      const _mockHandler = vi.fn().mockRejectedValue(new Error('Handler error'));
+      const _mockRequest = { params: { test: 'data' } };
+      const _mockExtra = {
         sendNotification: vi.fn(),
         sendRequest: vi.fn(),
       };
 
-      const mockSchema = {
+      const _mockSchema = {
         _def: {
           shape: () => ({
             method: { _def: { value: 'test/method' } }
@@ -234,13 +234,13 @@ describe('MCP Logging Enhancer', () => {
     it('should log notifications', async () => {
       enhanceServerWithLogging(mockServer);
 
-      const mockHandler = vi.fn().mockResolvedValue(undefined);
-      const mockNotification = { 
+      const _mockHandler = vi.fn().mockResolvedValue(undefined);
+      const _mockNotification = { 
         method: 'test/notification',
         params: { test: 'data' } 
       };
 
-      const mockSchema = {
+      const _mockSchema = {
         _def: {
           shape: () => ({
             method: { _def: { value: 'test/notification' } }

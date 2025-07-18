@@ -231,7 +231,7 @@ export class TestHelpers {
       // Simple schema validation - could be extended with a proper schema validator
       if (typeof schema === 'object' && schema !== null) {
         for (const key in schema) {
-          if (schema.hasOwnProperty(key)) {
+          if (Object.hasOwn(schema, key)) {
             if (!(key in obj)) {
               return false;
             }

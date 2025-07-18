@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 // This is a simplified test for the index.ts entry point
 // Testing CLI entry points with full execution is complex due to side effects

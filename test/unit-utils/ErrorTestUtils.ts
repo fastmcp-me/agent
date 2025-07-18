@@ -3,9 +3,6 @@ import {
   MCPError, 
   ClientConnectionError, 
   ClientNotFoundError, 
-  ServerStartupError, 
-  ConfigurationError, 
-  AuthenticationError, 
   ValidationError 
 } from '../../src/utils/errorTypes.js';
 
@@ -25,8 +22,8 @@ export class ErrorTestUtils {
     
     try {
       fn();
-    } catch (error) {
-      thrownError = error as Error;
+    } catch (_error) {
+      thrownError = _error as Error;
     }
     
     expect(thrownError).toBeDefined();
@@ -53,8 +50,8 @@ export class ErrorTestUtils {
     
     try {
       await fn();
-    } catch (error) {
-      thrownError = error as Error;
+    } catch (_error) {
+      thrownError = _error as Error;
     }
     
     expect(thrownError).toBeDefined();
@@ -132,36 +129,6 @@ export class ErrorTestUtils {
   }
 
   /**
-   * Create a mock server startup error
-   */
-  static createMockServerStartupError(
-    serverName: string,
-    reason?: string
-  ): ServerStartupError {
-    return new ServerStartupError(serverName, reason);
-  }
-
-  /**
-   * Create a mock configuration error
-   */
-  static createMockConfigurationError(
-    message: string,
-    field?: string
-  ): ConfigurationError {
-    return new ConfigurationError(message, field);
-  }
-
-  /**
-   * Create a mock authentication error
-   */
-  static createMockAuthenticationError(
-    message: string,
-    errorCode?: string
-  ): AuthenticationError {
-    return new AuthenticationError(message, errorCode);
-  }
-
-  /**
    * Create a mock validation error
    */
   static createMockValidationError(
@@ -190,7 +157,7 @@ export class ErrorTestUtils {
    */
   static createNthCallErrorFunction(
     n: number,
-    error: Error,
+    errorToThrow: Error,
     returnValue?: any
   ): () => any {
     let callCount = 0;
@@ -198,7 +165,7 @@ export class ErrorTestUtils {
     return () => {
       callCount++;
       if (callCount === n) {
-        throw error;
+        throw errorToThrow;
       }
       return returnValue;
     };
@@ -209,12 +176,12 @@ export class ErrorTestUtils {
    */
   static createIntermittentErrorFunction(
     errorProbability: number,
-    error: Error,
+    errorToThrow: Error,
     returnValue?: any
   ): () => any {
     return () => {
       if (Math.random() < errorProbability) {
-        throw error;
+        throw errorToThrow;
       }
       return returnValue;
     };
@@ -235,8 +202,8 @@ export class ErrorTestUtils {
       for (const fn of functions) {
         currentValue = await fn(currentValue);
       }
-    } catch (error) {
-      caughtError = error as Error;
+    } catch (_error) {
+      caughtError = _error as Error;
     }
     
     expect(caughtError).toBeDefined();
@@ -268,14 +235,14 @@ export class ErrorTestUtils {
           if (shouldSucceed) {
             break;
           }
-        } catch (error) {
-          lastError = error as Error;
+        } catch (_error) {
+          lastError = _error as Error;
           if (i === maxRetries - 1) {
-            throw error;
+            throw _error;
           }
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Expected if shouldSucceed is false
     }
     
@@ -321,7 +288,7 @@ export class ErrorTestUtils {
         }
         
         return result;
-      } catch (error) {
+      } catch (_error) {
         failureCount++;
         lastFailureTime = Date.now();
         
@@ -329,7 +296,7 @@ export class ErrorTestUtils {
           state = 'open';
         }
         
-        throw error;
+        throw _error;
       }
     };
     
@@ -357,8 +324,8 @@ export class ErrorTestUtils {
     
     try {
       fn();
-    } catch (error) {
-      caughtError = error as Error;
+    } catch (_error) {
+      caughtError = _error as Error;
     }
     
     expect(caughtError).toBeDefined();
@@ -379,8 +346,8 @@ export class ErrorTestUtils {
     
     try {
       await fn();
-    } catch (error) {
-      caughtError = error as Error;
+    } catch (_error) {
+      caughtError = _error as Error;
     }
     
     expect(caughtError).toBeDefined();
@@ -426,8 +393,8 @@ export class ErrorTestUtils {
     
     try {
       fn();
-    } catch (error) {
-      originalError = error as Error;
+    } catch (_error) {
+      originalError = _error as Error;
       
       try {
         result = errorBoundary(originalError);

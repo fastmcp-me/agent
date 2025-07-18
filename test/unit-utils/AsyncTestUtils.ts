@@ -350,7 +350,7 @@ export class AsyncTestUtils {
   static async testDebounce<T>(
     debouncedFn: (...args: any[]) => Promise<T>,
     calls: { args: any[]; delay: number }[],
-    expectedCallCount: number
+    _expectedCallCount: number
   ): Promise<void> {
     const promises: Promise<T>[] = [];
 
@@ -371,7 +371,7 @@ export class AsyncTestUtils {
   static async testThrottle<T>(
     throttledFn: (...args: any[]) => Promise<T>,
     calls: { args: any[]; delay: number }[],
-    expectedCallCount: number
+    _expectedCallCount: number
   ): Promise<void> {
     const promises: Promise<T>[] = [];
 

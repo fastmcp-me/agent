@@ -422,7 +422,7 @@ export class McpMockUtils {
         requestHandlers.set('tools/list', async () => result);
         return result;
       },
-      simulateToolCall: async (toolName: string, args?: any) => {
+      simulateToolCall: async (toolName: string, _args?: any) => {
         const result = McpMockUtils.createMockCallToolResult();
         requestHandlers.set('tools/call', async (params) => {
           if (params.name === toolName) {
@@ -452,7 +452,7 @@ export class McpMockUtils {
         requestHandlers.set('prompts/list', async () => result);
         return result;
       },
-      simulatePromptGet: async (name: string, args?: any) => {
+      simulatePromptGet: async (name: string, _args?: any) => {
         const result = McpMockUtils.createMockGetPromptResult();
         requestHandlers.set('prompts/get', async (params) => {
           if (params.name === name) {
