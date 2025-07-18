@@ -74,18 +74,18 @@ export class TestHelpers {
   static async waitFor(
     condition: () => boolean | Promise<boolean>,
     timeout: number = 5000,
-    interval: number = 100
+    interval: number = 100,
   ): Promise<void> {
     const start = Date.now();
-    
+
     while (Date.now() - start < timeout) {
       const result = await condition();
       if (result) {
         return;
       }
-      await new Promise(resolve => setTimeout(resolve, interval));
+      await new Promise((resolve) => setTimeout(resolve, interval));
     }
-    
+
     throw new Error(`Condition not met within ${timeout}ms`);
   }
 
@@ -93,7 +93,7 @@ export class TestHelpers {
    * Create a promise that resolves after a delay
    */
   static delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -101,13 +101,13 @@ export class TestHelpers {
    */
   static expectError(fn: () => any, expectedMessage?: string | RegExp): void {
     let thrownError: Error | undefined;
-    
+
     try {
       fn();
     } catch (error) {
       thrownError = error as Error;
     }
-    
+
     expect(thrownError).toBeDefined();
     if (expectedMessage) {
       if (typeof expectedMessage === 'string') {
@@ -123,13 +123,13 @@ export class TestHelpers {
    */
   static async expectAsyncError(fn: () => Promise<any>, expectedMessage?: string | RegExp): Promise<void> {
     let thrownError: Error | undefined;
-    
+
     try {
       await fn();
     } catch (error) {
       thrownError = error as Error;
     }
-    
+
     expect(thrownError).toBeDefined();
     if (expectedMessage) {
       if (typeof expectedMessage === 'string') {
@@ -150,11 +150,8 @@ export class TestHelpers {
   /**
    * Create a spy on an object method
    */
-  static spyOn<T extends Record<string, any>>(
-    object: T,
-    method: keyof T
-  ): ReturnType<typeof vi.spyOn> {
-    return vi.spyOn(object, method);
+  static spyOn<T extends Record<string, any>>(object: T, method: keyof T): any {
+    return vi.spyOn(object, method as any);
   }
 
   /**
@@ -210,7 +207,7 @@ export class TestHelpers {
   } {
     let resolve: (value: T) => void;
     let reject: (reason?: any) => void;
-    
+
     const promise = new Promise<T>((res, rej) => {
       resolve = res;
       reject = rej;
@@ -344,10 +341,7 @@ export class TestHelpers {
   /**
    * Create test data with incremental IDs
    */
-  static createTestSeries<T>(
-    factory: (index: number) => T,
-    count: number
-  ): T[] {
+  static createTestSeries<T>(factory: (index: number) => T, count: number): T[] {
     return Array.from({ length: count }, (_, i) => factory(i));
   }
 }

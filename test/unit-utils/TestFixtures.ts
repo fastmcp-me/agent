@@ -1,5 +1,4 @@
 import { ClientSessionData } from '../../src/auth/sessionTypes.js';
-import { ServerConfig } from '../../src/core/types/index.js';
 
 /**
  * Standard test data fixtures for consistent testing
@@ -8,7 +7,7 @@ export class TestFixtures {
   /**
    * Standard server configuration for testing
    */
-  static readonly SERVER_CONFIG: ServerConfig = {
+  static readonly SERVER_CONFIG = {
     name: 'test-server',
     command: 'node',
     args: ['test-server.js'],
@@ -19,7 +18,7 @@ export class TestFixtures {
   /**
    * Alternative server configuration for multi-server tests
    */
-  static readonly SERVER_CONFIG_ALT: ServerConfig = {
+  static readonly SERVER_CONFIG_ALT = {
     name: 'alt-server',
     command: 'python',
     args: ['alt-server.py'],
@@ -63,8 +62,8 @@ export class TestFixtures {
       expires_in: 3600,
       scope: 'read write',
     }),
-    createdAt: new Date('2024-01-01T00:00:00Z'),
-    updatedAt: new Date('2024-01-01T00:00:00Z'),
+    createdAt: Date.now(),
+    expires: Date.now() + 3600000,
   };
 
   /**
@@ -235,7 +234,7 @@ export class TestFixtures {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     AUTHORIZATION: {
-      'Authorization': 'Bearer access-token-123',
+      Authorization: 'Bearer access-token-123',
     },
   };
 
@@ -277,7 +276,7 @@ export class TestFixtures {
   /**
    * Create a server config with custom overrides
    */
-  static createServerConfig(overrides: Partial<ServerConfig> = {}): ServerConfig {
+  static createServerConfig(overrides: any = {}): any {
     return TestFixtures.merge(TestFixtures.SERVER_CONFIG, overrides);
   }
 

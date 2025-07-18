@@ -2,9 +2,8 @@ import { vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { 
-  JSONRPCRequest, 
-  JSONRPCResponse, 
+import {
+  JSONRPCRequest,
   JSONRPCError,
   InitializeRequest,
   InitializeResult,
@@ -109,17 +108,9 @@ export class McpMockUtils {
     let errorHandler: ((error: Error) => void) | undefined;
     let closeHandler: (() => void) | undefined;
 
-    mockTransport.onMessage = vi.fn((handler: (message: any) => void) => {
-      messageHandler = handler;
-    });
-
-    mockTransport.onError = vi.fn((handler: (error: Error) => void) => {
-      errorHandler = handler;
-    });
-
-    mockTransport.onClose = vi.fn((handler: () => void) => {
-      closeHandler = handler;
-    });
+    mockTransport.onmessage = vi.fn();
+    mockTransport.onerror = vi.fn();
+    mockTransport.onclose = vi.fn();
 
     // Add helper methods to simulate events
     (mockTransport as any).simulateMessage = (message: any) => {
@@ -146,11 +137,7 @@ export class McpMockUtils {
   /**
    * Create a mock JSON-RPC request
    */
-  static createMockRequest(
-    method: string,
-    params?: any,
-    id?: string | number
-  ): JSONRPCRequest {
+  static createMockRequest(method: string, params?: any, id?: string | number): JSONRPCRequest {
     return {
       jsonrpc: '2.0',
       method,
@@ -162,33 +149,26 @@ export class McpMockUtils {
   /**
    * Create a mock JSON-RPC response
    */
-  static createMockResponse(
-    id: string | number,
-    result?: any,
-    error?: JSONRPCError
-  ): JSONRPCResponse {
-    const response: JSONRPCResponse = {
-      jsonrpc: '2.0',
-      id,
-    };
-
+  static createMockResponse(id: string | number, result?: any, error?: JSONRPCError): any {
     if (error) {
-      response.error = error;
+      return {
+        jsonrpc: '2.0',
+        id: id,
+        error: error,
+      };
     } else {
-      response.result = result ?? {};
+      return {
+        jsonrpc: '2.0',
+        id: id,
+        result: result ?? {},
+      };
     }
-
-    return response;
   }
 
   /**
    * Create a mock JSON-RPC error
    */
-  static createMockError(
-    code: number,
-    message: string,
-    data?: any
-  ): JSONRPCError {
+  static createMockError(code: number, message: string, data?: any): any {
     return {
       code,
       message,
@@ -227,28 +207,20 @@ export class McpMockUtils {
   /**
    * Create a mock call tool request
    */
-  static createMockCallToolRequest(
-    toolName: string = 'test-tool',
-    arguments_?: any
-  ): CallToolRequest {
+  static createMockCallToolRequest(toolName: string = 'test-tool', arguments_?: any): CallToolRequest {
     return {
-      jsonrpc: '2.0',
-      id: Math.floor(Math.random() * 1000),
       method: 'tools/call',
       params: {
         name: toolName,
         arguments: arguments_ ?? { input: 'test input' },
       },
-    };
+    } as CallToolRequest;
   }
 
   /**
    * Create a mock call tool result
    */
-  static createMockCallToolResult(
-    content?: any,
-    isError: boolean = false
-  ): CallToolResult {
+  static createMockCallToolResult(content?: any, isError: boolean = false): CallToolResult {
     return {
       content: content ?? [
         {
@@ -265,10 +237,8 @@ export class McpMockUtils {
    */
   static createMockListResourcesRequest(): ListResourcesRequest {
     return {
-      jsonrpc: '2.0',
-      id: Math.floor(Math.random() * 1000),
       method: 'resources/list',
-    };
+    } as ListResourcesRequest;
   }
 
   /**
@@ -292,13 +262,11 @@ export class McpMockUtils {
    */
   static createMockReadResourceRequest(uri: string = 'file:///test-resource.txt'): ReadResourceRequest {
     return {
-      jsonrpc: '2.0',
-      id: Math.floor(Math.random() * 1000),
       method: 'resources/read',
       params: {
         uri,
       },
-    };
+    } as ReadResourceRequest;
   }
 
   /**
@@ -321,10 +289,8 @@ export class McpMockUtils {
    */
   static createMockListPromptsRequest(): ListPromptsRequest {
     return {
-      jsonrpc: '2.0',
-      id: Math.floor(Math.random() * 1000),
       method: 'prompts/list',
-    };
+    } as ListPromptsRequest;
   }
 
   /**
@@ -351,19 +317,14 @@ export class McpMockUtils {
   /**
    * Create a mock get prompt request
    */
-  static createMockGetPromptRequest(
-    name: string = 'test-prompt',
-    arguments_?: any
-  ): GetPromptRequest {
+  static createMockGetPromptRequest(name: string = 'test-prompt', arguments_?: any): GetPromptRequest {
     return {
-      jsonrpc: '2.0',
-      id: Math.floor(Math.random() * 1000),
       method: 'prompts/get',
       params: {
         name,
         arguments: arguments_ ?? { input: 'test input' },
       },
-    };
+    } as GetPromptRequest;
   }
 
   /**
@@ -529,36 +490,18 @@ export class McpMockUtils {
    */
   static createStandardErrors() {
     return {
-      parseError: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.PARSE_ERROR,
-        'Parse error',
-        data
-      ),
-      invalidRequest: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.INVALID_REQUEST,
-        'Invalid Request',
-        data
-      ),
-      methodNotFound: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.METHOD_NOT_FOUND,
-        'Method not found',
-        data
-      ),
-      invalidParams: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.INVALID_PARAMS,
-        'Invalid params',
-        data
-      ),
-      internalError: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.INTERNAL_ERROR,
-        'Internal error',
-        data
-      ),
-      serverError: (data?: any) => McpMockUtils.createMockError(
-        McpMockUtils.ERROR_CODES.SERVER_ERROR,
-        'Server error',
-        data
-      ),
+      parseError: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.PARSE_ERROR, 'Parse error', data),
+      invalidRequest: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.INVALID_REQUEST, 'Invalid Request', data),
+      methodNotFound: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.METHOD_NOT_FOUND, 'Method not found', data),
+      invalidParams: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.INVALID_PARAMS, 'Invalid params', data),
+      internalError: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.INTERNAL_ERROR, 'Internal error', data),
+      serverError: (data?: any) =>
+        McpMockUtils.createMockError(McpMockUtils.ERROR_CODES.SERVER_ERROR, 'Server error', data),
     };
   }
 }

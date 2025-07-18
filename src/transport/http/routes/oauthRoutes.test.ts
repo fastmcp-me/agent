@@ -96,7 +96,7 @@ describe('OAuth Routes', () => {
   describe('Route Creation', () => {
     it('should create OAuth routes with provider', () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       expect(router).toBeDefined();
       expect(router.stack).toBeDefined();
       expect(router.stack.length).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ describe('OAuth Routes', () => {
 
     it('should configure rate limiting', () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Should have middleware (rate limiter)
       const hasMiddleware = router.stack.some((layer: any) => !layer.route);
       expect(hasMiddleware).toBe(true);
@@ -114,12 +114,10 @@ describe('OAuth Routes', () => {
   describe('Route Handlers', () => {
     it('should handle dashboard route', async () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Find dashboard route
-      const dashboardRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/' && layer.route?.methods?.get
-      );
-      
+      const dashboardRoute = router.stack.find((layer: any) => layer.route?.path === '/' && layer.route?.methods?.get);
+
       expect(dashboardRoute).toBeDefined();
       expect(dashboardRoute?.route?.stack).toBeDefined();
       expect(dashboardRoute?.route?.stack.length).toBeGreaterThan(0);
@@ -127,48 +125,48 @@ describe('OAuth Routes', () => {
 
     it('should handle authorize route', async () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Find authorize route
-      const authorizeRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get
+      const authorizeRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get,
       );
-      
+
       expect(authorizeRoute).toBeDefined();
       expect(authorizeRoute?.route?.stack).toBeDefined();
     });
 
     it('should handle callback route', async () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Find callback route
-      const callbackRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get
+      const callbackRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get,
       );
-      
+
       expect(callbackRoute).toBeDefined();
       expect(callbackRoute?.route?.stack).toBeDefined();
     });
 
     it('should handle restart route', async () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Find restart route
-      const restartRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/restart/:serverName' && layer.route?.methods?.post
+      const restartRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/restart/:serverName' && layer.route?.methods?.post,
       );
-      
+
       expect(restartRoute).toBeDefined();
       expect(restartRoute?.route?.stack).toBeDefined();
     });
 
     it('should handle consent route', async () => {
       const router = createOAuthRoutes(mockOAuthProvider);
-      
+
       // Find consent route
-      const consentRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/consent' && layer.route?.methods?.post
+      const consentRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/consent' && layer.route?.methods?.post,
       );
-      
+
       expect(consentRoute).toBeDefined();
       expect(consentRoute?.route?.stack).toBeDefined();
     });
@@ -180,9 +178,7 @@ describe('OAuth Routes', () => {
       vi.mocked(ServerManager.current.getClients).mockReturnValue(new Map());
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const dashboardRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/' && layer.route?.methods?.get
-      );
+      const dashboardRoute = router.stack.find((layer: any) => layer.route?.path === '/' && layer.route?.methods?.get);
 
       await dashboardRoute?.route?.stack[0].handle(mockRequest, mockResponse);
 
@@ -193,22 +189,32 @@ describe('OAuth Routes', () => {
     it('should handle services with different statuses', async () => {
       const { ServerManager } = await import('../../../core/server/serverManager.js');
       const mockClients = new Map([
-        ['connected-service', {
-          status: ClientStatus.Connected,
-          lastConnected: new Date(),
-        }],
-        ['awaiting-service', {
-          status: ClientStatus.AwaitingOAuth,
-          authorizationUrl: 'https://example.com/auth',
-        }],
+        [
+          'connected-service',
+          {
+            name: 'connected-service',
+            transport: {} as any,
+            client: {} as any,
+            status: ClientStatus.Connected,
+            lastConnected: new Date(),
+          },
+        ],
+        [
+          'awaiting-service',
+          {
+            name: 'awaiting-service',
+            transport: {} as any,
+            client: {} as any,
+            status: ClientStatus.AwaitingOAuth,
+            authorizationUrl: 'https://example.com/auth',
+          },
+        ],
       ]);
-      
+
       vi.mocked(ServerManager.current.getClients).mockReturnValue(mockClients);
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const dashboardRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/' && layer.route?.methods?.get
-      );
+      const dashboardRoute = router.stack.find((layer: any) => layer.route?.path === '/' && layer.route?.methods?.get);
 
       await dashboardRoute?.route?.stack[0].handle(mockRequest, mockResponse);
 
@@ -223,16 +229,20 @@ describe('OAuth Routes', () => {
     it('should handle authorization request for existing service', async () => {
       const { ServerManager } = await import('../../../core/server/serverManager.js');
       mockRequest.params = { serverName: 'test-server' };
-      
+
       const clientInfo = {
+        name: 'test-server',
+        transport: {} as any,
+        client: {} as any,
+        status: ClientStatus.AwaitingOAuth,
         authorizationUrl: 'https://example.com/auth',
       };
-      
+
       vi.mocked(ServerManager.current.getClient).mockReturnValue(clientInfo);
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const authorizeRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get
+      const authorizeRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get,
       );
 
       await authorizeRoute?.route?.stack[0].handle(mockRequest, mockResponse);
@@ -243,12 +253,12 @@ describe('OAuth Routes', () => {
     it('should handle non-existent service', async () => {
       const { ServerManager } = await import('../../../core/server/serverManager.js');
       mockRequest.params = { serverName: 'non-existent' };
-      
-      vi.mocked(ServerManager.current.getClient).mockReturnValue(null);
+
+      vi.mocked(ServerManager.current.getClient).mockReturnValue(undefined);
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const authorizeRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get
+      const authorizeRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/authorize/:serverName' && layer.route?.methods?.get,
       );
 
       await authorizeRoute?.route?.stack[0].handle(mockRequest, mockResponse);
@@ -276,8 +286,8 @@ describe('OAuth Routes', () => {
       });
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const consentRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/consent' && layer.route?.methods?.post
+      const consentRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/consent' && layer.route?.methods?.post,
       );
 
       // Skip sensitive operation limiter middleware
@@ -298,12 +308,12 @@ describe('OAuth Routes', () => {
       mockOAuthProvider.oauthStorage.getAuthorizationRequest.mockReturnValue(authRequest);
       mockOAuthProvider.oauthStorage.clientDataRepository.get.mockReturnValue(client);
       mockOAuthProvider.oauthStorage.processConsentDenial.mockResolvedValue(
-        new URL('https://example.com/callback?error=access_denied')
+        new URL('https://example.com/callback?error=access_denied'),
       );
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const consentRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/consent' && layer.route?.methods?.post
+      const consentRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/consent' && layer.route?.methods?.post,
       );
 
       await consentRoute?.route?.stack[1].handle(mockRequest, mockResponse);
@@ -315,8 +325,8 @@ describe('OAuth Routes', () => {
       mockRequest.body = { action: 'approve' }; // Missing auth_request_id
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const consentRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/consent' && layer.route?.methods?.post
+      const consentRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/consent' && layer.route?.methods?.post,
       );
 
       await consentRoute?.route?.stack[1].handle(mockRequest, mockResponse);
@@ -336,19 +346,25 @@ describe('OAuth Routes', () => {
       mockRequest.query = { code: 'auth-code-123' };
 
       const mockTransport = {
+        name: 'test-transport',
+        start: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
         finishAuth: vi.fn().mockResolvedValue(undefined),
-      };
+      } as any;
 
       const clientInfo = {
+        name: 'test-server',
         transport: mockTransport,
+        client: {} as any,
         status: ClientStatus.AwaitingOAuth,
       };
 
       vi.mocked(ServerManager.current.getClient).mockReturnValue(clientInfo);
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const callbackRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get
+      const callbackRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get,
       );
 
       await callbackRoute?.route?.stack[0].handle(mockRequest, mockResponse);
@@ -362,8 +378,8 @@ describe('OAuth Routes', () => {
       mockRequest.query = { error: 'access_denied' };
 
       const router = createOAuthRoutes(mockOAuthProvider);
-      const callbackRoute = router.stack.find((layer: any) => 
-        layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get
+      const callbackRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get,
       );
 
       await callbackRoute?.route?.stack[0].handle(mockRequest, mockResponse);

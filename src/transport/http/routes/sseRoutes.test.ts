@@ -108,7 +108,7 @@ describe('SSE Routes', () => {
         SSE_ENDPOINT,
         expect.any(Function), // tagsExtractor
         expect.any(Function), // scopeAuthMiddleware
-        expect.any(Function)  // handler
+        expect.any(Function), // handler
       );
     });
 
@@ -117,7 +117,7 @@ describe('SSE Routes', () => {
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         MESSAGES_ENDPOINT,
-        expect.any(Function) // handler
+        expect.any(Function), // handler
       );
     });
 
@@ -138,7 +138,7 @@ describe('SSE Routes', () => {
     it('should handle SSE connection successfully', async () => {
       const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
       const { getValidatedTags } = await import('../middlewares/scopeAuthMiddleware.js');
-      
+
       const mockTransport = {
         sessionId: 'test-session-123',
         onclose: null,
@@ -152,20 +152,16 @@ describe('SSE Routes', () => {
       await getHandler(mockRequest, mockResponse);
 
       expect(SSEServerTransport).toHaveBeenCalledWith(MESSAGES_ENDPOINT, mockResponse);
-      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(
-        mockTransport,
-        'test-session-123',
-        {
-          tags: ['test-tag'],
-          enablePagination: true,
-        }
-      );
+      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(mockTransport, 'test-session-123', {
+        tags: ['test-tag'],
+        enablePagination: true,
+      });
     });
 
     it('should handle SSE connection with pagination disabled', async () => {
       const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
       const { getValidatedTags } = await import('../middlewares/scopeAuthMiddleware.js');
-      
+
       const mockTransport = {
         sessionId: 'test-session-456',
         onclose: null,
@@ -178,14 +174,10 @@ describe('SSE Routes', () => {
 
       await getHandler(mockRequest, mockResponse);
 
-      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(
-        mockTransport,
-        'test-session-456',
-        {
-          tags: ['another-tag'],
-          enablePagination: false,
-        }
-      );
+      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(mockTransport, 'test-session-456', {
+        tags: ['another-tag'],
+        enablePagination: false,
+      });
     });
 
     it('should handle SSE connection error', async () => {
@@ -230,7 +222,7 @@ describe('SSE Routes', () => {
 
       // Test the onclose handler
       if (mockTransport.onclose) {
-        mockTransport.onclose();
+        (mockTransport.onclose as Function)();
         expect(mockServerManager.disconnectTransport).toHaveBeenCalledWith('test-session-onclose');
       }
     });
@@ -249,14 +241,10 @@ describe('SSE Routes', () => {
 
       await getHandler(mockRequest, mockResponse);
 
-      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(
-        mockTransport,
-        'test-session-no-tags',
-        {
-          tags: [],
-          enablePagination: false,
-        }
-      );
+      expect(mockServerManager.connectTransport).toHaveBeenCalledWith(mockTransport, 'test-session-no-tags', {
+        tags: [],
+        enablePagination: false,
+      });
     });
   });
 
@@ -281,11 +269,7 @@ describe('SSE Routes', () => {
 
       await postHandler(mockRequest, mockResponse);
 
-      expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse,
-        mockRequest.body
-      );
+      expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
     });
 
     it('should return 400 when sessionId is missing', async () => {
@@ -396,11 +380,7 @@ describe('SSE Routes', () => {
 
       await postHandler(mockRequest, mockResponse);
 
-      expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse,
-        mockRequest.body
-      );
+      expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
     });
   });
 
@@ -416,7 +396,7 @@ describe('SSE Routes', () => {
       const logger = await import('../../../logger/logger.js');
 
       mockRequest.headers = {
-        'authorization': 'Bearer secret-token',
+        authorization: 'Bearer secret-token',
         'content-type': 'application/json',
       };
 
@@ -425,13 +405,10 @@ describe('SSE Routes', () => {
       await getHandler(mockRequest, mockResponse);
 
       expect(sanitizeHeaders).toHaveBeenCalledWith(mockRequest.headers);
-      expect(logger.default.info).toHaveBeenCalledWith(
-        '[GET] sse',
-        {
-          query: mockRequest.query,
-          headers: { 'content-type': 'application/json' }
-        }
-      );
+      expect(logger.default.info).toHaveBeenCalledWith('[GET] sse', {
+        query: mockRequest.query,
+        headers: { 'content-type': 'application/json' },
+      });
     });
 
     it('should log message handling', async () => {
@@ -443,13 +420,10 @@ describe('SSE Routes', () => {
 
       await postHandler(mockRequest, mockResponse);
 
-      expect(logger.default.info).toHaveBeenCalledWith(
-        'message',
-        {
-          body: mockRequest.body,
-          sessionId: 'log-test'
-        }
-      );
+      expect(logger.default.info).toHaveBeenCalledWith('message', {
+        body: mockRequest.body,
+        sessionId: 'log-test',
+      });
     });
   });
 });

@@ -43,10 +43,7 @@ export class AsyncTestUtils {
   /**
    * Wait for a promise to resolve with timeout
    */
-  static async waitForPromise<T>(
-    promise: Promise<T>,
-    timeout: number = 5000
-  ): Promise<T> {
+  static async waitForPromise<T>(promise: Promise<T>, timeout: number = 5000): Promise<T> {
     return Promise.race([
       promise,
       new Promise<never>((_, reject) => {
@@ -61,10 +58,10 @@ export class AsyncTestUtils {
   static async waitForCondition(
     condition: () => boolean | Promise<boolean>,
     timeout: number = 5000,
-    interval: number = 100
+    interval: number = 100,
   ): Promise<void> {
     const start = Date.now();
-    
+
     while (Date.now() - start < timeout) {
       const result = await condition();
       if (result) {
@@ -72,7 +69,7 @@ export class AsyncTestUtils {
       }
       await AsyncTestUtils.sleep(interval);
     }
-    
+
     throw new Error(`Condition not met within ${timeout}ms`);
   }
 
@@ -83,7 +80,7 @@ export class AsyncTestUtils {
     getValue: () => T | Promise<T>,
     expectedValue: T,
     timeout: number = 5000,
-    interval: number = 100
+    interval: number = 100,
   ): Promise<void> {
     await AsyncTestUtils.waitForCondition(
       async () => {
@@ -91,23 +88,15 @@ export class AsyncTestUtils {
         return value === expectedValue;
       },
       timeout,
-      interval
+      interval,
     );
   }
 
   /**
    * Wait for a mock to be called
    */
-  static async waitForMockCall(
-    mock: any,
-    timeout: number = 5000,
-    interval: number = 100
-  ): Promise<void> {
-    await AsyncTestUtils.waitForCondition(
-      () => mock.mock.calls.length > 0,
-      timeout,
-      interval
-    );
+  static async waitForMockCall(mock: any, timeout: number = 5000, interval: number = 100): Promise<void> {
+    await AsyncTestUtils.waitForCondition(() => mock.mock.calls.length > 0, timeout, interval);
   }
 
   /**
@@ -117,20 +106,16 @@ export class AsyncTestUtils {
     mock: any,
     expectedCount: number,
     timeout: number = 5000,
-    interval: number = 100
+    interval: number = 100,
   ): Promise<void> {
-    await AsyncTestUtils.waitForCondition(
-      () => mock.mock.calls.length === expectedCount,
-      timeout,
-      interval
-    );
+    await AsyncTestUtils.waitForCondition(() => mock.mock.calls.length === expectedCount, timeout, interval);
   }
 
   /**
    * Create a promise that resolves after a delay
    */
   static sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -145,14 +130,11 @@ export class AsyncTestUtils {
   /**
    * Test that a function completes within a specific time
    */
-  static async expectCompletesWithin<T>(
-    fn: () => Promise<T>,
-    maxDuration: number
-  ): Promise<T> {
+  static async expectCompletesWithin<T>(fn: () => Promise<T>, maxDuration: number): Promise<T> {
     const start = Date.now();
     const result = await fn();
     const duration = Date.now() - start;
-    
+
     expect(duration).toBeLessThanOrEqual(maxDuration);
     return result;
   }
@@ -160,14 +142,11 @@ export class AsyncTestUtils {
   /**
    * Test that a function takes at least a specific amount of time
    */
-  static async expectTakesAtLeast<T>(
-    fn: () => Promise<T>,
-    minDuration: number
-  ): Promise<T> {
+  static async expectTakesAtLeast<T>(fn: () => Promise<T>, minDuration: number): Promise<T> {
     const start = Date.now();
     const result = await fn();
     const duration = Date.now() - start;
-    
+
     expect(duration).toBeGreaterThanOrEqual(minDuration);
     return result;
   }
@@ -175,8 +154,8 @@ export class AsyncTestUtils {
   /**
    * Test that a promise resolves
    */
-  static async expectResolves<T>(promise: Promise<T>): Promise<T> {
-    return expect(promise).resolves.toBeDefined();
+  static async expectResolves<T>(promise: Promise<T>): Promise<void> {
+    await expect(promise).resolves.toBeDefined();
   }
 
   /**
@@ -189,10 +168,7 @@ export class AsyncTestUtils {
   /**
    * Test that a promise rejects with a specific error
    */
-  static async expectRejectsWith(
-    promise: Promise<any>,
-    expectedError: string | RegExp | Error
-  ): Promise<any> {
+  static async expectRejectsWith(promise: Promise<any>, expectedError: string | RegExp | Error): Promise<any> {
     if (typeof expectedError === 'string') {
       return expect(promise).rejects.toThrow(expectedError);
     } else if (expectedError instanceof RegExp) {
@@ -214,7 +190,7 @@ export class AsyncTestUtils {
     let resolve: (value: T) => void;
     let reject: (reason?: any) => void;
     let isPending = true;
-    
+
     const promise = new Promise<T>((res, rej) => {
       resolve = (value: T) => {
         isPending = false;
@@ -238,7 +214,7 @@ export class AsyncTestUtils {
    * Create a promise that resolves to a specific value after a delay
    */
   static resolveAfter<T>(value: T, delay: number): Promise<T> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       setTimeout(() => resolve(value), delay);
     });
   }
@@ -246,13 +222,8 @@ export class AsyncTestUtils {
   /**
    * Create a sequence of promises that resolve in order
    */
-  static createPromiseSequence<T>(
-    values: T[],
-    delay: number = 100
-  ): Promise<T>[] {
-    return values.map((value, index) => 
-      AsyncTestUtils.resolveAfter(value, delay * (index + 1))
-    );
+  static createPromiseSequence<T>(values: T[], delay: number = 100): Promise<T>[] {
+    return values.map((value, index) => AsyncTestUtils.resolveAfter(value, delay * (index + 1)));
   }
 
   /**
@@ -262,7 +233,7 @@ export class AsyncTestUtils {
     fn: () => Promise<T>,
     maxAttempts: number = 3,
     baseDelay: number = 100,
-    backoffFactor: number = 2
+    backoffFactor: number = 2,
   ): Promise<{
     result: T;
     attempts: number;
@@ -283,7 +254,7 @@ export class AsyncTestUtils {
         };
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempts < maxAttempts) {
           const delay = baseDelay * Math.pow(backoffFactor, attempts - 1);
           await AsyncTestUtils.sleep(delay);
@@ -297,17 +268,14 @@ export class AsyncTestUtils {
   /**
    * Test concurrent operations
    */
-  static async testConcurrency<T>(
-    operations: (() => Promise<T>)[],
-    maxConcurrency: number = 3
-  ): Promise<T[]> {
+  static async testConcurrency<T>(operations: (() => Promise<T>)[], maxConcurrency: number = 3): Promise<T[]> {
     const results: T[] = [];
     const executing: Promise<void>[] = [];
 
     for (let i = 0; i < operations.length; i++) {
       const operation = operations[i];
-      
-      const promise = operation().then(result => {
+
+      const promise = operation().then((result) => {
         results[i] = result;
       });
 
@@ -315,7 +283,10 @@ export class AsyncTestUtils {
 
       if (executing.length >= maxConcurrency) {
         await Promise.race(executing);
-        executing.splice(executing.findIndex(p => p === promise), 1);
+        executing.splice(
+          executing.findIndex((p) => p === promise),
+          1,
+        );
       }
     }
 
@@ -350,7 +321,7 @@ export class AsyncTestUtils {
   static async testDebounce<T>(
     debouncedFn: (...args: any[]) => Promise<T>,
     calls: { args: any[]; delay: number }[],
-    _expectedCallCount: number
+    _expectedCallCount: number,
   ): Promise<void> {
     const promises: Promise<T>[] = [];
 
@@ -360,7 +331,7 @@ export class AsyncTestUtils {
     }
 
     await Promise.all(promises);
-    
+
     // Additional assertions would need to be implemented based on the specific debounce implementation
     // This is a framework for testing debounce behavior
   }
@@ -371,7 +342,7 @@ export class AsyncTestUtils {
   static async testThrottle<T>(
     throttledFn: (...args: any[]) => Promise<T>,
     calls: { args: any[]; delay: number }[],
-    _expectedCallCount: number
+    _expectedCallCount: number,
   ): Promise<void> {
     const promises: Promise<T>[] = [];
 
@@ -381,7 +352,7 @@ export class AsyncTestUtils {
     }
 
     await Promise.all(promises);
-    
+
     // Additional assertions would need to be implemented based on the specific throttle implementation
     // This is a framework for testing throttle behavior
   }
@@ -391,7 +362,7 @@ export class AsyncTestUtils {
    */
   static async measurePerformance<T>(
     operation: () => Promise<T>,
-    iterations: number = 1
+    iterations: number = 1,
   ): Promise<{
     result: T;
     averageTime: number;

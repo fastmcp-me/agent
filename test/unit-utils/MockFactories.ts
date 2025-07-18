@@ -2,7 +2,7 @@ import { vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ClientStatus, OutboundConnections, InboundConnection } from '../../src/core/types/index.js';
+import { OutboundConnections, InboundConnection, OutboundConnection } from '../../src/core/types/index.js';
 import { ClientSessionData } from '../../src/auth/sessionTypes.js';
 
 /**
@@ -19,13 +19,14 @@ export const createMockLogger = () => ({
 /**
  * Factory for creating mock MCP transport instances
  */
-export const createMockTransport = (overrides?: Partial<Transport>): Transport => ({
-  name: 'test-transport',
-  start: vi.fn().mockResolvedValue(undefined),
-  send: vi.fn().mockResolvedValue(undefined),
-  close: vi.fn().mockResolvedValue(undefined),
-  ...overrides,
-} as Transport);
+export const createMockTransport = (overrides?: Partial<Transport>): Transport =>
+  ({
+    name: 'test-transport',
+    start: vi.fn().mockResolvedValue(undefined),
+    send: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
+  }) as Transport;
 
 /**
  * Factory for creating mock MCP client instances
@@ -56,7 +57,9 @@ export const createMockServer = (overrides?: Partial<Server>): Partial<Server> =
 /**
  * Factory for creating mock client status objects
  */
-export const createMockClientStatus = (overrides?: Partial<ClientStatus>): ClientStatus => ({
+export const createMockClientStatus = (
+  overrides?: Partial<{ status: string; lastSeen: Date; errorCount: number }>,
+): { status: string; lastSeen: Date; errorCount: number } => ({
   status: 'connected',
   lastSeen: new Date(),
   errorCount: 0,
@@ -66,18 +69,25 @@ export const createMockClientStatus = (overrides?: Partial<ClientStatus>): Clien
 /**
  * Factory for creating mock outbound connections
  */
-export const createMockOutboundConnections = (clients?: Record<string, Partial<Client>>): OutboundConnections => ({
-  clients: clients || {},
-  statuses: {},
-});
+export const createMockOutboundConnections = (
+  connections?: Record<string, OutboundConnection>,
+): OutboundConnections => {
+  const map = new Map<string, OutboundConnection>();
+  if (connections) {
+    Object.entries(connections).forEach(([key, value]) => {
+      map.set(key, value);
+    });
+  }
+  return map;
+};
 
 /**
  * Factory for creating mock inbound connections
  */
 export const createMockInboundConnection = (overrides?: Partial<InboundConnection>): InboundConnection => ({
-  id: 'test-connection-id',
-  transport: createMockTransport(),
-  createdAt: new Date(),
+  server: createMockServer() as Server,
+  tags: ['test'],
+  enablePagination: false,
   ...overrides,
 });
 
@@ -97,8 +107,8 @@ export const createMockClientSessionData = (overrides?: Partial<ClientSessionDat
     token_type: 'Bearer',
     expires_in: 3600,
   }),
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  createdAt: Date.now(),
+  expires: Date.now() + 3600000,
   ...overrides,
 });
 
@@ -196,21 +206,25 @@ export const createMockConfig = (overrides?: any) => ({
  * Collection of commonly used mock modules
  */
 export const MOCK_MODULES = {
-  logger: () => vi.mock('../../src/logger/logger.js', () => ({
-    default: createMockLogger(),
-  })),
-  
-  client: () => vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-    Client: vi.fn().mockImplementation(() => createMockClient()),
-  })),
-  
-  server: () => vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-    Server: vi.fn().mockImplementation(() => createMockServer()),
-  })),
-  
+  logger: () =>
+    vi.mock('../../src/logger/logger.js', () => ({
+      default: createMockLogger(),
+    })),
+
+  client: () =>
+    vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
+      Client: vi.fn().mockImplementation(() => createMockClient()),
+    })),
+
+  server: () =>
+    vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
+      Server: vi.fn().mockImplementation(() => createMockServer()),
+    })),
+
   fs: () => vi.mock('fs', () => createMockFileSystem()),
-  
-  childProcess: () => vi.mock('child_process', () => ({
-    spawn: vi.fn().mockReturnValue(createMockProcess()),
-  })),
+
+  childProcess: () =>
+    vi.mock('child_process', () => ({
+      spawn: vi.fn().mockReturnValue(createMockProcess()),
+    })),
 };

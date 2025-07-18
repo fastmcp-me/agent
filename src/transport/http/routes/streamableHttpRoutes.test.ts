@@ -114,7 +114,7 @@ describe('Streamable HTTP Routes', () => {
         STREAMABLE_HTTP_ENDPOINT,
         expect.any(Function), // tagsExtractor
         expect.any(Function), // scopeAuthMiddleware
-        expect.any(Function)  // handler
+        expect.any(Function), // handler
       );
     });
 
@@ -123,7 +123,7 @@ describe('Streamable HTTP Routes', () => {
 
       expect(mockRouter.get).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
-        expect.any(Function) // handler
+        expect.any(Function), // handler
       );
     });
 
@@ -132,7 +132,7 @@ describe('Streamable HTTP Routes', () => {
 
       expect(mockRouter.delete).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
-        expect.any(Function) // handler
+        expect.any(Function), // handler
       );
     });
 
@@ -157,10 +157,10 @@ describe('Streamable HTTP Routes', () => {
       const { randomUUID } = await import('node:crypto');
 
       vi.mocked(getValidatedTags).mockReturnValue(['test-tag']);
-      vi.mocked(randomUUID).mockReturnValue('new-uuid-123');
+      vi.mocked(randomUUID).mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
 
       const mockTransport = {
-        sessionId: 'new-uuid-123',
+        sessionId: '550e8400-e29b-41d4-a716-446655440000',
         onclose: null,
         handleRequest: vi.fn().mockResolvedValue(undefined),
       };
@@ -177,17 +177,13 @@ describe('Streamable HTTP Routes', () => {
       });
       expect(mockServerManager.connectTransport).toHaveBeenCalledWith(
         mockTransport,
-        'new-uuid-123',
+        '550e8400-e29b-41d4-a716-446655440000',
         {
           tags: ['test-tag'],
           enablePagination: true,
-        }
+        },
       );
-      expect(mockTransport.handleRequest).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse,
-        mockRequest.body
-      );
+      expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
     });
 
     it('should setup onclose handler for new transport', async () => {
@@ -196,10 +192,10 @@ describe('Streamable HTTP Routes', () => {
       const { randomUUID } = await import('node:crypto');
 
       vi.mocked(getValidatedTags).mockReturnValue([]);
-      vi.mocked(randomUUID).mockReturnValue('onclose-test');
+      vi.mocked(randomUUID).mockReturnValue('550e8400-e29b-41d4-a716-446655440001');
 
       const mockTransport = {
-        sessionId: 'onclose-test',
+        sessionId: '550e8400-e29b-41d4-a716-446655440001',
         onclose: null,
         handleRequest: vi.fn().mockResolvedValue(undefined),
       };
@@ -211,8 +207,8 @@ describe('Streamable HTTP Routes', () => {
 
       // Test the onclose handler
       if (mockTransport.onclose) {
-        mockTransport.onclose();
-        expect(mockServerManager.disconnectTransport).toHaveBeenCalledWith('onclose-test');
+        (mockTransport.onclose as Function)();
+        expect(mockServerManager.disconnectTransport).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440001');
       }
     });
 
@@ -222,10 +218,10 @@ describe('Streamable HTTP Routes', () => {
       const { randomUUID } = await import('node:crypto');
 
       vi.mocked(getValidatedTags).mockReturnValue(['tag1', 'tag2']);
-      vi.mocked(randomUUID).mockReturnValue('pagination-test');
+      vi.mocked(randomUUID).mockReturnValue('550e8400-e29b-41d4-a716-446655440002');
 
       const mockTransport = {
-        sessionId: 'pagination-test',
+        sessionId: '550e8400-e29b-41d4-a716-446655440002',
         onclose: null,
         handleRequest: vi.fn().mockResolvedValue(undefined),
       };
@@ -237,11 +233,11 @@ describe('Streamable HTTP Routes', () => {
 
       expect(mockServerManager.connectTransport).toHaveBeenCalledWith(
         mockTransport,
-        'pagination-test',
+        '550e8400-e29b-41d4-a716-446655440002',
         {
           tags: ['tag1', 'tag2'],
           enablePagination: false,
-        }
+        },
       );
     });
   });
@@ -269,11 +265,7 @@ describe('Streamable HTTP Routes', () => {
       await postHandler(mockRequest, mockResponse);
 
       expect(mockServerManager.getTransport).toHaveBeenCalledWith('existing-session');
-      expect(mockTransport.handleRequest).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse,
-        mockRequest.body
-      );
+      expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
     });
 
     it('should return 404 when session not found', async () => {
@@ -389,11 +381,7 @@ describe('Streamable HTTP Routes', () => {
       await getHandler(mockRequest, mockResponse);
 
       expect(mockServerManager.getTransport).toHaveBeenCalledWith('valid-session');
-      expect(mockTransport.handleRequest).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse,
-        mockRequest.body
-      );
+      expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
     });
 
     it('should return 400 when sessionId header missing', async () => {
@@ -457,10 +445,7 @@ describe('Streamable HTTP Routes', () => {
       await deleteHandler(mockRequest, mockResponse);
 
       expect(mockServerManager.getTransport).toHaveBeenCalledWith('delete-session');
-      expect(mockTransport.handleRequest).toHaveBeenCalledWith(
-        mockRequest,
-        mockResponse
-      );
+      expect(mockTransport.handleRequest).toHaveBeenCalledWith(mockRequest, mockResponse);
     });
 
     it('should return 400 when sessionId header missing for DELETE', async () => {
@@ -520,7 +505,7 @@ describe('Streamable HTTP Routes', () => {
       const logger = await import('../../../logger/logger.js');
 
       mockRequest.headers = {
-        'authorization': 'Bearer secret-token',
+        authorization: 'Bearer secret-token',
         'content-type': 'application/json',
       };
       mockRequest.body = { method: 'test' };
@@ -530,14 +515,11 @@ describe('Streamable HTTP Routes', () => {
       await postHandler(mockRequest, mockResponse);
 
       expect(sanitizeHeaders).toHaveBeenCalledWith(mockRequest.headers);
-      expect(logger.default.info).toHaveBeenCalledWith(
-        '[POST] streamable-http',
-        {
-          query: mockRequest.query,
-          body: mockRequest.body,
-          headers: { 'content-type': 'application/json' }
-        }
-      );
+      expect(logger.default.info).toHaveBeenCalledWith('[POST] streamable-http', {
+        query: mockRequest.query,
+        body: mockRequest.body,
+        headers: { 'content-type': 'application/json' },
+      });
     });
 
     it('should log GET request', async () => {
@@ -550,13 +532,10 @@ describe('Streamable HTTP Routes', () => {
 
       await getHandler(mockRequest, mockResponse);
 
-      expect(logger.default.info).toHaveBeenCalledWith(
-        '[GET] streamable-http',
-        {
-          query: mockRequest.query,
-          headers: { 'content-type': 'application/json' }
-        }
-      );
+      expect(logger.default.info).toHaveBeenCalledWith('[GET] streamable-http', {
+        query: mockRequest.query,
+        headers: { 'content-type': 'application/json' },
+      });
     });
 
     it('should log DELETE request', async () => {
@@ -569,13 +548,10 @@ describe('Streamable HTTP Routes', () => {
 
       await deleteHandler(mockRequest, mockResponse);
 
-      expect(logger.default.info).toHaveBeenCalledWith(
-        '[DELETE] streamable-http',
-        {
-          query: mockRequest.query,
-          headers: { 'content-type': 'application/json' }
-        }
-      );
+      expect(logger.default.info).toHaveBeenCalledWith('[DELETE] streamable-http', {
+        query: mockRequest.query,
+        headers: { 'content-type': 'application/json' },
+      });
     });
   });
 });

@@ -31,13 +31,13 @@ describe('errorHandler', () => {
       json: vi.fn().mockReturnThis(),
     };
 
-    mockNext = vi.fn();
+    mockNext = vi.fn() as any;
   });
 
   describe('error handling', () => {
     it('should log the error', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -45,7 +45,7 @@ describe('errorHandler', () => {
 
     it('should return 500 status code', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -53,7 +53,7 @@ describe('errorHandler', () => {
 
     it('should return standardized error response', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -66,7 +66,7 @@ describe('errorHandler', () => {
 
     it('should handle errors without message', () => {
       const error = new Error();
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -81,7 +81,7 @@ describe('errorHandler', () => {
 
     it('should handle different error types', () => {
       const error = new TypeError('Type error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -94,7 +94,7 @@ describe('errorHandler', () => {
         message: 'Custom error message',
         stack: 'Error stack trace',
       } as Error;
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -103,7 +103,7 @@ describe('errorHandler', () => {
 
     it('should not call next function', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockNext).not.toHaveBeenCalled();
@@ -114,7 +114,7 @@ describe('errorHandler', () => {
     it('should handle errors for different HTTP methods', () => {
       const error = new Error('Test error');
       mockRequest.method = 'POST';
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -124,7 +124,7 @@ describe('errorHandler', () => {
     it('should handle errors for different URLs', () => {
       const error = new Error('Test error');
       mockRequest.url = '/api/test';
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -135,9 +135,9 @@ describe('errorHandler', () => {
       const error = new Error('Test error');
       mockRequest.headers = {
         'content-type': 'application/json',
-        'authorization': 'Bearer token',
+        authorization: 'Bearer token',
       };
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -148,7 +148,7 @@ describe('errorHandler', () => {
   describe('response handling', () => {
     it('should chain response methods correctly', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.status).toHaveReturnedWith(mockResponse);
@@ -160,7 +160,7 @@ describe('errorHandler', () => {
       mockResponse.status = vi.fn().mockImplementation(() => {
         throw new Error('Response status failed');
       });
-      
+
       expect(() => {
         errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
       }).toThrow('Response status failed');
@@ -170,7 +170,7 @@ describe('errorHandler', () => {
 
     it('should use correct MCP error code', () => {
       const error = new Error('Test error');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith({
@@ -185,7 +185,7 @@ describe('errorHandler', () => {
   describe('error types', () => {
     it('should handle syntax errors', () => {
       const error = new SyntaxError('Invalid JSON');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -194,7 +194,7 @@ describe('errorHandler', () => {
 
     it('should handle reference errors', () => {
       const error = new ReferenceError('Variable not defined');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -203,7 +203,7 @@ describe('errorHandler', () => {
 
     it('should handle range errors', () => {
       const error = new RangeError('Value out of range');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(logger.error).toHaveBeenCalledWith('Express error:', error);
@@ -220,9 +220,9 @@ describe('errorHandler', () => {
         new RangeError('Range error'),
       ];
 
-      errors.forEach(error => {
+      errors.forEach((error) => {
         vi.clearAllMocks();
-        
+
         errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
         expect(mockResponse.json).toHaveBeenCalledWith({
@@ -236,7 +236,7 @@ describe('errorHandler', () => {
 
     it('should not expose internal error details to client', () => {
       const error = new Error('Internal database connection failed');
-      
+
       errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
       expect(mockResponse.json).toHaveBeenCalledWith({

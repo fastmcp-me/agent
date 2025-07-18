@@ -9,7 +9,7 @@ vi.mock('express', () => {
     get: vi.fn(),
     post: vi.fn(),
   });
-  
+
   const mockApp = () => ({
     use: vi.fn(),
     listen: vi.fn((port, host, callback) => {
@@ -17,8 +17,9 @@ vi.mock('express', () => {
     }),
   });
 
-  const mockExpress = vi.fn(mockApp);
-  mockExpress.Router = vi.fn(mockRouter);
+  const mockExpress = Object.assign(vi.fn(mockApp), {
+    Router: vi.fn(mockRouter),
+  });
 
   return {
     default: mockExpress,
@@ -127,9 +128,12 @@ describe('ExpressServer', () => {
 
     // Ensure SDKOAuthServerProvider returns an object with shutdown method
     const { SDKOAuthServerProvider } = await import('../../auth/sdkOAuthServerProvider.js');
-    vi.mocked(SDKOAuthServerProvider).mockImplementation(() => ({
-      shutdown: vi.fn(),
-    } as any));
+    vi.mocked(SDKOAuthServerProvider).mockImplementation(
+      () =>
+        ({
+          shutdown: vi.fn(),
+        }) as any,
+    );
   });
 
   afterEach(() => {
@@ -154,7 +158,7 @@ describe('ExpressServer', () => {
     it('should handle enhanced security when enabled', async () => {
       const { setupSecurityMiddleware } = await import('./middlewares/securityMiddleware.js');
       vi.mocked(setupSecurityMiddleware).mockReturnValue([vi.fn()]);
-      
+
       mockConfigManager.isEnhancedSecurityEnabled.mockReturnValue(true);
 
       expressServer = new ExpressServer(mockServerManager);
@@ -174,7 +178,7 @@ describe('ExpressServer', () => {
   describe('Server Operations', () => {
     it('should start server successfully', async () => {
       expressServer = new ExpressServer(mockServerManager);
-      
+
       expect(() => {
         expressServer.start();
       }).not.toThrow();
@@ -255,11 +259,11 @@ describe('ExpressServer', () => {
     it('should handle security middleware conditionally', async () => {
       const { setupSecurityMiddleware } = await import('./middlewares/securityMiddleware.js');
       vi.mocked(setupSecurityMiddleware).mockReturnValue([vi.fn()]);
-      
+
       // Test with security disabled
       mockConfigManager.isEnhancedSecurityEnabled.mockReturnValue(false);
       new ExpressServer(mockServerManager);
-      
+
       // Test with security enabled
       mockConfigManager.isEnhancedSecurityEnabled.mockReturnValue(true);
       new ExpressServer(mockServerManager);

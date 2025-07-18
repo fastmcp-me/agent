@@ -1,10 +1,5 @@
 import { vi, expect } from 'vitest';
-import { 
-  MCPError, 
-  ClientConnectionError, 
-  ClientNotFoundError, 
-  ValidationError 
-} from '../../src/utils/errorTypes.js';
+import { MCPError, ClientConnectionError, ClientNotFoundError, ValidationError } from '../../src/utils/errorTypes.js';
 
 /**
  * Utilities for testing error handling and error scenarios
@@ -16,19 +11,19 @@ export class ErrorTestUtils {
   static expectThrows<T extends Error>(
     fn: () => any,
     errorType: new (...args: any[]) => T,
-    message?: string | RegExp
+    message?: string | RegExp,
   ): void {
     let thrownError: Error | undefined;
-    
+
     try {
       fn();
     } catch (_error) {
       thrownError = _error as Error;
     }
-    
+
     expect(thrownError).toBeDefined();
     expect(thrownError).toBeInstanceOf(errorType);
-    
+
     if (message) {
       if (typeof message === 'string') {
         expect(thrownError!.message).toContain(message);
@@ -44,19 +39,19 @@ export class ErrorTestUtils {
   static async expectAsyncThrows<T extends Error>(
     fn: () => Promise<any>,
     errorType: new (...args: any[]) => T,
-    message?: string | RegExp
+    message?: string | RegExp,
   ): Promise<void> {
     let thrownError: Error | undefined;
-    
+
     try {
       await fn();
     } catch (_error) {
       thrownError = _error as Error;
     }
-    
+
     expect(thrownError).toBeDefined();
     expect(thrownError).toBeInstanceOf(errorType);
-    
+
     if (message) {
       if (typeof message === 'string') {
         expect(thrownError!.message).toContain(message);
@@ -83,11 +78,7 @@ export class ErrorTestUtils {
   /**
    * Create a mock error with specific properties
    */
-  static createMockError(
-    message: string,
-    code?: string,
-    details?: any
-  ): Error {
+  static createMockError(message: string, code?: string, details?: any): Error {
     const error = new Error(message);
     if (code) {
       (error as any).code = code;
@@ -101,11 +92,7 @@ export class ErrorTestUtils {
   /**
    * Create a mock MCP error
    */
-  static createMockMCPError(
-    message: string,
-    code?: number,
-    details?: any
-  ): MCPError {
+  static createMockMCPError(message: string, code: number = -1, details?: any): MCPError {
     return new MCPError(message, code, details);
   }
 
@@ -114,40 +101,31 @@ export class ErrorTestUtils {
    */
   static createMockClientConnectionError(
     clientName: string,
-    reason?: string
+    reason: string = 'Connection failed',
   ): ClientConnectionError {
-    return new ClientConnectionError(clientName, reason);
+    return new ClientConnectionError(clientName, new Error(reason));
   }
 
   /**
    * Create a mock client not found error
    */
-  static createMockClientNotFoundError(
-    clientName: string
-  ): ClientNotFoundError {
+  static createMockClientNotFoundError(clientName: string): ClientNotFoundError {
     return new ClientNotFoundError(clientName);
   }
 
   /**
    * Create a mock validation error
    */
-  static createMockValidationError(
-    message: string,
-    field?: string,
-    value?: any
-  ): ValidationError {
-    return new ValidationError(message, field, value);
+  static createMockValidationError(message: string, field?: string): ValidationError {
+    return new ValidationError(message, field);
   }
 
   /**
    * Create a function that throws an error after a delay
    */
-  static createDelayedErrorFunction(
-    delay: number,
-    error: Error
-  ): () => Promise<never> {
+  static createDelayedErrorFunction(delay: number, error: Error): () => Promise<never> {
     return async () => {
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
       throw error;
     };
   }
@@ -155,13 +133,9 @@ export class ErrorTestUtils {
   /**
    * Create a function that throws an error on the nth call
    */
-  static createNthCallErrorFunction(
-    n: number,
-    errorToThrow: Error,
-    returnValue?: any
-  ): () => any {
+  static createNthCallErrorFunction(n: number, errorToThrow: Error, returnValue?: any): () => any {
     let callCount = 0;
-    
+
     return () => {
       callCount++;
       if (callCount === n) {
@@ -174,11 +148,7 @@ export class ErrorTestUtils {
   /**
    * Create a function that throws an error intermittently
    */
-  static createIntermittentErrorFunction(
-    errorProbability: number,
-    errorToThrow: Error,
-    returnValue?: any
-  ): () => any {
+  static createIntermittentErrorFunction(errorProbability: number, errorToThrow: Error, returnValue?: any): () => any {
     return () => {
       if (Math.random() < errorProbability) {
         throw errorToThrow;
@@ -193,11 +163,11 @@ export class ErrorTestUtils {
   static async testErrorPropagation(
     functions: Array<(arg: any) => Promise<any>>,
     initialValue: any,
-    expectedError: Error
+    expectedError: Error,
   ): Promise<void> {
     let currentValue = initialValue;
     let caughtError: Error | undefined;
-    
+
     try {
       for (const fn of functions) {
         currentValue = await fn(currentValue);
@@ -205,7 +175,7 @@ export class ErrorTestUtils {
     } catch (_error) {
       caughtError = _error as Error;
     }
-    
+
     expect(caughtError).toBeDefined();
     expect(caughtError).toBeInstanceOf(expectedError.constructor);
     expect(caughtError!.message).toBe(expectedError.message);
@@ -218,16 +188,16 @@ export class ErrorTestUtils {
     fn: () => Promise<any>,
     maxRetries: number,
     expectedAttempts: number,
-    shouldSucceed: boolean = false
+    shouldSucceed: boolean = false,
   ): Promise<void> {
     let attempts = 0;
     let lastError: Error | undefined;
-    
+
     const wrappedFn = async () => {
       attempts++;
       return await fn();
     };
-    
+
     try {
       for (let i = 0; i < maxRetries; i++) {
         try {
@@ -245,9 +215,9 @@ export class ErrorTestUtils {
     } catch (_error) {
       // Expected if shouldSucceed is false
     }
-    
+
     expect(attempts).toBe(expectedAttempts);
-    
+
     if (!shouldSucceed) {
       expect(lastError).toBeDefined();
     }
@@ -259,7 +229,7 @@ export class ErrorTestUtils {
   static testCircuitBreakerErrorHandling(
     fn: () => Promise<any>,
     errorThreshold: number,
-    timeoutMs: number
+    timeoutMs: number,
   ): {
     execute: () => Promise<any>;
     getState: () => 'closed' | 'open' | 'half-open';
@@ -269,7 +239,7 @@ export class ErrorTestUtils {
     let failureCount = 0;
     let state: 'closed' | 'open' | 'half-open' = 'closed';
     let lastFailureTime = 0;
-    
+
     const execute = async () => {
       if (state === 'open') {
         if (Date.now() - lastFailureTime > timeoutMs) {
@@ -278,28 +248,28 @@ export class ErrorTestUtils {
           throw new Error('Circuit breaker is open');
         }
       }
-      
+
       try {
         const result = await fn();
-        
+
         if (state === 'half-open') {
           state = 'closed';
           failureCount = 0;
         }
-        
+
         return result;
       } catch (_error) {
         failureCount++;
         lastFailureTime = Date.now();
-        
+
         if (failureCount >= errorThreshold) {
           state = 'open';
         }
-        
+
         throw _error;
       }
     };
-    
+
     return {
       execute,
       getState: () => state,
@@ -318,20 +288,18 @@ export class ErrorTestUtils {
   static testErrorLogging(
     fn: () => any,
     mockLogger: any,
-    expectedLogLevel: 'error' | 'warn' | 'info' | 'debug' = 'error'
+    expectedLogLevel: 'error' | 'warn' | 'info' | 'debug' = 'error',
   ): void {
     let caughtError: Error | undefined;
-    
+
     try {
       fn();
     } catch (_error) {
       caughtError = _error as Error;
     }
-    
+
     expect(caughtError).toBeDefined();
-    expect(mockLogger[expectedLogLevel]).toHaveBeenCalledWith(
-      expect.stringContaining(caughtError!.message)
-    );
+    expect(mockLogger[expectedLogLevel]).toHaveBeenCalledWith(expect.stringContaining(caughtError!.message));
   }
 
   /**
@@ -340,20 +308,18 @@ export class ErrorTestUtils {
   static async testAsyncErrorLogging(
     fn: () => Promise<any>,
     mockLogger: any,
-    expectedLogLevel: 'error' | 'warn' | 'info' | 'debug' = 'error'
+    expectedLogLevel: 'error' | 'warn' | 'info' | 'debug' = 'error',
   ): Promise<void> {
     let caughtError: Error | undefined;
-    
+
     try {
       await fn();
     } catch (_error) {
       caughtError = _error as Error;
     }
-    
+
     expect(caughtError).toBeDefined();
-    expect(mockLogger[expectedLogLevel]).toHaveBeenCalledWith(
-      expect.stringContaining(caughtError!.message)
-    );
+    expect(mockLogger[expectedLogLevel]).toHaveBeenCalledWith(expect.stringContaining(caughtError!.message));
   }
 
   /**
@@ -367,14 +333,14 @@ export class ErrorTestUtils {
     const originalConsoleError = console.error;
     const mockConsoleError = vi.fn();
     console.error = mockConsoleError;
-    
+
     return {
       mock: mockConsoleError,
       restore: () => {
         console.error = originalConsoleError;
       },
       getErrorMessages: () => {
-        return mockConsoleError.mock.calls.map(call => call.join(' '));
+        return mockConsoleError.mock.calls.map((call) => call.join(' '));
       },
     };
   }
@@ -385,26 +351,26 @@ export class ErrorTestUtils {
   static testErrorBoundary(
     fn: () => any,
     errorBoundary: (error: Error) => any,
-    expectedHandling: 'catch' | 'rethrow' | 'transform'
+    expectedHandling: 'catch' | 'rethrow' | 'transform',
   ): void {
     let originalError: Error | undefined;
     let boundaryError: Error | undefined;
     let result: any;
-    
+
     try {
       fn();
     } catch (_error) {
       originalError = _error as Error;
-      
+
       try {
         result = errorBoundary(originalError);
       } catch (handledError) {
         boundaryError = handledError as Error;
       }
     }
-    
+
     expect(originalError).toBeDefined();
-    
+
     switch (expectedHandling) {
       case 'catch':
         expect(boundaryError).toBeUndefined();
@@ -432,17 +398,14 @@ export class ErrorTestUtils {
     INVALID_JSON: () => ErrorTestUtils.createMockError('Invalid JSON', 'JSON_PARSE_ERROR'),
     DATABASE_ERROR: () => ErrorTestUtils.createMockError('Database error', 'DATABASE_ERROR'),
     VALIDATION_ERROR: () => ErrorTestUtils.createMockValidationError('Validation failed', 'field'),
-    AUTHENTICATION_ERROR: () => ErrorTestUtils.createMockAuthenticationError('Authentication failed', 'INVALID_TOKEN'),
-    CONFIGURATION_ERROR: () => ErrorTestUtils.createMockConfigurationError('Configuration error', 'missing_field'),
+    AUTHENTICATION_ERROR: () => ErrorTestUtils.createMockError('Authentication failed', 'INVALID_TOKEN'),
+    CONFIGURATION_ERROR: () => ErrorTestUtils.createMockError('Configuration error', 'missing_field'),
   };
 
   /**
    * Test error message formatting
    */
-  static testErrorMessageFormatting(
-    error: Error,
-    expectedFormat: RegExp
-  ): void {
+  static testErrorMessageFormatting(error: Error, expectedFormat: RegExp): void {
     expect(error.message).toMatch(expectedFormat);
   }
 
@@ -460,7 +423,7 @@ export class ErrorTestUtils {
   static testErrorSerialization(error: Error): void {
     const serialized = JSON.stringify(error);
     const deserialized = JSON.parse(serialized);
-    
+
     expect(deserialized.message).toBe(error.message);
     expect(deserialized.name).toBe(error.name);
   }
