@@ -58,31 +58,33 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
 # Use stdio transport instead of SSE
 npx -y @1mcp/agent --transport stdio
 
+# Use external URL for reverse proxy setup (nginx, etc.)
+npx -y @1mcp/agent --external-url https://example.com
+
 # Show all available options
 npx -y @1mcp/agent --help
 ```
 
 Available options:
 
-| Option (CLI)                 | Environment Variable               | Description                                           |  Default  | Deprecated? |
-| :--------------------------- | :--------------------------------- | :---------------------------------------------------- | :-------: | :---------: |
-| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")     |  "http"   |             |
-| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                            |           |             |
-| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                      |   3050    |             |
-| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                      | localhost |             |
-| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                |           |             |
-| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)   |   false   |             |
-| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1)                     |   false   |     Yes     |
-| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                     |   false   |             |
-| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)           |   true    |             |
-| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)         |   false   |             |
-| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)               |   1440    |             |
-| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)        |           |             |
-| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)           |    15     |             |
-| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number) |    100    |             |
-| `--help`, `-h`               |                                    | Show help                                             |           |             |
-
-> 💡 **Note:** Deprecated options are provided for backward compatibility. Prefer using the non-deprecated options for new configurations.
+| Option (CLI)                 | Environment Variable               | Description                                                                  |  Default  |
+| :--------------------------- | :--------------------------------- | :--------------------------------------------------------------------------- | :-------: |
+| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                            |  "http"   |
+| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                   |           |
+| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                             |   3050    |
+| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                             | localhost |
+| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com) |           |
+| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                       |           |
+| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                          |   false   |
+| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1) - **Deprecated**                           |   false   |
+| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                            |   false   |
+| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                  |   true    |
+| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                |   false   |
+| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                      |   1440    |
+| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                               |           |
+| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                  |    15     |
+| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                        |    100    |
+| `--help`, `-h`               |                                    | Show help                                                                    |           |
 
 ## Docker
 
@@ -108,12 +110,18 @@ Available image tags:
 - `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
 - `sha-<commit>`: Specific commit
 
-Example:
+Examples:
 
 ```bash
+# Custom port and tags
 docker run -p 3051:3051 \
   -e ONE_MCP_PORT=3051 \
   -e ONE_MCP_TAGS=network,filesystem \
+  ghcr.io/1mcp-app/agent
+
+# With external URL for reverse proxy
+docker run -p 3050:3050 \
+  -e ONE_MCP_EXTERNAL_URL=https://mcp.example.com \
   ghcr.io/1mcp-app/agent
 ```
 

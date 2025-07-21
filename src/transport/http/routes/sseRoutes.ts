@@ -4,20 +4,13 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
+import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
-import { createScopeAuthMiddleware, getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
-import { sanitizeHeaders } from '../../../utils/sanitization.js';
-import { SDKOAuthServerProvider } from '../../../auth/sdkOAuthServerProvider.js';
+import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
-export function setupSseRoutes(
-  router: Router,
-  serverManager: ServerManager,
-  oauthProvider?: SDKOAuthServerProvider,
-): void {
-  const scopeAuthMiddleware = createScopeAuthMiddleware(oauthProvider);
-  router.get(SSE_ENDPOINT, tagsExtractor, scopeAuthMiddleware, async (req: Request, res: Response) => {
+export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
+  router.get(SSE_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
     try {
-      logger.info('[GET] sse', { query: req.query, headers: sanitizeHeaders(req.headers) });
       const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
 
       // Use validated tags from scope auth middleware
@@ -32,6 +25,15 @@ export function setupSseRoutes(
       transport.onclose = () => {
         serverManager.disconnectTransport(transport.sessionId);
         // Note: ServerManager already logs the disconnection
+      };
+
+      transport.onerror = (error) => {
+        logger.error(`SSE transport error for session ${transport.sessionId}:`, error);
+        const server = serverManager.getServer(transport.sessionId);
+        if (server) {
+          server.status = ServerStatus.Error;
+          server.lastError = error instanceof Error ? error : new Error(String(error));
+        }
       };
     } catch (error) {
       logger.error('SSE connection error:', error);
@@ -52,7 +54,6 @@ export function setupSseRoutes(
         return;
       }
 
-      logger.info('message', { body: req.body, sessionId });
       const transport = serverManager.getTransport(sessionId);
 
       if (transport instanceof SSEServerTransport) {

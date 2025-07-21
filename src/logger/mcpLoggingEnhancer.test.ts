@@ -80,9 +80,9 @@ describe('MCP Logging Enhancer', () => {
       const mockSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: 'test/method' } }
-          })
-        }
+            method: { _def: { value: 'test/method' } },
+          }),
+        },
       };
       const mockHandler = vi.fn();
 
@@ -99,9 +99,9 @@ describe('MCP Logging Enhancer', () => {
       const mockSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: 'test/notification' } }
-          })
-        }
+            method: { _def: { value: 'test/notification' } },
+          }),
+        },
       };
       const mockHandler = vi.fn();
 
@@ -117,7 +117,7 @@ describe('MCP Logging Enhancer', () => {
 
       const testNotification = {
         method: 'test/notification',
-        params: { data: 'test' }
+        params: { data: 'test' },
       };
 
       // Call the enhanced notification method
@@ -129,8 +129,8 @@ describe('MCP Logging Enhancer', () => {
         expect.objectContaining({
           method: 'test/notification',
           params: JSON.stringify({ data: 'test' }),
-          timestamp: expect.any(String)
-        })
+          timestamp: expect.any(String),
+        }),
       );
     });
 
@@ -144,7 +144,7 @@ describe('MCP Logging Enhancer', () => {
 
       const testNotification = {
         method: 'test/notification',
-        params: { data: 'test' }
+        params: { data: 'test' },
       };
 
       // Should not throw even if original notification throws connection error
@@ -152,9 +152,7 @@ describe('MCP Logging Enhancer', () => {
         mockServer.notification(testNotification);
       }).not.toThrow();
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Attempted to send notification on disconnected transport'
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('Attempted to send notification on disconnected transport');
     });
 
     it('should re-throw non-connection errors', () => {
@@ -162,12 +160,13 @@ describe('MCP Logging Enhancer', () => {
         throw new Error('Other error');
       });
       mockServer.notification = originalNotification;
+      mockServer.transport = { send: vi.fn() }; // Add transport for this test
 
       enhanceServerWithLogging(mockServer);
 
       const testNotification = {
         method: 'test/notification',
-        params: { data: 'test' }
+        params: { data: 'test' },
       };
 
       // Should re-throw non-connection errors
@@ -193,9 +192,9 @@ describe('MCP Logging Enhancer', () => {
       const _mockSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: 'test/method' } }
-          })
-        }
+            method: { _def: { value: 'test/method' } },
+          }),
+        },
       };
 
       // Store original to test wrapping
@@ -220,9 +219,9 @@ describe('MCP Logging Enhancer', () => {
       const _mockSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: 'test/method' } }
-          })
-        }
+            method: { _def: { value: 'test/method' } },
+          }),
+        },
       };
 
       // Enhanced server should still work
@@ -235,17 +234,17 @@ describe('MCP Logging Enhancer', () => {
       enhanceServerWithLogging(mockServer);
 
       const _mockHandler = vi.fn().mockResolvedValue(undefined);
-      const _mockNotification = { 
+      const _mockNotification = {
         method: 'test/notification',
-        params: { test: 'data' } 
+        params: { test: 'data' },
       };
 
       const _mockSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: 'test/notification' } }
-          })
-        }
+            method: { _def: { value: 'test/notification' } },
+          }),
+        },
       };
 
       // Enhanced server should maintain functionality
@@ -259,7 +258,7 @@ describe('MCP Logging Enhancer', () => {
 
       const testNotification = {
         method: 'test/notification',
-        params: { data: 'test' }
+        params: { data: 'test' },
       };
 
       mockServer.notification(testNotification);
@@ -268,8 +267,8 @@ describe('MCP Logging Enhancer', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'MCP Notification',
         expect.objectContaining({
-          method: 'test/notification'
-        })
+          method: 'test/notification',
+        }),
       );
     });
 
@@ -278,7 +277,7 @@ describe('MCP Logging Enhancer', () => {
 
       const testNotification = {
         method: 'test/notification',
-        params: { data: 'test' }
+        params: { data: 'test' },
       };
 
       mockServer.notification(testNotification);
@@ -286,8 +285,8 @@ describe('MCP Logging Enhancer', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'MCP Notification',
         expect.objectContaining({
-          timestamp: expect.any(String)
-        })
+          timestamp: expect.any(String),
+        }),
       );
     });
 
@@ -297,12 +296,12 @@ describe('MCP Logging Enhancer', () => {
       const complexParams = {
         nested: { data: 'test' },
         array: [1, 2, 3],
-        number: 42
+        number: 42,
       };
 
       const testNotification = {
         method: 'test/notification',
-        params: complexParams
+        params: complexParams,
       };
 
       mockServer.notification(testNotification);
@@ -310,8 +309,8 @@ describe('MCP Logging Enhancer', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'MCP Notification',
         expect.objectContaining({
-          params: JSON.stringify(complexParams)
-        })
+          params: JSON.stringify(complexParams),
+        }),
       );
     });
   });
@@ -326,9 +325,9 @@ describe('MCP Logging Enhancer', () => {
       const malformedSchema = {
         _def: {
           shape: () => ({
-            method: { _def: { value: undefined } } // Malformed method
-          })
-        }
+            method: { _def: { value: undefined } }, // Malformed method
+          }),
+        },
       };
 
       expect(() => {
@@ -341,7 +340,7 @@ describe('MCP Logging Enhancer', () => {
 
       const testNotification = {
         method: 'test/notification',
-        params: undefined
+        params: undefined,
       };
 
       expect(() => {
@@ -351,8 +350,8 @@ describe('MCP Logging Enhancer', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'MCP Notification',
         expect.objectContaining({
-          params: undefined
-        })
+          params: undefined,
+        }),
       );
     });
 
@@ -360,7 +359,7 @@ describe('MCP Logging Enhancer', () => {
       enhanceServerWithLogging(mockServer);
 
       const testNotification = {
-        method: 'test/notification'
+        method: 'test/notification',
         // No params property
       };
 
@@ -380,7 +379,7 @@ describe('MCP Logging Enhancer', () => {
       for (let i = 0; i < 100; i++) {
         mockServer.notification({
           method: `test/notification${i}`,
-          params: { index: i }
+          params: { index: i },
         });
       }
 

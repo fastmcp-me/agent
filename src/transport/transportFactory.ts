@@ -47,11 +47,11 @@ function createOAuthProvider(
   name: string,
   validatedTransport: typeof transportConfigSchema._type,
 ): SDKOAuthClientProvider {
-  const { host, port } = AgentConfigManager.getInstance().getConfig();
+  const configManager = AgentConfigManager.getInstance();
 
   const oauthConfig: OAuthClientConfig = {
     autoRegister: true,
-    redirectUrl: `http://${host}:${port}${AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH}/${name}`,
+    redirectUrl: `${configManager.getUrl()}${AUTH_CONFIG.CLIENT.OAUTH.DEFAULT_CALLBACK_PATH}/${name}`,
     ...validatedTransport.oauth,
   };
 

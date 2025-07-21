@@ -4,16 +4,23 @@ import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
-import { OutboundConnections, InboundConnection, InboundConnectionConfig } from '../types/index.js';
+import {
+  OutboundConnections,
+  InboundConnection,
+  InboundConnectionConfig,
+  OperationOptions,
+  ServerStatus,
+} from '../types/index.js';
 import type { OutboundConnection } from '../types/client.js';
+import { executeOperation } from '../../utils/operationExecution.js';
 
 export class ServerManager {
   private static instance: ServerManager;
-  private servers: Map<string, InboundConnection> = new Map();
+  private inboundConns: Map<string, InboundConnection> = new Map();
   private serverConfig: { name: string; version: string };
   private serverCapabilities: { capabilities: Record<string, unknown> };
 
-  private clients: OutboundConnections = new Map<string, OutboundConnection>();
+  private outboundConns: OutboundConnections = new Map<string, OutboundConnection>();
   private transports: Record<string, Transport> = {};
   private connectionSemaphore: Map<string, Promise<void>> = new Map();
   private disconnectingIds: Set<string> = new Set();
@@ -21,23 +28,23 @@ export class ServerManager {
   private constructor(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: OutboundConnections,
+    outboundConns: OutboundConnections,
     transports: Record<string, Transport>,
   ) {
     this.serverConfig = config;
     this.serverCapabilities = capabilities;
-    this.clients = clients;
+    this.outboundConns = outboundConns;
     this.transports = transports;
   }
 
   public static getOrCreateInstance(
     config: { name: string; version: string },
     capabilities: { capabilities: Record<string, unknown> },
-    clients: OutboundConnections,
+    outboundConns: OutboundConnections,
     transports: Record<string, Transport>,
   ): ServerManager {
     if (!ServerManager.instance) {
-      ServerManager.instance = new ServerManager(config, capabilities, clients, transports);
+      ServerManager.instance = new ServerManager(config, capabilities, outboundConns, transports);
     }
     return ServerManager.instance;
   }
@@ -50,10 +57,10 @@ export class ServerManager {
   public static resetInstance(): void {
     if (ServerManager.instance) {
       // Clean up existing connections with forced close
-      for (const [sessionId] of ServerManager.instance.servers) {
+      for (const [sessionId] of ServerManager.instance.inboundConns) {
         ServerManager.instance.disconnectTransport(sessionId, true);
       }
-      ServerManager.instance.servers.clear();
+      ServerManager.instance.inboundConns.clear();
       ServerManager.instance.connectionSemaphore.clear();
       ServerManager.instance.disconnectingIds.clear();
     }
@@ -70,7 +77,7 @@ export class ServerManager {
     }
 
     // Check if transport is already connected
-    if (this.servers.has(sessionId)) {
+    if (this.inboundConns.has(sessionId)) {
       logger.warn(`Transport already connected for session ${sessionId}`);
       return;
     }
@@ -102,10 +109,13 @@ export class ServerManager {
     try {
       await Promise.race([this.doConnect(transport, sessionId, opts), timeoutPromise]);
     } catch (error) {
-      // Clean up partial connection on failure
-      if (this.servers.has(sessionId)) {
-        this.servers.delete(sessionId);
+      // Update status to Error if connection exists
+      const connection = this.inboundConns.get(sessionId);
+      if (connection) {
+        connection.status = ServerStatus.Error;
+        connection.lastError = error instanceof Error ? error : new Error(String(error));
       }
+
       logger.error(`Failed to connect transport for session ${sessionId}:`, error);
       throw error;
     }
@@ -118,6 +128,8 @@ export class ServerManager {
     // Create server info object first
     const serverInfo: InboundConnection = {
       server,
+      status: ServerStatus.Connecting,
+      connectedAt: new Date(),
       ...opts,
     };
 
@@ -125,16 +137,20 @@ export class ServerManager {
     enhanceServerWithLogging(server);
 
     // Set up capabilities for this server instance
-    await setupCapabilities(this.clients, serverInfo);
+    await setupCapabilities(this.outboundConns, serverInfo);
 
     // Update the configuration reload service with server info
     configReloadService.updateServerInfo(sessionId, serverInfo);
 
     // Store the server instance
-    this.servers.set(sessionId, serverInfo);
+    this.inboundConns.set(sessionId, serverInfo);
 
     // Connect the transport to the new server instance
     await server.connect(transport);
+
+    // Update status to Connected after successful connection
+    serverInfo.status = ServerStatus.Connected;
+    serverInfo.lastConnected = new Date();
 
     logger.info(`Connected transport for session ${sessionId}`);
   }
@@ -145,11 +161,14 @@ export class ServerManager {
       return;
     }
 
-    const server = this.servers.get(sessionId);
+    const server = this.inboundConns.get(sessionId);
     if (server) {
       this.disconnectingIds.add(sessionId);
 
       try {
+        // Update status to Disconnected
+        server.status = ServerStatus.Disconnected;
+
         // Only close the transport if explicitly requested (e.g., during shutdown)
         // Don't close if this is called from an onclose handler to avoid recursion
         if (forceClose && server.server.transport) {
@@ -160,7 +179,7 @@ export class ServerManager {
           }
         }
 
-        this.servers.delete(sessionId);
+        this.inboundConns.delete(sessionId);
         configReloadService.removeServerInfo(sessionId);
         logger.info(`Disconnected transport for session ${sessionId}`);
       } finally {
@@ -170,12 +189,12 @@ export class ServerManager {
   }
 
   public getTransport(sessionId: string): Transport | undefined {
-    return this.servers.get(sessionId)?.server.transport;
+    return this.inboundConns.get(sessionId)?.server.transport;
   }
 
   public getTransports(): Map<string, Transport> {
     const transports = new Map<string, Transport>();
-    for (const [id, server] of this.servers.entries()) {
+    for (const [id, server] of this.inboundConns.entries()) {
       if (server.server.transport) {
         transports.set(id, server.server.transport);
       }
@@ -188,7 +207,7 @@ export class ServerManager {
   }
 
   public getClients(): OutboundConnections {
-    return this.clients;
+    return this.outboundConns;
   }
 
   /**
@@ -196,19 +215,38 @@ export class ServerManager {
    * Encapsulates access to prevent prototype pollution and accidental key collisions.
    */
   public getClient(serverName: string): OutboundConnection | undefined {
-    return this.clients.get(serverName);
+    return this.outboundConns.get(serverName);
   }
 
   public getActiveTransportsCount(): number {
-    return this.servers.size;
+    return this.inboundConns.size;
   }
 
   public getServer(sessionId: string): InboundConnection | undefined {
-    return this.servers.get(sessionId);
+    return this.inboundConns.get(sessionId);
   }
 
   public updateClientsAndTransports(newClients: OutboundConnections, newTransports: Record<string, Transport>): void {
-    this.clients = newClients;
+    this.outboundConns = newClients;
     this.transports = newTransports;
+  }
+
+  /**
+   * Executes a server operation with error handling and retry logic
+   * @param inboundConn The inbound connection to execute the operation on
+   * @param operation The operation to execute
+   * @param options Operation options including timeout and retry settings
+   */
+  public async executeServerOperation<T>(
+    inboundConn: InboundConnection,
+    operation: (inboundConn: InboundConnection) => Promise<T>,
+    options: OperationOptions = {},
+  ): Promise<T> {
+    // Check connection status before executing operation
+    if (inboundConn.status !== ServerStatus.Connected || !inboundConn.server.transport) {
+      throw new Error(`Cannot execute operation: server status is ${inboundConn.status}`);
+    }
+
+    return executeOperation(() => operation(inboundConn), 'server', options);
   }
 }

@@ -6,6 +6,7 @@ import { mcpAuthRouter } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import logger from '../../logger/logger.js';
 import errorHandler from './middlewares/errorHandler.js';
 import { setupSecurityMiddleware } from './middlewares/securityMiddleware.js';
+import { httpRequestLogger } from './middlewares/httpRequestLogger.js';
 import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
@@ -13,6 +14,7 @@ import { setupSseRoutes } from './routes/sseRoutes.js';
 import createOAuthRoutes from './routes/oauthRoutes.js';
 import { AgentConfigManager } from '../../core/server/agentConfig.js';
 import { RATE_LIMIT_CONFIG } from '../../constants.js';
+import { createScopeAuthMiddleware } from './middlewares/scopeAuthMiddleware.js';
 
 /**
  * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.
@@ -59,6 +61,7 @@ export class ExpressServer {
    *
    * Configures the basic middleware stack required for the MCP server:
    * - Enhanced security middleware (conditional based on feature flag)
+   * - HTTP request logging for all requests
    * - CORS for cross-origin requests
    * - JSON body parsing
    * - Global error handling
@@ -68,6 +71,9 @@ export class ExpressServer {
     if (this.configManager.isEnhancedSecurityEnabled()) {
       this.app.use(...setupSecurityMiddleware());
     }
+
+    // Add HTTP request logging middleware (early in the stack for complete coverage)
+    this.app.use(httpRequestLogger);
 
     this.app.use(cors()); // Allow all origins for local dev
     this.app.use(bodyParser.json());
@@ -89,8 +95,7 @@ export class ExpressServer {
    */
   private setupRoutes(): void {
     // Setup OAuth routes using SDK's mcpAuthRouter
-    const { host, port } = this.configManager.getConfig();
-    const issuerUrl = new URL(`http://${host}:${port}`);
+    const issuerUrl = new URL(this.configManager.getUrl());
 
     const rateLimitConfig: Partial<RateLimitOptions> = {
       windowMs: this.configManager.getRateLimitWindowMs(),
@@ -123,8 +128,12 @@ export class ExpressServer {
 
     // Setup MCP transport routes (auth is handled per-route via scopeAuthMiddleware)
     const router = express.Router();
-    setupStreamableHttpRoutes(router, this.serverManager, this.oauthProvider);
-    setupSseRoutes(router, this.serverManager, this.oauthProvider);
+
+    const scopeAuthMiddleware = createScopeAuthMiddleware(this.oauthProvider);
+    router.use(scopeAuthMiddleware);
+
+    setupStreamableHttpRoutes(router, this.serverManager);
+    setupSseRoutes(router, this.serverManager);
     this.app.use(router);
 
     // Log authentication status
@@ -149,7 +158,7 @@ export class ExpressServer {
     this.app.listen(port, host, () => {
       const authStatus = this.configManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
       logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport ${authStatus}`);
-      logger.info(`📋 OAuth Management Dashboard: http://${host}:${port}/oauth`);
+      logger.info(`📋 OAuth Management Dashboard: ${this.configManager.getUrl()}/oauth`);
     });
   }
 

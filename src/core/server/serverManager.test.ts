@@ -48,7 +48,7 @@ vi.mock('../../logger/mcpLoggingEnhancer.js', () => ({
 describe('ServerManager', () => {
   let mockConfig: { name: string; version: string };
   let mockCapabilities: { capabilities: Record<string, unknown> };
-  let mockClients: OutboundConnections;
+  let mockOutboundConns: OutboundConnections;
   let mockTransports: Record<string, Transport>;
   let mockTransport: Transport;
   let mockServer: Server;
@@ -63,7 +63,7 @@ describe('ServerManager', () => {
     // Setup test data
     mockConfig = { name: 'test-server', version: '1.0.0' };
     mockCapabilities = { capabilities: { test: true } };
-    mockClients = new Map();
+    mockOutboundConns = new Map();
     mockTransports = {};
     mockTransport = {
       // Add any required Transport properties here
@@ -86,8 +86,18 @@ describe('ServerManager', () => {
 
   describe('getInstance', () => {
     it('should create a singleton instance', () => {
-      const instance1 = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
-      const instance2 = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      const instance1 = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
+      const instance2 = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
 
       expect(instance1).toBe(instance2);
     });
@@ -99,7 +109,12 @@ describe('ServerManager', () => {
     const tags = ['tag1', 'tag2'];
 
     beforeEach(() => {
-      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
     });
 
     it('should successfully connect a transport', async () => {
@@ -129,7 +144,12 @@ describe('ServerManager', () => {
     const sessionId = 'test-session';
 
     beforeEach(() => {
-      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
     });
 
     it('should successfully disconnect a transport', async () => {
@@ -151,7 +171,12 @@ describe('ServerManager', () => {
     const sessionId = 'test-session';
 
     beforeEach(async () => {
-      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
       await serverManager.connectTransport(mockTransport, sessionId, { enablePagination: false });
     });
 
@@ -187,7 +212,12 @@ describe('ServerManager', () => {
     const tags = ['tag1', 'tag2'];
 
     beforeEach(async () => {
-      serverManager = ServerManager.getOrCreateInstance(mockConfig, mockCapabilities, mockClients, mockTransports);
+      serverManager = ServerManager.getOrCreateInstance(
+        mockConfig,
+        mockCapabilities,
+        mockOutboundConns,
+        mockTransports,
+      );
       await serverManager.connectTransport(mockTransport, sessionId, { tags, enablePagination: false });
     });
 

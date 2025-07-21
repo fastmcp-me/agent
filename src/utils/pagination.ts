@@ -1,7 +1,7 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { Resource, ResourceTemplate, Tool, Prompt } from '@modelcontextprotocol/sdk/types.js';
-import { OutboundConnection, OutboundConnections } from '../core/types/index.js';
+import { ClientStatus, OutboundConnection, OutboundConnections } from '../core/types/index.js';
 import logger from '../logger/logger.js';
 
 interface PaginationParams {
@@ -111,25 +111,30 @@ export function encodeCursor(clientName: string, nextCursor: string = ''): strin
 }
 
 async function fetchAllItemsForClient<T>(
-  clientInfo: OutboundConnection,
+  outboundConn: OutboundConnection,
   params: PaginationParams,
   callClientMethod: (client: Client, params: unknown, opts: RequestOptions) => Promise<PaginationResponse>,
   transformResult: (client: OutboundConnection, result: PaginationResponse) => T[],
 ): Promise<T[]> {
-  logger.info(`Fetching all items for client ${clientInfo.name}`);
+  if (!outboundConn || outboundConn.status !== ClientStatus.Connected || !outboundConn.client.transport) {
+    logger.warn(`Client '${outboundConn?.name}' is not connected or transport not available, skipping`);
+    return [];
+  }
+
+  logger.info(`Fetching all items for client ${outboundConn.name}`);
 
   const items: T[] = [];
-  let result = await callClientMethod(clientInfo.client, params, { timeout: clientInfo.transport.timeout });
-  items.push(...transformResult(clientInfo, result));
+  let result = await callClientMethod(outboundConn.client, params, { timeout: outboundConn.transport.timeout });
+  items.push(...transformResult(outboundConn, result));
 
   while (result.nextCursor) {
-    logger.info(`Fetching next page for client ${clientInfo.name} with cursor ${result.nextCursor}`);
+    logger.info(`Fetching next page for client ${outboundConn.name} with cursor ${result.nextCursor}`);
     result = await callClientMethod(
-      clientInfo.client,
+      outboundConn.client,
       { ...params, cursor: result.nextCursor },
-      { timeout: clientInfo.transport.timeout },
+      { timeout: outboundConn.transport.timeout },
     );
-    items.push(...transformResult(clientInfo, result));
+    items.push(...transformResult(outboundConn, result));
   }
 
   return items;
@@ -166,15 +171,15 @@ export async function handlePagination<T>(
   const targetClientName = clientName || clientNames[0];
 
   // Validate that the target client exists
-  const clientInfo = clients.get(targetClientName);
-  if (!clientInfo) {
+  const outboundConn = clients.get(targetClientName);
+  if (!outboundConn) {
     logger.warn(`Client '${targetClientName}' not found, falling back to first available client`);
     // Fallback to first available client if the target doesn't exist
     const fallbackClientName = clientNames[0];
     const fallbackClient = fallbackClientName ? clients.get(fallbackClientName) : null;
 
-    if (!fallbackClient) {
-      logger.warn('No clients available for pagination');
+    if (!fallbackClient || fallbackClient.status !== ClientStatus.Connected || !fallbackClient.client.transport) {
+      logger.warn(`Client '${fallbackClientName}' is not connected or transport not available, skipping`);
       return { items: [] };
     }
 
@@ -193,13 +198,18 @@ export async function handlePagination<T>(
     return { items: transformedItems, nextCursor };
   }
 
+  if (!outboundConn || outboundConn.status !== ClientStatus.Connected || !outboundConn.client.transport) {
+    logger.warn(`Client '${targetClientName}' is not connected or transport not available, skipping`);
+    return { items: [] };
+  }
+
   const result = await callClientMethod(
-    clientInfo.client,
+    outboundConn.client,
     { ...clientParams, cursor: actualCursor },
-    { timeout: clientInfo.transport.timeout },
+    { timeout: outboundConn.transport.timeout },
   );
 
-  const transformedItems = transformResult(clientInfo, result);
+  const transformedItems = transformResult(outboundConn, result);
   const nextCursor = result.nextCursor
     ? encodeCursor(targetClientName, result.nextCursor)
     : getNextClientCursor(targetClientName, clientNames);

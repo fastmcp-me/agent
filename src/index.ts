@@ -39,6 +39,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       default: HOST,
     },
+    'external-url': {
+      alias: 'u',
+      describe: 'External URL for the server (used for OAuth callbacks and public URLs)',
+      type: 'string',
+      default: undefined,
+    },
     config: {
       alias: 'c',
       describe: 'Path to the config file',
@@ -164,6 +170,7 @@ async function main() {
     serverConfigManager.updateConfig({
       host: argv.host,
       port: argv.port,
+      externalUrl: argv['external-url'],
       auth: {
         enabled: authEnabled,
         sessionTtlMinutes: argv['session-ttl'],

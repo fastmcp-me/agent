@@ -26,7 +26,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR } from '../constants.js';
-import { executeClientOperation, executeServerOperation } from '../core/client/clientManager.js';
+import { ClientManager } from '../core/client/clientManager.js';
+import { ServerManager } from '../core/server/serverManager.js';
 import { parseUri } from '../utils/parsing.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
@@ -36,46 +37,48 @@ import logger from '../logger/logger.js';
 
 /**
  * Registers server-specific request handlers
- * @param clients Record of client instances
+ * @param outboundConns Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerServerRequestHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
-  Array.from(clients.entries()).forEach(([_, clientInfo]) => {
-    clientInfo.client.setRequestHandler(
+function registerServerRequestHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
+  Array.from(outboundConns.entries()).forEach(([_, outboundConn]) => {
+    outboundConn.client.setRequestHandler(
       PingRequestSchema,
       withErrorHandling(async () => {
-        return executeServerOperation(serverInfo, (_server: InboundConnection) => _server.server.ping());
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+          inboundConn.server.ping(),
+        );
       }, 'Error pinging'),
     );
 
-    clientInfo.client.setRequestHandler(
+    outboundConn.client.setRequestHandler(
       CreateMessageRequestSchema,
       withErrorHandling(async (request: CreateMessageRequest) => {
-        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
-          _server.server.createMessage(request.params, {
-            timeout: clientInfo.transport.timeout,
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+          inboundConn.server.createMessage(request.params, {
+            timeout: outboundConn.transport.timeout,
           }),
         );
       }, 'Error creating message'),
     );
 
-    clientInfo.client.setRequestHandler(
+    outboundConn.client.setRequestHandler(
       ElicitRequestSchema,
       withErrorHandling(async (request: ElicitRequest) => {
-        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
-          _server.server.elicitInput(request.params, {
-            timeout: clientInfo.transport.timeout,
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+          inboundConn.server.elicitInput(request.params, {
+            timeout: outboundConn.transport.timeout,
           }),
         );
       }, 'Error eliciting input'),
     );
 
-    clientInfo.client.setRequestHandler(
+    outboundConn.client.setRequestHandler(
       ListRootsRequestSchema,
       withErrorHandling(async (request: ListRootsRequest) => {
-        return executeServerOperation(serverInfo, (_server: InboundConnection) =>
-          _server.server.listRoots(request.params, {
-            timeout: clientInfo.transport.timeout,
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+          inboundConn.server.listRoots(request.params, {
+            timeout: outboundConn.transport.timeout,
           }),
         );
       }, 'Error listing roots'),
@@ -90,22 +93,22 @@ function registerServerRequestHandlers(clients: OutboundConnections, serverInfo:
  * @param capabilities The server capabilities
  * @param tags Array of tags to filter clients by
  */
-export function registerRequestHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
+export function registerRequestHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
   // Register logging level handler
-  serverInfo.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+  inboundConn.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
     setLogLevel(request.params.level);
     return {};
   });
 
   // Register ping handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     PingRequestSchema,
     withErrorHandling(async () => {
       // Health check all connected upstream clients
-      const healthCheckPromises = Array.from(clients.entries()).map(async ([clientName, clientInfo]) => {
-        if (clientInfo.status === ClientStatus.Connected) {
+      const healthCheckPromises = Array.from(outboundConns.entries()).map(async ([clientName, outboundConn]) => {
+        if (outboundConn.status === ClientStatus.Connected && outboundConn.client.transport) {
           try {
-            await clientInfo.client.ping();
+            await outboundConn.client.ping();
             logger.info(`Health check successful for client: ${clientName}`);
           } catch (error) {
             logger.warn(`Health check failed for client ${clientName}: ${error}`);
@@ -122,19 +125,19 @@ export function registerRequestHandlers(clients: OutboundConnections, serverInfo
   );
 
   // Register resource-related handlers
-  registerResourceHandlers(clients, serverInfo);
+  registerResourceHandlers(outboundConns, inboundConn);
 
   // Register tool-related handlers
-  registerToolHandlers(clients, serverInfo);
+  registerToolHandlers(outboundConns, inboundConn);
 
   // Register prompt-related handlers
-  registerPromptHandlers(clients, serverInfo);
+  registerPromptHandlers(outboundConns, inboundConn);
 
   // Register completion-related handlers
-  registerCompletionHandlers(clients, serverInfo);
+  registerCompletionHandlers(outboundConns, inboundConn);
 
   // Register server-specific request handlers
-  registerServerRequestHandlers(clients, serverInfo);
+  registerServerRequestHandlers(outboundConns, inboundConn);
 }
 
 /**
@@ -142,25 +145,25 @@ export function registerRequestHandlers(clients: OutboundConnections, serverInfo
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerResourceHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
+function registerResourceHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
   // List Resources handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     ListResourcesRequestSchema,
     withErrorHandling(async (request: ListResourcesRequest) => {
-      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(inboundConn.tags))(outboundConns);
 
       const result = await handlePagination(
         filteredClients,
         request.params || {},
         (client, params, opts) => client.listResources(params as ListResourcesRequest['params'], opts),
-        (clientInfo, result) =>
+        (outboundConn, result) =>
           result.resources?.map((resource) => ({
-            uri: `${clientInfo.name}${MCP_URI_SEPARATOR}${resource.uri}`,
+            uri: `${outboundConn.name}${MCP_URI_SEPARATOR}${resource.uri}`,
             name: resource.name,
             description: resource.description,
             mimeType: resource.mimeType,
           })) ?? [],
-        serverInfo.enablePagination ?? false,
+        inboundConn.enablePagination ?? false,
       );
 
       return {
@@ -171,23 +174,23 @@ function registerResourceHandlers(clients: OutboundConnections, serverInfo: Inbo
   );
 
   // List Resource Templates handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     ListResourceTemplatesRequestSchema,
     withErrorHandling(async (request: ListResourceTemplatesRequest) => {
-      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ resources: {} }), byTags(inboundConn.tags))(outboundConns);
 
       const result = await handlePagination(
         filteredClients,
         request.params || {},
         (client, params, opts) => client.listResourceTemplates(params as ListResourceTemplatesRequest['params'], opts),
-        (clientInfo, result) =>
+        (outboundConn, result) =>
           result.resourceTemplates?.map((template) => ({
-            uriTemplate: `${clientInfo.name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
+            uriTemplate: `${outboundConn.name}${MCP_URI_SEPARATOR}${template.uriTemplate}`,
             name: template.name,
             description: template.description,
             mimeType: template.mimeType,
           })) ?? [],
-        serverInfo.enablePagination ?? false,
+        inboundConn.enablePagination ?? false,
       );
 
       return {
@@ -198,15 +201,15 @@ function registerResourceHandlers(clients: OutboundConnections, serverInfo: Inbo
   );
 
   // Subscribe Resource handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     SubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (clientInfo) =>
-        clientInfo.client.subscribeResource(
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
+        outboundConn.client.subscribeResource(
           { ...request.params, uri: resourceName },
           {
-            timeout: clientInfo.transport.timeout,
+            timeout: outboundConn.transport.timeout,
           },
         ),
       );
@@ -214,15 +217,15 @@ function registerResourceHandlers(clients: OutboundConnections, serverInfo: Inbo
   );
 
   // Unsubscribe Resource handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     UnsubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (clientInfo) =>
-        clientInfo.client.unsubscribeResource(
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
+        outboundConn.client.unsubscribeResource(
           { ...request.params, uri: resourceName },
           {
-            timeout: clientInfo.transport.timeout,
+            timeout: outboundConn.transport.timeout,
           },
         ),
       );
@@ -230,15 +233,15 @@ function registerResourceHandlers(clients: OutboundConnections, serverInfo: Inbo
   );
 
   // Read Resource handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     ReadResourceRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (clientInfo) =>
-        clientInfo.client.readResource(
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
+        outboundConn.client.readResource(
           { ...request.params, uri: resourceName },
           {
-            timeout: clientInfo.transport.timeout,
+            timeout: outboundConn.transport.timeout,
           },
         ),
       );
@@ -251,26 +254,26 @@ function registerResourceHandlers(clients: OutboundConnections, serverInfo: Inbo
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerToolHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
+function registerToolHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
   // List Tools handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     ListToolsRequestSchema,
     withErrorHandling(async (request: ListToolsRequest) => {
-      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ tools: {} }), byTags(inboundConn.tags))(outboundConns);
 
       const result = await handlePagination(
         filteredClients,
         request.params || {},
         (client, params, opts) => client.listTools(params as ListToolsRequest['params'], opts),
-        (clientInfo, result) =>
+        (outboundConn, result) =>
           result.tools?.map((tool) => ({
-            name: `${clientInfo.name}${MCP_URI_SEPARATOR}${tool.name}`,
+            name: `${outboundConn.name}${MCP_URI_SEPARATOR}${tool.name}`,
             description: tool.description,
             inputSchema: tool.inputSchema,
             outputSchema: tool.outputSchema,
             annotations: tool.annotations,
           })) ?? [],
-        serverInfo.enablePagination ?? false,
+        inboundConn.enablePagination ?? false,
       );
 
       return {
@@ -281,13 +284,13 @@ function registerToolHandlers(clients: OutboundConnections, serverInfo: InboundC
   );
 
   // Call Tool handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     CallToolRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (clientInfo) =>
-        clientInfo.client.callTool({ ...request.params, name: toolName }, CallToolResultSchema, {
-          timeout: clientInfo.transport.timeout,
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
+        outboundConn.client.callTool({ ...request.params, name: toolName }, CallToolResultSchema, {
+          timeout: outboundConn.transport.timeout,
         }),
       );
     }, 'Error calling tool'),
@@ -299,24 +302,24 @@ function registerToolHandlers(clients: OutboundConnections, serverInfo: InboundC
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerPromptHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
+function registerPromptHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
   // List Prompts handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     ListPromptsRequestSchema,
     withErrorHandling(async (request: ListPromptsRequest) => {
-      const filteredClients = filterClients(byCapabilities({ prompts: {} }), byTags(serverInfo.tags))(clients);
+      const filteredClients = filterClients(byCapabilities({ prompts: {} }), byTags(inboundConn.tags))(outboundConns);
 
       const result = await handlePagination(
         filteredClients,
         request.params || {},
         (client, params, opts) => client.listPrompts(params as ListPromptsRequest['params'], opts),
-        (clientInfo, result) =>
+        (outboundConn, result) =>
           result.prompts?.map((prompt) => ({
-            name: `${clientInfo.name}${MCP_URI_SEPARATOR}${prompt.name}`,
+            name: `${outboundConn.name}${MCP_URI_SEPARATOR}${prompt.name}`,
             description: prompt.description,
             arguments: prompt.arguments,
           })) ?? [],
-        serverInfo.enablePagination ?? false,
+        inboundConn.enablePagination ?? false,
       );
 
       return {
@@ -327,12 +330,12 @@ function registerPromptHandlers(clients: OutboundConnections, serverInfo: Inboun
   );
 
   // Get Prompt handler
-  serverInfo.server.setRequestHandler(
+  inboundConn.server.setRequestHandler(
     GetPromptRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(clients, clientName, (clientInfo) =>
-        clientInfo.client.getPrompt({ ...request.params, name: promptName }),
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
+        outboundConn.client.getPrompt({ ...request.params, name: promptName }),
       );
     }, 'Error getting prompt'),
   );
@@ -343,8 +346,8 @@ function registerPromptHandlers(clients: OutboundConnections, serverInfo: Inboun
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-function registerCompletionHandlers(clients: OutboundConnections, serverInfo: InboundConnection): void {
-  serverInfo.server.setRequestHandler(
+function registerCompletionHandlers(outboundConns: OutboundConnections, inboundConn: InboundConnection): void {
+  inboundConn.server.setRequestHandler(
     CompleteRequestSchema,
     withErrorHandling(async (request: CompleteRequest) => {
       const { ref } = request.params;
@@ -366,12 +369,11 @@ function registerCompletionHandlers(clients: OutboundConnections, serverInfo: In
 
       const params = { ...request.params, ref: updatedRef };
 
-      return executeClientOperation(
-        clients,
+      return ClientManager.current.executeClientOperation(
         clientName,
-        (clientInfo) =>
-          clientInfo.client.complete(params, {
-            timeout: clientInfo.transport.timeout,
+        (outboundConn) =>
+          outboundConn.client.complete(params, {
+            timeout: outboundConn.transport.timeout,
           }),
         {},
         'completions',

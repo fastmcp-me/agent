@@ -11,13 +11,16 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
-import { OutboundConnections, InboundConnection, ClientStatus } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection, ClientStatus, ServerStatus } from '../core/types/index.js';
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-export function setupClientToServerNotifications(clients: OutboundConnections, serverInfo: InboundConnection): void {
+export function setupClientToServerNotifications(
+  outboundConns: OutboundConnections,
+  inboundConn: InboundConnection,
+): void {
   const clientNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -28,16 +31,16 @@ export function setupClientToServerNotifications(clients: OutboundConnections, s
     PromptListChangedNotificationSchema,
   ];
 
-  for (const [name, clientInfo] of clients.entries()) {
+  for (const [name, outboundConn] of outboundConns.entries()) {
     clientNotificationSchemas.forEach((schema) => {
-      clientInfo.client.setNotificationHandler(
+      outboundConn.client.setNotificationHandler(
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
 
           // Check if client is connected before attempting to send
-          if (clientInfo.status !== ClientStatus.Connected) {
-            logger.warn(`Client ${name} is not connected. Notification not sent.`);
+          if (inboundConn.status !== ServerStatus.Connected || !inboundConn.server.transport) {
+            logger.warn(`Server transport not connected. Dropping notification from ${name}`);
             return;
           }
 
@@ -51,7 +54,7 @@ export function setupClientToServerNotifications(clients: OutboundConnections, s
                 server: name,
               },
             };
-            serverInfo.server.notification(forwardedNotification);
+            inboundConn.server.notification(forwardedNotification);
           } catch (error) {
             if (error instanceof Error && error.message.includes('Not connected')) {
               logger.warn(`Server transport not connected. Dropping notification from ${name}`);
@@ -70,7 +73,10 @@ export function setupClientToServerNotifications(clients: OutboundConnections, s
  * @param clients Record of client instances
  * @param serverInfo The MCP server instance
  */
-export function setupServerToClientNotifications(clients: OutboundConnections, serverInfo: InboundConnection): void {
+export function setupServerToClientNotifications(
+  outboundConns: OutboundConnections,
+  inboundConn: InboundConnection,
+): void {
   const serverNotificationSchemas = [
     CancelledNotificationSchema,
     ProgressNotificationSchema,
@@ -78,13 +84,13 @@ export function setupServerToClientNotifications(clients: OutboundConnections, s
     RootsListChangedNotificationSchema,
   ];
 
-  for (const [name, clientInfo] of clients.entries()) {
+  for (const [name, outboundConn] of outboundConns.entries()) {
     serverNotificationSchemas.forEach((schema) => {
-      serverInfo.server.setNotificationHandler(
+      inboundConn.server.setNotificationHandler(
         schema,
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in server: ${name} ${JSON.stringify(notification)}`);
-          if (clientInfo.status !== ClientStatus.Connected) {
+          if (outboundConn.status !== ClientStatus.Connected || !outboundConn.client.transport) {
             logger.warn(`Client ${name} is not connected. Notification not sent.`);
             return;
           }
@@ -99,7 +105,7 @@ export function setupServerToClientNotifications(clients: OutboundConnections, s
                 client: name,
               },
             };
-            clientInfo.client.notification(forwardedNotification);
+            outboundConn.client.notification(forwardedNotification);
           } catch (error) {
             if (error instanceof Error && error.message.includes('Not connected')) {
               logger.warn(`Client ${name} transport not connected. Dropping notification.`);

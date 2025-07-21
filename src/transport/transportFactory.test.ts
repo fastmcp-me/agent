@@ -41,6 +41,7 @@ vi.mock('../core/server/agentConfig.js', () => ({
         host: 'localhost',
         port: 3000,
       }),
+      getUrl: vi.fn().mockReturnValue('http://localhost:3000'),
     }),
   },
 }));

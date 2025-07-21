@@ -175,9 +175,29 @@ export function enhanceServerWithLogging(server: Server): void {
   }) => {
     logNotification(notification.method, notification.params);
 
+    if (!server.transport) {
+      logger.warn('Attempted to send notification on disconnected transport');
+      return Promise.resolve();
+    }
+
     // Try to send notification, catch connection errors gracefully
     try {
-      return originalNotification(notification);
+      const result = originalNotification(notification);
+
+      // Handle both sync and async cases
+      if (result && typeof result.catch === 'function') {
+        // It's a promise - handle async errors
+        return result.catch((error: unknown) => {
+          if (error instanceof Error && error.message.includes('Not connected')) {
+            logger.warn('Attempted to send notification on disconnected transport');
+            return Promise.resolve();
+          }
+          throw error;
+        });
+      }
+
+      // Sync result
+      return result;
     } catch (error) {
       if (error instanceof Error && error.message.includes('Not connected')) {
         logger.warn('Attempted to send notification on disconnected transport');

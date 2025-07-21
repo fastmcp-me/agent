@@ -8,7 +8,13 @@ import {
   setupServerToClientNotifications,
 } from '../handlers/notificationHandlers.js';
 import { registerRequestHandlers } from '../handlers/requestHandlers.js';
-import { OutboundConnections, InboundConnection, OutboundConnection, ClientStatus } from '../core/types/index.js';
+import {
+  OutboundConnections,
+  InboundConnection,
+  OutboundConnection,
+  ClientStatus,
+  ServerStatus,
+} from '../core/types/index.js';
 
 // Mock dependencies
 vi.mock('../logger/logger.js', () => ({
@@ -43,6 +49,7 @@ describe('CapabilityManager', () => {
     // Setup mock server info
     mockServerInfo = {
       server: {} as any,
+      status: ServerStatus.Connected,
       tags: [],
       enablePagination: false,
     };

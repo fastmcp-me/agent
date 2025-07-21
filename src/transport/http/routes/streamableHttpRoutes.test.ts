@@ -58,7 +58,7 @@ vi.mock('../../../auth/sdkOAuthServerProvider.js', () => ({
 describe('Streamable HTTP Routes', () => {
   let mockRouter: any;
   let mockServerManager: any;
-  let mockOAuthProvider: any;
+  let _mockOAuthProvider: any;
   let mockRequest: any;
   let mockResponse: any;
   let postHandler: any;
@@ -83,7 +83,7 @@ describe('Streamable HTTP Routes', () => {
     };
 
     // Mock OAuth provider
-    mockOAuthProvider = {
+    _mockOAuthProvider = {
       validateScope: vi.fn().mockReturnValue(true),
     };
 
@@ -108,18 +108,17 @@ describe('Streamable HTTP Routes', () => {
 
   describe('setupStreamableHttpRoutes', () => {
     it('should setup POST route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
         expect.any(Function), // tagsExtractor
-        expect.any(Function), // scopeAuthMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup GET route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
 
       expect(mockRouter.get).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
@@ -128,7 +127,7 @@ describe('Streamable HTTP Routes', () => {
     });
 
     it('should setup DELETE route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
 
       expect(mockRouter.delete).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
@@ -147,8 +146,8 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - New Session', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      postHandler = mockRouter.post.mock.calls[0][3]; // Get the actual handler function
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      postHandler = mockRouter.post.mock.calls[0][2]; // Get the actual handler function (3rd arg after endpoint and tagsExtractor)
     });
 
     it('should create new session when no sessionId header', async () => {
@@ -244,8 +243,8 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - Existing Session', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      postHandler = mockRouter.post.mock.calls[0][3];
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      postHandler = mockRouter.post.mock.calls[0][2];
     });
 
     it('should use existing transport when sessionId provided', async () => {
@@ -305,8 +304,8 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - Error Handling', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      postHandler = mockRouter.post.mock.calls[0][3];
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      postHandler = mockRouter.post.mock.calls[0][2];
     });
 
     it('should handle transport creation error', async () => {
@@ -365,7 +364,7 @@ describe('Streamable HTTP Routes', () => {
 
   describe('GET Handler', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
       getHandler = mockRouter.get.mock.calls[0][1]; // Get the actual handler function
     });
 
@@ -430,7 +429,7 @@ describe('Streamable HTTP Routes', () => {
 
   describe('DELETE Handler', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupStreamableHttpRoutes(mockRouter, mockServerManager);
       deleteHandler = mockRouter.delete.mock.calls[0][1]; // Get the actual handler function
     });
 
@@ -489,69 +488,6 @@ describe('Streamable HTTP Routes', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.end).toHaveBeenCalled();
-    });
-  });
-
-  describe('Logging and Sanitization', () => {
-    beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      postHandler = mockRouter.post.mock.calls[0][3];
-      getHandler = mockRouter.get.mock.calls[0][1];
-      deleteHandler = mockRouter.delete.mock.calls[0][1];
-    });
-
-    it('should log POST request with sanitized headers', async () => {
-      const { sanitizeHeaders } = await import('../../../utils/sanitization.js');
-      const logger = await import('../../../logger/logger.js');
-
-      mockRequest.headers = {
-        authorization: 'Bearer secret-token',
-        'content-type': 'application/json',
-      };
-      mockRequest.body = { method: 'test' };
-
-      vi.mocked(sanitizeHeaders).mockReturnValue({ 'content-type': 'application/json' });
-
-      await postHandler(mockRequest, mockResponse);
-
-      expect(sanitizeHeaders).toHaveBeenCalledWith(mockRequest.headers);
-      expect(logger.default.info).toHaveBeenCalledWith('[POST] streamable-http', {
-        query: mockRequest.query,
-        body: mockRequest.body,
-        headers: { 'content-type': 'application/json' },
-      });
-    });
-
-    it('should log GET request', async () => {
-      const { sanitizeHeaders } = await import('../../../utils/sanitization.js');
-      const logger = await import('../../../logger/logger.js');
-
-      mockRequest.headers = { 'mcp-session-id': 'log-test' };
-      vi.mocked(sanitizeHeaders).mockReturnValue({ 'content-type': 'application/json' });
-      mockServerManager.getTransport.mockReturnValue(null);
-
-      await getHandler(mockRequest, mockResponse);
-
-      expect(logger.default.info).toHaveBeenCalledWith('[GET] streamable-http', {
-        query: mockRequest.query,
-        headers: { 'content-type': 'application/json' },
-      });
-    });
-
-    it('should log DELETE request', async () => {
-      const { sanitizeHeaders } = await import('../../../utils/sanitization.js');
-      const logger = await import('../../../logger/logger.js');
-
-      mockRequest.headers = { 'mcp-session-id': 'delete-log-test' };
-      vi.mocked(sanitizeHeaders).mockReturnValue({ 'content-type': 'application/json' });
-      mockServerManager.getTransport.mockReturnValue(null);
-
-      await deleteHandler(mockRequest, mockResponse);
-
-      expect(logger.default.info).toHaveBeenCalledWith('[DELETE] streamable-http', {
-        query: mockRequest.query,
-        headers: { 'content-type': 'application/json' },
-      });
     });
   });
 });
