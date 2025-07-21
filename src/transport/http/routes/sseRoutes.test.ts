@@ -54,7 +54,7 @@ vi.mock('../../../auth/sdkOAuthServerProvider.js', () => ({
 describe('SSE Routes', () => {
   let mockRouter: any;
   let mockServerManager: any;
-  let mockOAuthProvider: any;
+  let _mockOAuthProvider: any;
   let mockRequest: any;
   let mockResponse: any;
   let getHandler: any;
@@ -77,7 +77,7 @@ describe('SSE Routes', () => {
     };
 
     // Mock OAuth provider
-    mockOAuthProvider = {
+    _mockOAuthProvider = {
       validateScope: vi.fn().mockReturnValue(true),
     };
 
@@ -102,18 +102,17 @@ describe('SSE Routes', () => {
 
   describe('setupSseRoutes', () => {
     it('should setup SSE GET route', () => {
-      setupSseRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupSseRoutes(mockRouter, mockServerManager);
 
       expect(mockRouter.get).toHaveBeenCalledWith(
         SSE_ENDPOINT,
         expect.any(Function), // tagsExtractor
-        expect.any(Function), // scopeAuthMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup messages POST route', () => {
-      setupSseRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupSseRoutes(mockRouter, mockServerManager);
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         MESSAGES_ENDPOINT,
@@ -131,8 +130,8 @@ describe('SSE Routes', () => {
 
   describe('SSE GET Handler', () => {
     beforeEach(() => {
-      setupSseRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      getHandler = mockRouter.get.mock.calls[0][3]; // Get the actual handler function
+      setupSseRoutes(mockRouter, mockServerManager);
+      getHandler = mockRouter.get.mock.calls[0][2]; // Get the actual handler function
     });
 
     it('should handle SSE connection successfully', async () => {
@@ -250,7 +249,7 @@ describe('SSE Routes', () => {
 
   describe('Messages POST Handler', () => {
     beforeEach(() => {
-      setupSseRoutes(mockRouter, mockServerManager, mockOAuthProvider);
+      setupSseRoutes(mockRouter, mockServerManager);
       postHandler = mockRouter.post.mock.calls[0][1]; // Get the actual handler function
     });
 
@@ -381,49 +380,6 @@ describe('SSE Routes', () => {
       await postHandler(mockRequest, mockResponse);
 
       expect(mockTransport.handlePostMessage).toHaveBeenCalledWith(mockRequest, mockResponse, mockRequest.body);
-    });
-  });
-
-  describe('Logging and Sanitization', () => {
-    beforeEach(() => {
-      setupSseRoutes(mockRouter, mockServerManager, mockOAuthProvider);
-      getHandler = mockRouter.get.mock.calls[0][3];
-      postHandler = mockRouter.post.mock.calls[0][1];
-    });
-
-    it('should log SSE connection with sanitized headers', async () => {
-      const { sanitizeHeaders } = await import('../../../utils/sanitization.js');
-      const logger = await import('../../../logger/logger.js');
-
-      mockRequest.headers = {
-        authorization: 'Bearer secret-token',
-        'content-type': 'application/json',
-      };
-
-      vi.mocked(sanitizeHeaders).mockReturnValue({ 'content-type': 'application/json' });
-
-      await getHandler(mockRequest, mockResponse);
-
-      expect(sanitizeHeaders).toHaveBeenCalledWith(mockRequest.headers);
-      expect(logger.default.info).toHaveBeenCalledWith('[GET] sse', {
-        query: mockRequest.query,
-        headers: { 'content-type': 'application/json' },
-      });
-    });
-
-    it('should log message handling', async () => {
-      const logger = await import('../../../logger/logger.js');
-
-      mockRequest.query = { sessionId: 'log-test' };
-      mockRequest.body = { method: 'test', params: { data: 'value' } };
-      mockServerManager.getTransport.mockReturnValue(null);
-
-      await postHandler(mockRequest, mockResponse);
-
-      expect(logger.default.info).toHaveBeenCalledWith('message', {
-        body: mockRequest.body,
-        sessionId: 'log-test',
-      });
     });
   });
 });

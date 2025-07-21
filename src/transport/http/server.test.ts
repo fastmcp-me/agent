@@ -8,6 +8,7 @@ vi.mock('express', () => {
     use: vi.fn(),
     get: vi.fn(),
     post: vi.fn(),
+    delete: vi.fn(),
   });
 
   const mockApp = () => ({
@@ -58,6 +59,14 @@ vi.mock('./middlewares/securityMiddleware.js', () => ({
   setupSecurityMiddleware: vi.fn(() => [vi.fn()]),
 }));
 
+vi.mock('./middlewares/scopeAuthMiddleware.js', () => ({
+  createScopeAuthMiddleware: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('./middlewares/httpRequestLogger.js', () => ({
+  httpRequestLogger: vi.fn(),
+}));
+
 vi.mock('./routes/streamableHttpRoutes.js', () => ({
   setupStreamableHttpRoutes: vi.fn(),
 }));
@@ -103,9 +112,16 @@ describe('ExpressServer', () => {
       }),
     };
 
-    // Mock Express constructor
+    // Mock Express constructor and Router
     const express = await import('express');
+    const mockRouter = {
+      use: vi.fn(),
+      get: vi.fn(),
+      post: vi.fn(),
+      delete: vi.fn(),
+    } as any;
     vi.mocked(express.default).mockReturnValue(mockApp);
+    vi.mocked(express.default.Router).mockReturnValue(mockRouter);
 
     // Mock ServerManager
     mockServerManager = {
