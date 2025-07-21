@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, MockInstance } from 'vitest';
 import { ConfigReloadService } from './configReloadService.js';
 import { McpConfigManager, ConfigChangeEvent } from '../config/mcpConfigManager.js';
-import { createClients } from '../core/client/clientManager.js';
+import { ClientManager } from '../core/client/clientManager.js';
 import { createTransports } from '../transport/transportFactory.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { ServerManager } from '../core/server/serverManager.js';
@@ -18,7 +18,11 @@ vi.mock('../config/mcpConfigManager.js', () => ({
 }));
 
 vi.mock('../core/client/clientManager.js', () => ({
-  createClients: vi.fn(),
+  ClientManager: {
+    getOrCreateInstance: vi.fn().mockReturnValue({
+      createClients: vi.fn(),
+    }),
+  },
 }));
 
 vi.mock('../transport/transportFactory.js', () => ({
@@ -51,6 +55,7 @@ describe('ConfigReloadService', () => {
   let mockTransports: Record<string, any>;
   let mockClients: Record<string, any>;
   let mockServerInfo: any;
+  let mockClientManager: any;
 
   beforeEach(() => {
     // Reset singleton state for test isolation
@@ -80,9 +85,13 @@ describe('ConfigReloadService', () => {
       tags: ['test'],
     };
 
+    mockClientManager = {
+      createClients: vi.fn().mockResolvedValue(mockClients),
+    };
+
     (McpConfigManager.getInstance as unknown as MockInstance).mockReturnValue(mockConfigManager);
     (createTransports as unknown as MockInstance).mockReturnValue(mockTransports);
-    (createClients as unknown as MockInstance).mockResolvedValue(mockClients);
+    (ClientManager.getOrCreateInstance as unknown as MockInstance).mockReturnValue(mockClientManager);
     (setupCapabilities as unknown as MockInstance).mockResolvedValue(undefined);
 
     configReloadService = ConfigReloadService.getInstance();
@@ -149,7 +158,7 @@ describe('ConfigReloadService', () => {
       await handleConfigChange(newConfig);
 
       expect(createTransports).toHaveBeenCalledWith(newConfig);
-      expect(createClients).toHaveBeenCalledWith(mockTransports);
+      expect(mockClientManager.createClients).toHaveBeenCalledWith(mockTransports);
       expect(ServerManager.current.updateClientsAndTransports).toHaveBeenCalledWith(mockClients, mockTransports);
       expect(setupCapabilities).not.toHaveBeenCalled(); // Should not be called when no server instances are available
     });
@@ -163,7 +172,7 @@ describe('ConfigReloadService', () => {
       await handleConfigChange(newConfig);
 
       expect(createTransports).toHaveBeenCalledWith(newConfig);
-      expect(createClients).toHaveBeenCalledWith(mockTransports);
+      expect(mockClientManager.createClients).toHaveBeenCalledWith(mockTransports);
       expect(ServerManager.current.updateClientsAndTransports).toHaveBeenCalledWith(mockClients, mockTransports);
       expect(setupCapabilities).toHaveBeenCalledWith(mockClients, mockServerInfo);
     });

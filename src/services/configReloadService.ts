@@ -1,7 +1,7 @@
 import logger from '../logger/logger.js';
 import { ConfigChangeEvent, McpConfigManager } from '../config/mcpConfigManager.js';
 import { MCPServerParams, InboundConnection, EnhancedTransport } from '../core/types/index.js';
-import { createClients } from '../core/client/clientManager.js';
+import { ClientManager } from '../core/client/clientManager.js';
 import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { createTransports } from '../transport/transportFactory.js';
 import { ServerManager } from '../core/server/serverManager.js';
@@ -85,7 +85,8 @@ export class ConfigReloadService {
       const newTransports = createTransports(newConfig);
 
       // Create clients for the new transports
-      const newClients = await createClients(newTransports);
+      const clientManager = ClientManager.getOrCreateInstance();
+      const newClients = await clientManager.createClients(newTransports);
 
       // Update ServerManager with new clients and transports
       const serverManager = ServerManager.current;

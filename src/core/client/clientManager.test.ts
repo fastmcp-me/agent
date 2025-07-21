@@ -1,17 +1,10 @@
 import { vi, describe, it, expect, beforeEach, MockInstance, afterEach } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import {
-  createClients,
-  getClient,
-  executeOperation,
-  executeClientOperation,
-  executeServerOperation,
-} from './clientManager.js';
-import createClientFn from './clientFactory.js';
+import { ClientManager } from './clientManager.js';
 import logger from '../../logger/logger.js';
-import { ClientStatus, OutboundConnections, InboundConnection } from '../types/index.js';
-import { ClientConnectionError, ClientNotFoundError, MCPError } from '../../utils/errorTypes.js';
+import { ClientStatus } from '../types/index.js';
+import { ClientConnectionError, ClientNotFoundError } from '../../utils/errorTypes.js';
 import { MCP_SERVER_NAME, CONNECTION_RETRY } from '../../constants.js';
 
 // Mock dependencies
@@ -19,16 +12,12 @@ vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
   Client: vi.fn(),
 }));
 
-vi.mock('./clientFactory.js', () => ({
-  __esModule: true,
-  default: vi.fn(),
-}));
-
 vi.mock('../../logger/logger.js', () => ({
   __esModule: true,
   default: {
     info: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
@@ -40,7 +29,12 @@ vi.mock('../server/agentConfig.js', () => ({
   },
 }));
 
-describe('clientManager', () => {
+vi.mock('../../utils/operationExecution.js', () => ({
+  executeOperation: vi.fn().mockImplementation((operation) => operation()),
+}));
+
+describe('ClientManager', () => {
+  let clientManager: ClientManager;
   let mockTransport: Transport;
   let mockClient: Partial<Client>;
   let mockTransports: Record<string, Transport>;
@@ -48,6 +42,10 @@ describe('clientManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+
+    // Reset singleton for each test
+    ClientManager.resetInstance();
+    clientManager = ClientManager.getOrCreateInstance();
 
     mockTransport = {
       name: 'test-transport',
@@ -65,11 +63,27 @@ describe('clientManager', () => {
       'test-client': mockTransport,
     };
 
-    (createClientFn as unknown as MockInstance).mockResolvedValue(mockClient);
+    (Client as unknown as MockInstance).mockImplementation(() => mockClient);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+    ClientManager.resetInstance();
+  });
+
+  describe('singleton pattern', () => {
+    it('should return the same instance', () => {
+      const instance1 = ClientManager.getOrCreateInstance();
+      const instance2 = ClientManager.getOrCreateInstance();
+      expect(instance1).toBe(instance2);
+    });
+
+    it('should reset instance properly', () => {
+      const instance1 = ClientManager.getOrCreateInstance();
+      ClientManager.resetInstance();
+      const instance2 = ClientManager.getOrCreateInstance();
+      expect(instance1).not.toBe(instance2);
+    });
   });
 
   describe('createClients', () => {
@@ -80,7 +94,7 @@ describe('clientManager', () => {
         version: '1.0.0',
       });
 
-      const clientsPromise = createClients(mockTransports);
+      const clientsPromise = clientManager.createClients(mockTransports);
       await vi.runAllTimersAsync();
       const clients = await clientsPromise;
 
@@ -94,7 +108,7 @@ describe('clientManager', () => {
       const error = new Error('Connection failed');
       (mockClient.connect as unknown as MockInstance).mockRejectedValue(error);
 
-      const clientsPromise = createClients(mockTransports);
+      const clientsPromise = clientManager.createClients(mockTransports);
 
       // Run through all retry attempts
       for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
@@ -116,7 +130,7 @@ describe('clientManager', () => {
         version: '1.0.0',
       });
 
-      const clientsPromise = createClients(mockTransports);
+      const clientsPromise = clientManager.createClients(mockTransports);
       await vi.runAllTimersAsync();
       const clients = await clientsPromise;
 
@@ -127,77 +141,37 @@ describe('clientManager', () => {
   });
 
   describe('getClient', () => {
-    let clients: OutboundConnections;
-
     beforeEach(async () => {
-      clients = await createClients(mockTransports);
+      (mockClient.connect as unknown as MockInstance).mockResolvedValue(undefined);
+      (mockClient.getServerVersion as unknown as MockInstance).mockResolvedValue({
+        name: 'test-server',
+        version: '1.0.0',
+      });
+
+      // Ensure mockClient has transport property
+      Object.defineProperty(mockClient, 'transport', {
+        value: mockTransport,
+        writable: true,
+        configurable: true,
+      });
+
+      const clientsPromise = clientManager.createClients(mockTransports);
+      await vi.runAllTimersAsync();
+      await clientsPromise;
     });
 
     it('should return client info for existing client', () => {
-      const clientInfo = getClient(clients, 'test-client');
+      const clientInfo = clientManager.getClient('test-client');
       expect(clientInfo).toBeDefined();
       expect(clientInfo.name).toBe('test-client');
     });
 
     it('should throw ClientNotFoundError for non-existent client', () => {
-      expect(() => getClient(clients, 'non-existent')).toThrow(ClientNotFoundError);
-    });
-  });
-
-  describe('executeOperation', () => {
-    it('should execute operation successfully', async () => {
-      const operation = vi.fn().mockResolvedValue('result');
-
-      const result = await executeOperation(operation, 'test-context');
-
-      expect(result).toBe('result');
-      expect(operation).toHaveBeenCalled();
-    });
-
-    it('should retry failed operations', async () => {
-      const error = new Error('Operation failed');
-      const operation = vi.fn().mockRejectedValueOnce(error).mockResolvedValueOnce('result');
-
-      const operationPromise = executeOperation(operation, 'test-context', { retryCount: 1, retryDelay: 1000 });
-
-      // Advance timer by retry delay
-      await vi.advanceTimersByTimeAsync(1000);
-
-      const result = await operationPromise;
-
-      expect(result).toBe('result');
-      expect(operation).toHaveBeenCalledTimes(2);
-      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Retrying operation'));
-    });
-
-    it('should throw error after max retries', async () => {
-      const error = new Error('Operation failed');
-      const operation = vi.fn().mockRejectedValue(error);
-
-      const operationPromise = executeOperation(operation, 'test-context', { retryCount: 2, retryDelay: 1000 });
-
-      // Create rejection assertion before advancing timers
-      const rejection = expect(operationPromise).rejects.toMatchObject({
-        message: 'Error executing operation on test-context',
-        data: { originalError: error },
-      });
-
-      // Advance timer for each retry
-      for (let i = 0; i < 2; i++) {
-        await vi.advanceTimersByTimeAsync(1000);
-      }
-
-      // Wait for the rejection assertion
-      await rejection;
-
-      expect(operation).toHaveBeenCalledTimes(3); // Initial try + 2 retries
-      expect(logger.error).toHaveBeenCalled();
+      expect(() => clientManager.getClient('non-existent')).toThrow(ClientNotFoundError);
     });
   });
 
   describe('executeClientOperation', () => {
-    let clients: OutboundConnections;
-
     beforeEach(async () => {
       // Set up mocks exactly like the successful test
       (mockClient.connect as unknown as MockInstance).mockResolvedValue(undefined);
@@ -213,52 +187,26 @@ describe('clientManager', () => {
         configurable: true,
       });
 
-      const clientsPromise = createClients(mockTransports);
+      const clientsPromise = clientManager.createClients(mockTransports);
       await vi.runAllTimersAsync();
-      clients = await clientsPromise;
+      await clientsPromise;
     });
 
     it('should execute client operation successfully', async () => {
       const operation = vi.fn().mockResolvedValue('result');
 
-      const result = await executeClientOperation(clients, 'test-client', operation);
+      const result = await clientManager.executeClientOperation('test-client', operation);
 
       expect(result).toBe('result');
-      expect(operation).toHaveBeenCalledWith(clients.get('test-client'));
+      expect(operation).toHaveBeenCalledWith(clientManager.getClient('test-client'));
     });
 
     it('should throw error for non-existent client', async () => {
       const operation = vi.fn();
 
-      await expect(executeClientOperation(clients, 'non-existent', operation)).rejects.toThrow(ClientNotFoundError);
-    });
-  });
-
-  describe('executeServerOperation', () => {
-    let mockInboundConn: InboundConnection;
-
-    beforeEach(() => {
-      mockInboundConn = {
-        server: {
-          request: vi.fn().mockResolvedValue('result'),
-        },
-      } as unknown as InboundConnection;
-    });
-
-    it('should execute server operation successfully', async () => {
-      const operation = vi.fn().mockResolvedValue('result');
-
-      const result = await executeServerOperation(mockInboundConn, operation);
-
-      expect(result).toBe('result');
-      expect(operation).toHaveBeenCalledWith(mockInboundConn);
-    });
-
-    it('should handle server operation failure', async () => {
-      const error = new Error('Server operation failed');
-      const operation = vi.fn().mockRejectedValue(error);
-
-      await expect(executeServerOperation(mockInboundConn, operation)).rejects.toThrow(MCPError);
+      await expect(clientManager.executeClientOperation('non-existent', operation)).rejects.toThrow(
+        ClientNotFoundError,
+      );
     });
   });
 });

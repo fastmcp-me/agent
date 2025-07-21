@@ -26,7 +26,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { setLogLevel } from '../logger/logger.js';
 import { MCP_URI_SEPARATOR } from '../constants.js';
-import { executeClientOperation, executeServerOperation } from '../core/client/clientManager.js';
+import { ClientManager } from '../core/client/clientManager.js';
+import { ServerManager } from '../core/server/serverManager.js';
 import { parseUri } from '../utils/parsing.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
 import { filterClients, byCapabilities, byTags } from '../utils/clientFiltering.js';
@@ -44,14 +45,16 @@ function registerServerRequestHandlers(outboundConns: OutboundConnections, inbou
     outboundConn.client.setRequestHandler(
       PingRequestSchema,
       withErrorHandling(async () => {
-        return executeServerOperation(inboundConn, (inboundConn: InboundConnection) => inboundConn.server.ping());
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+          inboundConn.server.ping(),
+        );
       }, 'Error pinging'),
     );
 
     outboundConn.client.setRequestHandler(
       CreateMessageRequestSchema,
       withErrorHandling(async (request: CreateMessageRequest) => {
-        return executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
           inboundConn.server.createMessage(request.params, {
             timeout: outboundConn.transport.timeout,
           }),
@@ -62,7 +65,7 @@ function registerServerRequestHandlers(outboundConns: OutboundConnections, inbou
     outboundConn.client.setRequestHandler(
       ElicitRequestSchema,
       withErrorHandling(async (request: ElicitRequest) => {
-        return executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
           inboundConn.server.elicitInput(request.params, {
             timeout: outboundConn.transport.timeout,
           }),
@@ -73,7 +76,7 @@ function registerServerRequestHandlers(outboundConns: OutboundConnections, inbou
     outboundConn.client.setRequestHandler(
       ListRootsRequestSchema,
       withErrorHandling(async (request: ListRootsRequest) => {
-        return executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
+        return ServerManager.current.executeServerOperation(inboundConn, (inboundConn: InboundConnection) =>
           inboundConn.server.listRoots(request.params, {
             timeout: outboundConn.transport.timeout,
           }),
@@ -202,7 +205,7 @@ function registerResourceHandlers(outboundConns: OutboundConnections, inboundCon
     SubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(outboundConns, clientName, (outboundConn) =>
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
         outboundConn.client.subscribeResource(
           { ...request.params, uri: resourceName },
           {
@@ -218,7 +221,7 @@ function registerResourceHandlers(outboundConns: OutboundConnections, inboundCon
     UnsubscribeRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(outboundConns, clientName, (outboundConn) =>
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
         outboundConn.client.unsubscribeResource(
           { ...request.params, uri: resourceName },
           {
@@ -234,7 +237,7 @@ function registerResourceHandlers(outboundConns: OutboundConnections, inboundCon
     ReadResourceRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName } = parseUri(request.params.uri, MCP_URI_SEPARATOR);
-      return executeClientOperation(outboundConns, clientName, (outboundConn) =>
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
         outboundConn.client.readResource(
           { ...request.params, uri: resourceName },
           {
@@ -285,7 +288,7 @@ function registerToolHandlers(outboundConns: OutboundConnections, inboundConn: I
     CallToolRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: toolName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(outboundConns, clientName, (outboundConn) =>
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
         outboundConn.client.callTool({ ...request.params, name: toolName }, CallToolResultSchema, {
           timeout: outboundConn.transport.timeout,
         }),
@@ -331,7 +334,7 @@ function registerPromptHandlers(outboundConns: OutboundConnections, inboundConn:
     GetPromptRequestSchema,
     withErrorHandling(async (request) => {
       const { clientName, resourceName: promptName } = parseUri(request.params.name, MCP_URI_SEPARATOR);
-      return executeClientOperation(outboundConns, clientName, (outboundConn) =>
+      return ClientManager.current.executeClientOperation(clientName, (outboundConn) =>
         outboundConn.client.getPrompt({ ...request.params, name: promptName }),
       );
     }, 'Error getting prompt'),
@@ -366,8 +369,7 @@ function registerCompletionHandlers(outboundConns: OutboundConnections, inboundC
 
       const params = { ...request.params, ref: updatedRef };
 
-      return executeClientOperation(
-        outboundConns,
+      return ClientManager.current.executeClientOperation(
         clientName,
         (outboundConn) =>
           outboundConn.client.complete(params, {

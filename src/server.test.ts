@@ -17,7 +17,9 @@ vi.mock('./transport/transportFactory.js', () => ({
 }));
 
 vi.mock('./core/client/clientManager.js', () => ({
-  createClients: vi.fn(),
+  ClientManager: {
+    getOrCreateInstance: vi.fn(),
+  },
 }));
 
 vi.mock('./core/server/serverManager.js', () => ({
@@ -41,7 +43,7 @@ vi.mock('./services/configReloadService.js', () => ({
 // Import the mocked modules
 import logger from './logger/logger.js';
 import { createTransports } from './transport/transportFactory.js';
-import { createClients } from './core/client/clientManager.js';
+import { ClientManager } from './core/client/clientManager.js';
 import { ServerManager } from './core/server/serverManager.js';
 import { McpConfigManager } from './config/mcpConfigManager.js';
 import configReloadService from './services/configReloadService.js';
@@ -51,6 +53,7 @@ describe('server', () => {
   let mockClients: any;
   let mockServerManager: any;
   let mockConfigManager: any;
+  let mockClientManager: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,7 +70,10 @@ describe('server', () => {
       ['client1', { connect: vi.fn() }],
       ['client2', { connect: vi.fn() }],
     ]);
-    vi.mocked(createClients).mockResolvedValue(mockClients);
+    mockClientManager = {
+      createClients: vi.fn().mockResolvedValue(mockClients),
+    };
+    vi.mocked(ClientManager.getOrCreateInstance).mockReturnValue(mockClientManager);
 
     // Setup mock server manager
     mockServerManager = {
@@ -113,7 +119,7 @@ describe('server', () => {
     it('should create clients for each transport', async () => {
       await setupServer();
 
-      expect(createClients).toHaveBeenCalledWith(mockTransports);
+      expect(mockClientManager.createClients).toHaveBeenCalledWith(mockTransports);
     });
 
     it('should log client creation', async () => {
@@ -129,7 +135,7 @@ describe('server', () => {
         { name: MCP_SERVER_NAME, version: MCP_SERVER_VERSION },
         { capabilities: MCP_SERVER_CAPABILITIES },
         mockClients,
-        mockTransports
+        mockTransports,
       );
     });
 
@@ -165,7 +171,7 @@ describe('server', () => {
 
     it('should handle client creation errors', async () => {
       const error = new Error('Client creation failed');
-      vi.mocked(createClients).mockRejectedValue(error);
+      mockClientManager.createClients.mockRejectedValue(error);
 
       await expect(setupServer()).rejects.toThrow('Client creation failed');
       expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: Client creation failed');

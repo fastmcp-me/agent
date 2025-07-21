@@ -3,8 +3,7 @@ import rateLimit from 'express-rate-limit';
 import logger from '../../../logger/logger.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import { ClientStatus } from '../../../core/types/index.js';
-import { OAuthRequiredError } from '../../../core/client/clientManager.js';
-import createClient from '../../../core/client/clientFactory.js';
+import { OAuthRequiredError, ClientManager } from '../../../core/client/clientManager.js';
 import { RATE_LIMIT_CONFIG, AUTH_CONFIG } from '../../../constants.js';
 import { AgentConfigManager } from '../../../core/server/agentConfig.js';
 import {
@@ -306,7 +305,8 @@ export function createOAuthRoutes(oauthProvider: SDKOAuthServerProvider): Router
 
     try {
       // Create new client and attempt connection to trigger OAuth
-      const newClient = await createClient();
+      const clientManager = ClientManager.getOrCreateInstance();
+      const newClient = clientManager.createClientInstance();
       await newClient.connect(clientInfo.transport);
     } catch (error) {
       if (error instanceof OAuthRequiredError) {

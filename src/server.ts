@@ -1,7 +1,7 @@
 import { MCP_SERVER_CAPABILITIES, MCP_SERVER_NAME, MCP_SERVER_VERSION } from './constants.js';
 import logger from './logger/logger.js';
 import { createTransports } from './transport/transportFactory.js';
-import { createClients } from './core/client/clientManager.js';
+import { ClientManager } from './core/client/clientManager.js';
 import { ServerManager } from './core/server/serverManager.js';
 import { McpConfigManager } from './config/mcpConfigManager.js';
 import configReloadService from './services/configReloadService.js';
@@ -17,7 +17,8 @@ async function setupServer(): Promise<ServerManager> {
     logger.info(`Created ${Object.keys(transports).length} transports`);
 
     // Create clients for each transport
-    const clients = await createClients(transports);
+    const clientManager = ClientManager.getOrCreateInstance();
+    const clients = await clientManager.createClients(transports);
     logger.info(`Created ${clients.size} clients`);
 
     const serverManager = ServerManager.getOrCreateInstance(

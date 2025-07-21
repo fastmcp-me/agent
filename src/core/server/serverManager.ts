@@ -4,8 +4,9 @@ import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
-import { OutboundConnections, InboundConnection, InboundConnectionConfig } from '../types/index.js';
+import { OutboundConnections, InboundConnection, InboundConnectionConfig, OperationOptions } from '../types/index.js';
 import type { OutboundConnection } from '../types/client.js';
+import { executeOperation } from '../../utils/operationExecution.js';
 
 export class ServerManager {
   private static instance: ServerManager;
@@ -210,5 +211,19 @@ export class ServerManager {
   public updateClientsAndTransports(newClients: OutboundConnections, newTransports: Record<string, Transport>): void {
     this.outboundConns = newClients;
     this.transports = newTransports;
+  }
+
+  /**
+   * Executes a server operation with error handling and retry logic
+   * @param inboundConn The inbound connection to execute the operation on
+   * @param operation The operation to execute
+   * @param options Operation options including timeout and retry settings
+   */
+  public async executeServerOperation<T>(
+    inboundConn: InboundConnection,
+    operation: (inboundConn: InboundConnection) => Promise<T>,
+    options: OperationOptions = {},
+  ): Promise<T> {
+    return executeOperation(() => operation(inboundConn), 'server', options);
   }
 }
