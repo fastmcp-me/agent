@@ -32,6 +32,14 @@ vi.mock('../../logger/logger.js', () => ({
   },
 }));
 
+vi.mock('../server/agentConfig.js', () => ({
+  AgentConfigManager: {
+    getInstance: vi.fn().mockReturnValue({
+      getUrl: vi.fn().mockReturnValue('http://localhost:3050'),
+    }),
+  },
+}));
+
 describe('clientManager', () => {
   let mockTransport: Transport;
   let mockClient: Partial<Client>;
@@ -191,7 +199,23 @@ describe('clientManager', () => {
     let clients: OutboundConnections;
 
     beforeEach(async () => {
-      clients = await createClients(mockTransports);
+      // Set up mocks exactly like the successful test
+      (mockClient.connect as unknown as MockInstance).mockResolvedValue(undefined);
+      (mockClient.getServerVersion as unknown as MockInstance).mockResolvedValue({
+        name: 'test-server',
+        version: '1.0.0',
+      });
+
+      // Ensure mockClient has transport property
+      Object.defineProperty(mockClient, 'transport', {
+        value: mockTransport,
+        writable: true,
+        configurable: true,
+      });
+
+      const clientsPromise = createClients(mockTransports);
+      await vi.runAllTimersAsync();
+      clients = await clientsPromise;
     });
 
     it('should execute client operation successfully', async () => {

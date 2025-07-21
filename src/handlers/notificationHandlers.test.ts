@@ -62,6 +62,14 @@ describe('Notification Handlers', () => {
         throw new Error('Not connected');
       });
 
+      // Ensure server transport exists so the notification is attempted
+      mockServer.transport = {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      };
+
       // Setup the notification handlers
       setupClientToServerNotifications(mockOutboundConns, mockInboundConn);
 
@@ -140,6 +148,14 @@ describe('Notification Handlers', () => {
       mockClient.notification = vi.fn().mockImplementation(() => {
         throw new Error('Not connected');
       });
+
+      // Ensure client transport exists so the notification is attempted
+      mockClient.transport = {
+        timeout: 5000,
+        start: vi.fn(),
+        send: vi.fn(),
+        close: vi.fn(),
+      };
 
       // Setup the notification handlers
       setupServerToClientNotifications(mockOutboundConns, mockInboundConn);

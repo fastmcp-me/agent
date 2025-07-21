@@ -121,6 +121,7 @@ describe('ExpressServer', () => {
       getRateLimitWindowMs: vi.fn(() => 900000),
       getRateLimitMax: vi.fn(() => 100),
       isAuthEnabled: vi.fn(() => false),
+      getUrl: vi.fn(() => 'http://localhost:3050'),
     };
 
     const { AgentConfigManager } = await import('../../core/server/agentConfig.js');
@@ -300,8 +301,12 @@ describe('ExpressServer', () => {
   describe('Error Handling', () => {
     it('should handle initialization errors gracefully', async () => {
       // Test with problematic config
+      const configError = new Error('Config error');
       mockConfigManager.getConfig.mockImplementation(() => {
-        throw new Error('Config error');
+        throw configError;
+      });
+      mockConfigManager.getUrl.mockImplementation(() => {
+        throw configError;
       });
 
       expect(() => {
