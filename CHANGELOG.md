@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2025-07-21
+
+### 🚀 Features
+- Implement centralized HTTP request logging middleware by @xizhibei
+- Introduce ServerStatus enum and enhance connection management by @xizhibei
+- Add external URL support for OAuth callbacks by @xizhibei
+
+### 💼 Other
+- Merge pull request #79 from 1mcp-app/feat/external-url by @xizhibei in [#79](https://github.com/1mcp-app/agent/pull/79)
+- Merge pull request #77 from 1mcp-app/dependabot/npm_and_yarn/npm_and_yarn-20b018c2ea by @xizhibei in [#77](https://github.com/1mcp-app/agent/pull/77)
+- Merge pull request #78 from 1mcp-app/feat/test-improve by @xizhibei in [#78](https://github.com/1mcp-app/agent/pull/78)
+
+### 🚜 Refactor
+- Implement ClientManager for client creation and management by @xizhibei
+- Rename variables for clarity and consistency by @xizhibei
+
+### 📚 Documentation
+- Update available options and add external URL example by @xizhibei
+
+### 🧪 Testing
+- Add comprehensive OAuth 2.1 E2E test with MCP specification compliance by @xizhibei
+- Enhance test setups with additional transport mocks by @xizhibei
+- Fix TypeScript compilation errors in test files by @xizhibei
+- Fix eslint errors in test files by @xizhibei
+- Add comprehensive tests for security middleware and index module by @xizhibei
+- Add comprehensive SSE and streamable HTTP routes testing by @xizhibei
+- Expand test coverage for core components by @xizhibei
+- Implement comprehensive OAuth routes testing by @xizhibei
+- Improve test coverage with shared utilities and new unit tests by @xizhibei
+- Add unit tests for client-server notification handling by @xizhibei
+
+
 ## [0.13.1] - 2025-07-16
 
 ### 🚀 Features
@@ -377,6 +409,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.14.0]: https://github.com/1mcp-app/agent/compare/v0.13.1..v0.14.0
 [0.13.1]: https://github.com/1mcp-app/agent/compare/v0.13.0..v0.13.1
 [0.13.0]: https://github.com/1mcp-app/agent/compare/v0.12.0..v0.13.0
 [0.12.0]: https://github.com/1mcp-app/agent/compare/v0.11.0..v0.12.0
