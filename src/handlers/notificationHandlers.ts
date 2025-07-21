@@ -35,6 +35,12 @@ export function setupClientToServerNotifications(clients: OutboundConnections, s
         withErrorHandling(async (notification) => {
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
 
+          // Check if client is connected before attempting to send
+          if (clientInfo.status !== ClientStatus.Connected) {
+            logger.warn(`Client ${name} is not connected. Notification not sent.`);
+            return;
+          }
+
           // Try to send notification, catch connection errors gracefully
           try {
             // Preserve original message structure and only modify params
