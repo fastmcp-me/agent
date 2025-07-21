@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ClientStatus, type OutboundConnections, type OutboundConnection, type InboundConnection } from '../core/types/index.js';
+import {
+  ClientStatus,
+  type OutboundConnections,
+  type OutboundConnection,
+  type InboundConnection,
+} from '../core/types/index.js';
 
 // Mock dependencies
 vi.mock('../logger/logger.js', () => ({
@@ -36,8 +41,8 @@ vi.mock('../utils/parsing.js', () => ({
 }));
 
 describe('Request Handlers', () => {
-  let mockClients: OutboundConnections;
-  let mockServerInfo: InboundConnection;
+  let mockOutboundConns: OutboundConnections;
+  let mockInboundConn: InboundConnection;
   let mockClient1: any;
   let mockClient2: any;
   let mockServer: any;
@@ -91,8 +96,8 @@ describe('Request Handlers', () => {
     };
 
     // Create mock clients collection
-    mockClients = new Map();
-    mockClients.set('client1', {
+    mockOutboundConns = new Map();
+    mockOutboundConns.set('client1', {
       name: 'client1',
       status: ClientStatus.Connected,
       client: mockClient1,
@@ -104,7 +109,7 @@ describe('Request Handlers', () => {
       },
     } as OutboundConnection);
 
-    mockClients.set('client2', {
+    mockOutboundConns.set('client2', {
       name: 'client2',
       status: ClientStatus.Connected,
       client: mockClient2,
@@ -117,7 +122,7 @@ describe('Request Handlers', () => {
     } as OutboundConnection);
 
     // Create mock server info
-    mockServerInfo = {
+    mockInboundConn = {
       server: mockServer,
       tags: ['test'],
       enablePagination: true,
@@ -126,17 +131,17 @@ describe('Request Handlers', () => {
 
   describe('registerRequestHandlers', () => {
     it('should register all request handlers', () => {
-      registerRequestHandlers(mockClients, mockServerInfo);
+      registerRequestHandlers(mockOutboundConns, mockInboundConn);
 
       // Verify that setRequestHandler was called for each handler
       expect(mockServer.setRequestHandler).toHaveBeenCalled();
-      
+
       // Should register multiple handlers
       expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThan(5);
     });
 
     it('should register server-specific handlers for clients', () => {
-      registerRequestHandlers(mockClients, mockServerInfo);
+      registerRequestHandlers(mockOutboundConns, mockInboundConn);
 
       // Verify client request handlers were set
       expect(mockClient1.setRequestHandler).toHaveBeenCalled();
@@ -145,9 +150,9 @@ describe('Request Handlers', () => {
 
     it('should handle server with no clients', () => {
       const emptyClients: OutboundConnections = new Map();
-      
+
       expect(() => {
-        registerRequestHandlers(emptyClients, mockServerInfo);
+        registerRequestHandlers(emptyClients, mockInboundConn);
       }).not.toThrow();
 
       expect(mockServer.setRequestHandler).toHaveBeenCalled();
@@ -155,14 +160,14 @@ describe('Request Handlers', () => {
 
     it('should handle clients with different statuses', () => {
       // Add clients with different statuses
-      mockClients.set('disconnected', {
+      mockOutboundConns.set('disconnected', {
         name: 'disconnected',
         status: ClientStatus.Disconnected,
         client: { setRequestHandler: vi.fn() },
         transport: { timeout: 5000 },
       } as any);
 
-      mockClients.set('error', {
+      mockOutboundConns.set('error', {
         name: 'error',
         status: ClientStatus.Error,
         client: { setRequestHandler: vi.fn() },
@@ -170,7 +175,7 @@ describe('Request Handlers', () => {
       } as any);
 
       expect(() => {
-        registerRequestHandlers(mockClients, mockServerInfo);
+        registerRequestHandlers(mockOutboundConns, mockInboundConn);
       }).not.toThrow();
 
       expect(mockServer.setRequestHandler).toHaveBeenCalled();
@@ -178,23 +183,23 @@ describe('Request Handlers', () => {
 
     it('should handle server with undefined pagination setting', () => {
       const serverWithoutPagination = {
-        ...mockServerInfo,
+        ...mockInboundConn,
         enablePagination: undefined,
       };
 
       expect(() => {
-        registerRequestHandlers(mockClients, serverWithoutPagination);
+        registerRequestHandlers(mockOutboundConns, serverWithoutPagination);
       }).not.toThrow();
     });
 
     it('should handle server with empty tags', () => {
       const serverWithEmptyTags = {
-        ...mockServerInfo,
+        ...mockInboundConn,
         tags: [],
       };
 
       expect(() => {
-        registerRequestHandlers(mockClients, serverWithEmptyTags);
+        registerRequestHandlers(mockOutboundConns, serverWithEmptyTags);
       }).not.toThrow();
     });
   });
@@ -226,7 +231,7 @@ describe('Request Handlers', () => {
       mockClient1.ping.mockResolvedValue({});
       mockClient2.ping.mockResolvedValue({});
 
-      const pingHandler = createPingHandler(mockClients);
+      const pingHandler = createPingHandler(mockOutboundConns);
       const result = await pingHandler();
 
       expect(mockClient1.ping).toHaveBeenCalledTimes(1);
@@ -236,7 +241,7 @@ describe('Request Handlers', () => {
 
     it('should skip disconnected clients', async () => {
       // Add a disconnected client
-      mockClients.set('client3', {
+      mockOutboundConns.set('client3', {
         name: 'client3',
         status: ClientStatus.Disconnected,
         client: { ping: vi.fn() },
@@ -251,18 +256,18 @@ describe('Request Handlers', () => {
       mockClient1.ping.mockResolvedValue({});
       mockClient2.ping.mockResolvedValue({});
 
-      const pingHandler = createPingHandler(mockClients);
+      const pingHandler = createPingHandler(mockOutboundConns);
       await pingHandler();
 
       // Client3 is disconnected, so its ping should not be called
-      expect(mockClients.get('client3')!.client.ping).not.toHaveBeenCalled();
+      expect(mockOutboundConns.get('client3')!.client.ping).not.toHaveBeenCalled();
     });
 
     it('should handle client ping failures gracefully', async () => {
       mockClient1.ping.mockResolvedValue({});
       mockClient2.ping.mockRejectedValue(new Error('Client 2 failed'));
 
-      const pingHandler = createPingHandler(mockClients);
+      const pingHandler = createPingHandler(mockOutboundConns);
       const result = await pingHandler();
 
       expect(mockClient1.ping).toHaveBeenCalledTimes(1);
@@ -274,7 +279,7 @@ describe('Request Handlers', () => {
       mockClient1.ping.mockRejectedValue(new Error('Client 1 failed'));
       mockClient2.ping.mockRejectedValue(new Error('Client 2 failed'));
 
-      const pingHandler = createPingHandler(mockClients);
+      const pingHandler = createPingHandler(mockOutboundConns);
       const result = await pingHandler();
 
       expect(result).toEqual({});
@@ -335,14 +340,14 @@ describe('Request Handlers', () => {
 
   describe('Handler Registration Validation', () => {
     it('should register multiple request handlers on server', () => {
-      registerRequestHandlers(mockClients, mockServerInfo);
+      registerRequestHandlers(mockOutboundConns, mockInboundConn);
 
       // Should register at least 10 different handlers
       expect(mockServer.setRequestHandler.mock.calls.length).toBeGreaterThanOrEqual(10);
     });
 
     it('should register client-specific handlers', () => {
-      registerRequestHandlers(mockClients, mockServerInfo);
+      registerRequestHandlers(mockOutboundConns, mockInboundConn);
 
       // Each client should have multiple handlers registered
       expect(mockClient1.setRequestHandler.mock.calls.length).toBeGreaterThan(0);
@@ -359,7 +364,7 @@ describe('Request Handlers', () => {
       } as any);
 
       expect(() => {
-        registerRequestHandlers(clientsWithoutTimeout, mockServerInfo);
+        registerRequestHandlers(clientsWithoutTimeout, mockInboundConn);
       }).not.toThrow();
     });
 
@@ -373,7 +378,7 @@ describe('Request Handlers', () => {
       } as any;
 
       expect(() => {
-        registerRequestHandlers(mockClients, minimalServer);
+        registerRequestHandlers(mockOutboundConns, minimalServer);
       }).not.toThrow();
 
       expect(minimalServer.server.setRequestHandler).toHaveBeenCalled();

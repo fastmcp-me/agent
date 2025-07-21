@@ -211,10 +211,10 @@ describe('clientManager', () => {
   });
 
   describe('executeServerOperation', () => {
-    let mockServer: InboundConnection;
+    let mockInboundConn: InboundConnection;
 
     beforeEach(() => {
-      mockServer = {
+      mockInboundConn = {
         server: {
           request: vi.fn().mockResolvedValue('result'),
         },
@@ -224,17 +224,17 @@ describe('clientManager', () => {
     it('should execute server operation successfully', async () => {
       const operation = vi.fn().mockResolvedValue('result');
 
-      const result = await executeServerOperation(mockServer, operation);
+      const result = await executeServerOperation(mockInboundConn, operation);
 
       expect(result).toBe('result');
-      expect(operation).toHaveBeenCalledWith(mockServer);
+      expect(operation).toHaveBeenCalledWith(mockInboundConn);
     });
 
     it('should handle server operation failure', async () => {
       const error = new Error('Server operation failed');
       const operation = vi.fn().mockRejectedValue(error);
 
-      await expect(executeServerOperation(mockServer, operation)).rejects.toThrow(MCPError);
+      await expect(executeServerOperation(mockInboundConn, operation)).rejects.toThrow(MCPError);
     });
   });
 });

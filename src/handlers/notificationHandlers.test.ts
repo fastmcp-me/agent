@@ -9,8 +9,8 @@ import {
 import { LoggingMessageNotificationSchema, InitializedNotificationSchema } from '@modelcontextprotocol/sdk/types.js';
 
 describe('Notification Handlers', () => {
-  let mockClients: OutboundConnections;
-  let mockServerInfo: InboundConnection;
+  let mockOutboundConns: OutboundConnections;
+  let mockInboundConn: InboundConnection;
   let mockClient: any;
   let mockServer: any;
 
@@ -30,7 +30,7 @@ describe('Notification Handlers', () => {
     };
 
     // Create mock server info
-    mockServerInfo = {
+    mockInboundConn = {
       server: mockServer,
       transport: {
         timeout: 5000,
@@ -41,8 +41,8 @@ describe('Notification Handlers', () => {
     } as InboundConnection;
 
     // Create mock clients collection
-    mockClients = new Map();
-    mockClients.set('test-client', {
+    mockOutboundConns = new Map();
+    mockOutboundConns.set('test-client', {
       name: 'test-client',
       status: ClientStatus.Connected,
       client: mockClient,
@@ -63,7 +63,7 @@ describe('Notification Handlers', () => {
       });
 
       // Setup the notification handlers
-      setupClientToServerNotifications(mockClients, mockServerInfo);
+      setupClientToServerNotifications(mockOutboundConns, mockInboundConn);
 
       // Verify that setNotificationHandler was called
       expect(mockClient.setNotificationHandler).toHaveBeenCalled();
@@ -102,11 +102,11 @@ describe('Notification Handlers', () => {
 
     it('should not send notifications when client is not connected', async () => {
       // Set client status to disconnected
-      const disconnectedClient = mockClients.get('test-client')!;
+      const disconnectedClient = mockOutboundConns.get('test-client')!;
       disconnectedClient.status = ClientStatus.Disconnected;
 
       // Setup the notification handlers
-      setupClientToServerNotifications(mockClients, mockServerInfo);
+      setupClientToServerNotifications(mockOutboundConns, mockInboundConn);
 
       // Get the notification handler that was registered
       const setNotificationHandlerCalls = mockClient.setNotificationHandler.mock.calls;
@@ -142,7 +142,7 @@ describe('Notification Handlers', () => {
       });
 
       // Setup the notification handlers
-      setupServerToClientNotifications(mockClients, mockServerInfo);
+      setupServerToClientNotifications(mockOutboundConns, mockInboundConn);
 
       // Verify that setNotificationHandler was called on the server
       expect(mockServer.setNotificationHandler).toHaveBeenCalled();
@@ -176,11 +176,11 @@ describe('Notification Handlers', () => {
 
     it('should not send notifications when client status is not connected', async () => {
       // Set client status to disconnected
-      const disconnectedClient = mockClients.get('test-client')!;
+      const disconnectedClient = mockOutboundConns.get('test-client')!;
       disconnectedClient.status = ClientStatus.Disconnected;
 
       // Setup the notification handlers
-      setupServerToClientNotifications(mockClients, mockServerInfo);
+      setupServerToClientNotifications(mockOutboundConns, mockInboundConn);
 
       // Get the notification handler that was registered
       const setNotificationHandlerCalls = mockServer.setNotificationHandler.mock.calls;

@@ -23,7 +23,7 @@ import { AgentConfigManager } from '../server/agentConfig.js';
  * @returns Record of client instances
  */
 export async function createClients(transports: Record<string, AuthProviderTransport>): Promise<OutboundConnections> {
-  const clients = new Map<string, OutboundConnection>();
+  const outboundConns = new Map<string, OutboundConnection>();
 
   for (const [name, transport] of Object.entries(transports)) {
     logger.info(`Creating client for ${name}`);
@@ -33,7 +33,7 @@ export async function createClients(transports: Record<string, AuthProviderTrans
       // Connect with retry logic
       const connectedClient = await connectWithRetry(client, transport, name);
 
-      clients.set(name, {
+      outboundConns.set(name, {
         name,
         transport,
         client: connectedClient,
@@ -43,11 +43,15 @@ export async function createClients(transports: Record<string, AuthProviderTrans
       logger.info(`Client created for ${name}`);
 
       connectedClient.onclose = () => {
-        const clientInfo = clients.get(name);
+        const clientInfo = outboundConns.get(name);
         if (clientInfo) {
           clientInfo.status = ClientStatus.Disconnected;
         }
         logger.info(`Client ${name} disconnected`);
+      };
+
+      connectedClient.onerror = (error) => {
+        logger.error(`Client ${name} error: ${error}`);
       };
     } catch (error) {
       if (error instanceof OAuthRequiredError) {
@@ -66,7 +70,7 @@ export async function createClients(transports: Record<string, AuthProviderTrans
           logger.warn(`Could not extract authorization URL for ${name}:`, urlError);
         }
 
-        clients.set(name, {
+        outboundConns.set(name, {
           name,
           transport,
           client: error.client,
@@ -76,7 +80,7 @@ export async function createClients(transports: Record<string, AuthProviderTrans
         });
       } else {
         logger.error(`Failed to create client for ${name}: ${error}`);
-        clients.set(name, {
+        outboundConns.set(name, {
           name,
           transport,
           client: await createClient(),
@@ -87,7 +91,7 @@ export async function createClients(transports: Record<string, AuthProviderTrans
     }
   }
 
-  return clients;
+  return outboundConns;
 }
 
 /**
@@ -150,13 +154,13 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
 
 /**
  * Gets a client by name with error handling
- * @param clients Record of client instances
+ * @param outboundConns Record of client instances
  * @param clientName The name of the client to get
  * @returns The client instance
  * @throws ClientNotFoundError if the client is not found
  */
-export function getClient(clients: OutboundConnections, clientName: string): OutboundConnection {
-  const client = clients.get(clientName);
+export function getClient(outboundConns: OutboundConnections, clientName: string): OutboundConnection {
+  const client = outboundConns.get(clientName);
   if (!client) {
     throw new ClientNotFoundError(clientName);
   }
@@ -205,26 +209,30 @@ export async function executeOperation<T>(
 
 /**
  * Executes a client operation with error handling and retry logic
- * @param clients Record of client instances
+ * @param outboundConns Record of client instances
  * @param clientName The name of the client to use
  * @param operation The operation to execute
  * @param options Operation options including timeout and retry settings
  * @param requiredCapability The capability required for this operation
  */
 export async function executeClientOperation<T>(
-  clients: OutboundConnections,
+  outboundConns: OutboundConnections,
   clientName: string,
   operation: (clientInfo: OutboundConnection) => Promise<T>,
   options: OperationOptions = {},
   requiredCapability?: ServerCapability,
 ): Promise<T> {
-  const clientInfo = getClient(clients, clientName);
+  const outboundConn = getClient(outboundConns, clientName);
 
-  if (requiredCapability && !clientInfo.capabilities?.[requiredCapability]) {
+  if (outboundConn.status !== ClientStatus.Connected || !outboundConn.client.transport) {
+    throw new ClientConnectionError(clientName, new Error('Client not connected'));
+  }
+
+  if (requiredCapability && !outboundConn.capabilities?.[requiredCapability]) {
     throw new CapabilityError(clientName, String(requiredCapability));
   }
 
-  return executeOperation(() => operation(clientInfo), `client ${clientName}`, options);
+  return executeOperation(() => operation(outboundConn), `client ${clientName}`, options);
 }
 
 /**
@@ -234,11 +242,11 @@ export async function executeClientOperation<T>(
  * @param options Operation options including timeout and retry settings
  */
 export async function executeServerOperation<T>(
-  server: InboundConnection,
-  operation: (server: InboundConnection) => Promise<T>,
+  inboundConn: InboundConnection,
+  operation: (inboundConn: InboundConnection) => Promise<T>,
   options: OperationOptions = {},
 ): Promise<T> {
-  return executeOperation(() => operation(server), 'server', options);
+  return executeOperation(() => operation(inboundConn), 'server', options);
 }
 
 /**
