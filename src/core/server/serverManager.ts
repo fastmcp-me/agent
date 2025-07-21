@@ -4,7 +4,13 @@ import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
 import { setupCapabilities } from '../../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
-import { OutboundConnections, InboundConnection, InboundConnectionConfig, OperationOptions } from '../types/index.js';
+import {
+  OutboundConnections,
+  InboundConnection,
+  InboundConnectionConfig,
+  OperationOptions,
+  ServerStatus,
+} from '../types/index.js';
 import type { OutboundConnection } from '../types/client.js';
 import { executeOperation } from '../../utils/operationExecution.js';
 
@@ -103,10 +109,13 @@ export class ServerManager {
     try {
       await Promise.race([this.doConnect(transport, sessionId, opts), timeoutPromise]);
     } catch (error) {
-      // Clean up partial connection on failure
-      if (this.inboundConns.has(sessionId)) {
-        this.inboundConns.delete(sessionId);
+      // Update status to Error if connection exists
+      const connection = this.inboundConns.get(sessionId);
+      if (connection) {
+        connection.status = ServerStatus.Error;
+        connection.lastError = error instanceof Error ? error : new Error(String(error));
       }
+
       logger.error(`Failed to connect transport for session ${sessionId}:`, error);
       throw error;
     }
@@ -119,6 +128,8 @@ export class ServerManager {
     // Create server info object first
     const serverInfo: InboundConnection = {
       server,
+      status: ServerStatus.Connecting,
+      connectedAt: new Date(),
       ...opts,
     };
 
@@ -137,6 +148,10 @@ export class ServerManager {
     // Connect the transport to the new server instance
     await server.connect(transport);
 
+    // Update status to Connected after successful connection
+    serverInfo.status = ServerStatus.Connected;
+    serverInfo.lastConnected = new Date();
+
     logger.info(`Connected transport for session ${sessionId}`);
   }
 
@@ -151,6 +166,9 @@ export class ServerManager {
       this.disconnectingIds.add(sessionId);
 
       try {
+        // Update status to Disconnected
+        server.status = ServerStatus.Disconnected;
+
         // Only close the transport if explicitly requested (e.g., during shutdown)
         // Don't close if this is called from an onclose handler to avoid recursion
         if (forceClose && server.server.transport) {
@@ -224,6 +242,11 @@ export class ServerManager {
     operation: (inboundConn: InboundConnection) => Promise<T>,
     options: OperationOptions = {},
   ): Promise<T> {
+    // Check connection status before executing operation
+    if (inboundConn.status !== ServerStatus.Connected || !inboundConn.server.transport) {
+      throw new Error(`Cannot execute operation: server status is ${inboundConn.status}`);
+    }
+
     return executeOperation(() => operation(inboundConn), 'server', options);
   }
 }

@@ -4,6 +4,7 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
+import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { createScopeAuthMiddleware, getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 import { sanitizeHeaders } from '../../../utils/sanitization.js';
@@ -32,6 +33,15 @@ export function setupSseRoutes(
       transport.onclose = () => {
         serverManager.disconnectTransport(transport.sessionId);
         // Note: ServerManager already logs the disconnection
+      };
+
+      transport.onerror = (error) => {
+        logger.error(`SSE transport error for session ${transport.sessionId}:`, error);
+        const server = serverManager.getServer(transport.sessionId);
+        if (server) {
+          server.status = ServerStatus.Error;
+          server.lastError = error instanceof Error ? error : new Error(String(error));
+        }
       };
     } catch (error) {
       logger.error('SSE connection error:', error);

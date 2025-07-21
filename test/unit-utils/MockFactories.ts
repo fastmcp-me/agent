@@ -2,7 +2,12 @@ import { vi } from 'vitest';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { OutboundConnections, InboundConnection, OutboundConnection } from '../../src/core/types/index.js';
+import {
+  OutboundConnections,
+  InboundConnection,
+  OutboundConnection,
+  ServerStatus,
+} from '../../src/core/types/index.js';
 import { ClientSessionData } from '../../src/auth/sessionTypes.js';
 
 /**
@@ -86,6 +91,7 @@ export const createMockOutboundConnections = (
  */
 export const createMockInboundConnection = (overrides?: Partial<InboundConnection>): InboundConnection => ({
   server: createMockServer() as Server,
+  status: ServerStatus.Connected,
   tags: ['test'],
   enablePagination: false,
   ...overrides,

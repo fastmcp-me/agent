@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupClientToServerNotifications, setupServerToClientNotifications } from './notificationHandlers.js';
 import {
   ClientStatus,
+  ServerStatus,
   type OutboundConnections,
   type OutboundConnection,
   type InboundConnection,
@@ -32,6 +33,7 @@ describe('Notification Handlers', () => {
     // Create mock server info
     mockInboundConn = {
       server: mockServer,
+      status: ServerStatus.Connected,
       transport: {
         timeout: 5000,
         start: vi.fn(),

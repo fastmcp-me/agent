@@ -5,6 +5,7 @@ import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../../../logger/logger.js';
 import { STREAMABLE_HTTP_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
+import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { createScopeAuthMiddleware, getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 import { sanitizeHeaders } from '../../../utils/sanitization.js';
@@ -44,6 +45,15 @@ export function setupStreamableHttpRoutes(
         transport.onclose = () => {
           serverManager.disconnectTransport(id);
           // Note: ServerManager already logs the disconnection
+        };
+
+        transport.onerror = (error) => {
+          logger.error(`Streamable HTTP transport error for session ${id}:`, error);
+          const server = serverManager.getServer(id);
+          if (server) {
+            server.status = ServerStatus.Error;
+            server.lastError = error instanceof Error ? error : new Error(String(error));
+          }
         };
       } else {
         const existingTransport = serverManager.getTransport(sessionId);

@@ -11,7 +11,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import logger from '../logger/logger.js';
 import { withErrorHandling } from '../utils/errorHandling.js';
-import { OutboundConnections, InboundConnection, ClientStatus } from '../core/types/index.js';
+import { OutboundConnections, InboundConnection, ClientStatus, ServerStatus } from '../core/types/index.js';
 /**
  * Sets up client-to-server notification handlers
  * @param clients Record of client instances
@@ -39,7 +39,7 @@ export function setupClientToServerNotifications(
           logger.info(`Received notification in client: ${name} ${JSON.stringify(notification)}`);
 
           // Check if client is connected before attempting to send
-          if (!inboundConn.server.transport) {
+          if (inboundConn.status !== ServerStatus.Connected || !inboundConn.server.transport) {
             logger.warn(`Server transport not connected. Dropping notification from ${name}`);
             return;
           }
