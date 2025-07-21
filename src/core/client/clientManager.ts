@@ -119,10 +119,8 @@ async function connectWithRetry(client: Client, transport: Transport, name: stri
     } catch (error) {
       // Handle OAuth authorization flow (managed by SDK)
       if (error instanceof UnauthorizedError) {
-        const serverConfig = AgentConfigManager.getInstance().getConfig();
-        logger.info(
-          `OAuth authorization required for ${name}. Visit http://localhost:${serverConfig.port}/oauth to authorize`,
-        );
+        const configManager = AgentConfigManager.getInstance();
+        logger.info(`OAuth authorization required for ${name}. Visit ${configManager.getUrl()}/oauth to authorize`);
 
         // Throw special error that includes OAuth info
         throw new OAuthRequiredError(name, currentClient);

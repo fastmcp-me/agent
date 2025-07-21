@@ -9,6 +9,7 @@ import { AUTH_CONFIG, HOST, PORT, RATE_LIMIT_CONFIG } from '../../constants.js';
 export interface AgentConfig {
   host: string;
   port: number;
+  externalUrl?: string;
   auth: {
     enabled: boolean;
     sessionTtlMinutes: number;
@@ -202,5 +203,23 @@ export class AgentConfigManager {
    */
   public isEnhancedSecurityEnabled(): boolean {
     return this.config.features.enhancedSecurity;
+  }
+
+  /**
+   * Gets the external URL if configured.
+   *
+   * @returns The external URL or undefined if not set
+   */
+  public getExternalUrl(): string | undefined {
+    return this.config.externalUrl;
+  }
+
+  /**
+   * Gets the server URL, preferring external URL if set, otherwise falling back to http://host:port.
+   *
+   * @returns The server URL to use for OAuth callbacks and public URLs
+   */
+  public getUrl(): string {
+    return this.config.externalUrl || `http://${this.config.host}:${this.config.port}`;
   }
 }

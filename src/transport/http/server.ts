@@ -89,8 +89,7 @@ export class ExpressServer {
    */
   private setupRoutes(): void {
     // Setup OAuth routes using SDK's mcpAuthRouter
-    const { host, port } = this.configManager.getConfig();
-    const issuerUrl = new URL(`http://${host}:${port}`);
+    const issuerUrl = new URL(this.configManager.getUrl());
 
     const rateLimitConfig: Partial<RateLimitOptions> = {
       windowMs: this.configManager.getRateLimitWindowMs(),
@@ -149,7 +148,7 @@ export class ExpressServer {
     this.app.listen(port, host, () => {
       const authStatus = this.configManager.isAuthEnabled() ? 'with authentication' : 'without authentication';
       logger.info(`Server is running on port ${port} with HTTP/SSE and Streamable HTTP transport ${authStatus}`);
-      logger.info(`📋 OAuth Management Dashboard: http://${host}:${port}/oauth`);
+      logger.info(`📋 OAuth Management Dashboard: ${this.configManager.getUrl()}/oauth`);
     });
   }
 

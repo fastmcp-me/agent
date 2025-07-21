@@ -54,6 +54,7 @@ export function createScopeAuthMiddleware(oauthProvider?: SDKOAuthServerProvider
   // Create the SDK's bearer auth middleware
   const bearerAuthMiddleware = requireBearerAuth({
     verifier: provider,
+    resourceMetadataUrl: `${AgentConfigManager.getInstance().getUrl()}/.well-known/oauth-protected-resource`,
   });
 
   // Return a combined middleware that does both auth and scope validation
