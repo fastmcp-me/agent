@@ -108,35 +108,44 @@ describe('Streamable HTTP Routes', () => {
 
   describe('setupStreamableHttpRoutes', () => {
     it('should setup POST route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn();
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
         expect.any(Function), // tagsExtractor
+        mockAuthMiddleware, // authMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup GET route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn();
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.get).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
+        expect.any(Function), // tagsExtractor
+        mockAuthMiddleware, // authMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup DELETE route', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn();
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.delete).toHaveBeenCalledWith(
         STREAMABLE_HTTP_ENDPOINT,
+        expect.any(Function), // tagsExtractor
+        mockAuthMiddleware, // authMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup routes without OAuth provider', () => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.post).toHaveBeenCalled();
       expect(mockRouter.get).toHaveBeenCalled();
@@ -146,8 +155,9 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - New Session', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
-      postHandler = mockRouter.post.mock.calls[0][2]; // Get the actual handler function (3rd arg after endpoint and tagsExtractor)
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      postHandler = mockRouter.post.mock.calls[0][3]; // Get the actual handler function (4th arg after endpoint, tagsExtractor, authMiddleware)
     });
 
     it('should create new session when no sessionId header', async () => {
@@ -243,8 +253,9 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - Existing Session', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
-      postHandler = mockRouter.post.mock.calls[0][2];
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      postHandler = mockRouter.post.mock.calls[0][3];
     });
 
     it('should use existing transport when sessionId provided', async () => {
@@ -304,8 +315,9 @@ describe('Streamable HTTP Routes', () => {
 
   describe('POST Handler - Error Handling', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
-      postHandler = mockRouter.post.mock.calls[0][2];
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      postHandler = mockRouter.post.mock.calls[0][3];
     });
 
     it('should handle transport creation error', async () => {
@@ -364,8 +376,9 @@ describe('Streamable HTTP Routes', () => {
 
   describe('GET Handler', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
-      getHandler = mockRouter.get.mock.calls[0][1]; // Get the actual handler function
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      getHandler = mockRouter.get.mock.calls[0][3]; // Get the actual handler function
     });
 
     it('should handle GET request with valid sessionId', async () => {
@@ -429,8 +442,9 @@ describe('Streamable HTTP Routes', () => {
 
   describe('DELETE Handler', () => {
     beforeEach(() => {
-      setupStreamableHttpRoutes(mockRouter, mockServerManager);
-      deleteHandler = mockRouter.delete.mock.calls[0][1]; // Get the actual handler function
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupStreamableHttpRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      deleteHandler = mockRouter.delete.mock.calls[0][3]; // Get the actual handler function
     });
 
     it('should handle DELETE request with valid sessionId', async () => {

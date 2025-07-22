@@ -46,6 +46,7 @@ export class ExpressServer {
    */
   constructor(serverManager: ServerManager) {
     this.app = express();
+
     this.serverManager = serverManager;
     this.configManager = AgentConfigManager.getInstance();
 
@@ -141,10 +142,9 @@ export class ExpressServer {
     const router = express.Router();
 
     const scopeAuthMiddleware = createScopeAuthMiddleware(this.oauthProvider);
-    router.use(scopeAuthMiddleware);
 
-    setupStreamableHttpRoutes(router, this.serverManager);
-    setupSseRoutes(router, this.serverManager);
+    setupStreamableHttpRoutes(router, this.serverManager, scopeAuthMiddleware);
+    setupSseRoutes(router, this.serverManager, scopeAuthMiddleware);
     this.app.use(router);
 
     // Log authentication status

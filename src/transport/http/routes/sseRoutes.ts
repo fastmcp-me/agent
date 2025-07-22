@@ -8,8 +8,10 @@ import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
-export function setupSseRoutes(router: Router, serverManager: ServerManager): void {
-  router.get(SSE_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
+export function setupSseRoutes(router: Router, serverManager: ServerManager, authMiddleware: any): void {
+  const middlewares = [tagsExtractor, authMiddleware];
+
+  router.get(SSE_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
       const transport = new SSEServerTransport(MESSAGES_ENDPOINT, res);
 
@@ -41,7 +43,7 @@ export function setupSseRoutes(router: Router, serverManager: ServerManager): vo
     }
   });
 
-  router.post(MESSAGES_ENDPOINT, async (req: Request, res: Response) => {
+  router.post(MESSAGES_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
       const sessionId = req.query.sessionId as string;
       if (!sessionId) {

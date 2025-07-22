@@ -102,26 +102,32 @@ describe('SSE Routes', () => {
 
   describe('setupSseRoutes', () => {
     it('should setup SSE GET route', () => {
-      setupSseRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn();
+      setupSseRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.get).toHaveBeenCalledWith(
         SSE_ENDPOINT,
         expect.any(Function), // tagsExtractor
+        mockAuthMiddleware, // authMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup messages POST route', () => {
-      setupSseRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn();
+      setupSseRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.post).toHaveBeenCalledWith(
         MESSAGES_ENDPOINT,
+        expect.any(Function), // tagsExtractor
+        mockAuthMiddleware, // authMiddleware
         expect.any(Function), // handler
       );
     });
 
     it('should setup routes without OAuth provider', () => {
-      setupSseRoutes(mockRouter, mockServerManager);
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupSseRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
 
       expect(mockRouter.get).toHaveBeenCalled();
       expect(mockRouter.post).toHaveBeenCalled();
@@ -130,8 +136,9 @@ describe('SSE Routes', () => {
 
   describe('SSE GET Handler', () => {
     beforeEach(() => {
-      setupSseRoutes(mockRouter, mockServerManager);
-      getHandler = mockRouter.get.mock.calls[0][2]; // Get the actual handler function
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupSseRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      getHandler = mockRouter.get.mock.calls[0][3]; // Get the actual handler function
     });
 
     it('should handle SSE connection successfully', async () => {
@@ -249,8 +256,9 @@ describe('SSE Routes', () => {
 
   describe('Messages POST Handler', () => {
     beforeEach(() => {
-      setupSseRoutes(mockRouter, mockServerManager);
-      postHandler = mockRouter.post.mock.calls[0][1]; // Get the actual handler function
+      const mockAuthMiddleware = vi.fn((req, res, next) => next());
+      setupSseRoutes(mockRouter, mockServerManager, mockAuthMiddleware);
+      postHandler = mockRouter.post.mock.calls[0][3]; // Get the actual handler function
     });
 
     it('should handle message with valid sessionId', async () => {

@@ -9,8 +9,10 @@ import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
-export function setupStreamableHttpRoutes(router: Router, serverManager: ServerManager): void {
-  router.post(STREAMABLE_HTTP_ENDPOINT, tagsExtractor, async (req: Request, res: Response) => {
+export function setupStreamableHttpRoutes(router: Router, serverManager: ServerManager, authMiddleware: any): void {
+  const middlewares = [tagsExtractor, authMiddleware];
+
+  router.post(STREAMABLE_HTTP_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
       let transport: StreamableHTTPServerTransport;
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
@@ -73,7 +75,7 @@ export function setupStreamableHttpRoutes(router: Router, serverManager: ServerM
     }
   });
 
-  router.get(STREAMABLE_HTTP_ENDPOINT, async (req: Request, res: Response) => {
+  router.get(STREAMABLE_HTTP_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       if (!sessionId) {
@@ -103,7 +105,7 @@ export function setupStreamableHttpRoutes(router: Router, serverManager: ServerM
     }
   });
 
-  router.delete(STREAMABLE_HTTP_ENDPOINT, async (req: Request, res: Response) => {
+  router.delete(STREAMABLE_HTTP_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
       if (!sessionId) {

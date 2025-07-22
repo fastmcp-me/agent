@@ -244,6 +244,33 @@ describe('HTTP Transport Authentication E2E', () => {
       console.warn('Could not test OAuth protected resource metadata:', error);
     }
 
+    // Step 2.5: Test invalid OAuth well-known endpoints return 404
+    try {
+      const invalidPaths = [
+        `${baseUrl}/.well-known/oauth-protected-resource/mcp`,
+        `${baseUrl}/.well-known/oauth-authorization-server/mcp`,
+      ];
+
+      for (const invalidPath of invalidPaths) {
+        // Test GET request returns 404
+        const getResponse = await fetch(invalidPath);
+        expect(getResponse.status).toBe(404);
+
+        // Test OPTIONS request returns 404 (not 204)
+        const optionsResponse = await fetch(invalidPath, { method: 'OPTIONS' });
+        expect(optionsResponse.status).toBe(404);
+
+        // Verify error response format
+        const errorData = await getResponse.json();
+        expect(errorData).toMatchObject({
+          error: 'not_found',
+          error_description: 'Invalid OAuth discovery endpoint',
+        });
+      }
+    } catch (error) {
+      console.warn('Could not test invalid OAuth paths:', error);
+    }
+
     // Step 3: Test WWW-Authenticate header on unauthorized access to protected endpoints
     try {
       const unauthorizedResponse = await fetch(`${baseUrl}/sse`, {
