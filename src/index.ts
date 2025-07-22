@@ -14,6 +14,7 @@ import { McpConfigManager } from './config/mcpConfigManager.js';
 import { ExpressServer } from './transport/http/server.js';
 import { AgentConfigManager } from './core/server/agentConfig.js';
 import { PORT, HOST } from './constants.js';
+import { displayLogo } from './utils/logo.js';
 
 // Parse command line arguments
 const argv = yargs(hideBin(process.argv))
@@ -155,6 +156,7 @@ async function main() {
   try {
     if (argv.transport !== 'stdio') {
       enableConsoleTransport();
+      displayLogo();
     }
 
     McpConfigManager.getInstance(argv.config);
