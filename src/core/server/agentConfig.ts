@@ -10,6 +10,7 @@ export interface AgentConfig {
   host: string;
   port: number;
   externalUrl?: string;
+  trustProxy: string | boolean;
   auth: {
     enabled: boolean;
     sessionTtlMinutes: number;
@@ -58,6 +59,7 @@ export class AgentConfigManager {
     this.config = {
       host: HOST,
       port: PORT,
+      trustProxy: 'loopback',
       auth: {
         enabled: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
         sessionTtlMinutes: AUTH_CONFIG.SERVER.SESSION.TTL_MINUTES,
@@ -100,15 +102,19 @@ export class AgentConfigManager {
    * @param updates - Partial configuration object with new values
    */
   public updateConfig(updates: Partial<AgentConfig>): void {
-    this.config = { ...this.config, ...updates };
-    if (updates.auth) {
-      this.config.auth = { ...this.config.auth, ...updates.auth };
+    // Handle nested object merging properly
+    const { auth, rateLimit, features, ...otherUpdates } = updates;
+
+    this.config = { ...this.config, ...otherUpdates };
+
+    if (auth) {
+      this.config.auth = { ...this.config.auth, ...auth };
     }
-    if (updates.rateLimit) {
-      this.config.rateLimit = { ...this.config.rateLimit, ...updates.rateLimit };
+    if (rateLimit) {
+      this.config.rateLimit = { ...this.config.rateLimit, ...rateLimit };
     }
-    if (updates.features) {
-      this.config.features = { ...this.config.features, ...updates.features };
+    if (features) {
+      this.config.features = { ...this.config.features, ...features };
     }
   }
 
@@ -212,6 +218,15 @@ export class AgentConfigManager {
    */
   public getExternalUrl(): string | undefined {
     return this.config.externalUrl;
+  }
+
+  /**
+   * Gets the trust proxy configuration for Express.js.
+   *
+   * @returns Trust proxy setting (boolean, string preset, IP address, or CIDR range)
+   */
+  public getTrustProxy(): string | boolean {
+    return this.config.trustProxy;
   }
 
   /**

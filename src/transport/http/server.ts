@@ -50,6 +50,9 @@ export class ExpressServer {
     this.serverManager = serverManager;
     this.configManager = AgentConfigManager.getInstance();
 
+    // Configure trust proxy setting before any middleware
+    this.app.set('trust proxy', this.configManager.getTrustProxy());
+
     // Initialize OAuth provider with custom session storage path if configured
     const sessionStoragePath = this.configManager.getSessionStoragePath();
     this.oauthProvider = new SDKOAuthServerProvider(sessionStoragePath);

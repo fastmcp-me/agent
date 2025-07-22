@@ -104,6 +104,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'number',
       default: 100,
     },
+    'trust-proxy': {
+      describe:
+        'Trust proxy configuration for Express.js (boolean, IP address, subnet, or preset: loopback, linklocal, uniquelocal)',
+      type: 'string',
+      default: 'loopback',
+    },
   })
   .help()
   .alias('help', 'h')
@@ -169,10 +175,15 @@ async function main() {
     const scopeValidationEnabled = argv['enable-scope-validation'] ?? authEnabled;
     const enhancedSecurityEnabled = argv['enable-enhanced-security'] ?? false;
 
+    // Handle trust proxy configuration (convert 'true'/'false' strings to boolean)
+    const trustProxyValue = argv['trust-proxy'];
+    const trustProxy = trustProxyValue === 'true' ? true : trustProxyValue === 'false' ? false : trustProxyValue;
+
     serverConfigManager.updateConfig({
       host: argv.host,
       port: argv.port,
       externalUrl: argv['external-url'],
+      trustProxy,
       auth: {
         enabled: authEnabled,
         sessionTtlMinutes: argv['session-ttl'],

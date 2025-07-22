@@ -61,30 +61,34 @@ npx -y @1mcp/agent --transport stdio
 # Use external URL for reverse proxy setup (nginx, etc.)
 npx -y @1mcp/agent --external-url https://example.com
 
+# Configure trust proxy for reverse proxy setup
+npx -y @1mcp/agent --trust-proxy=192.168.1.1
+
 # Show all available options
 npx -y @1mcp/agent --help
 ```
 
 Available options:
 
-| Option (CLI)                 | Environment Variable               | Description                                                                  |  Default  |
-| :--------------------------- | :--------------------------------- | :--------------------------------------------------------------------------- | :-------: |
-| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                            |  "http"   |
-| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                   |           |
-| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                             |   3050    |
-| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                             | localhost |
-| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com) |           |
-| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                       |           |
-| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                          |   false   |
-| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1) - **Deprecated**                           |   false   |
-| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                            |   false   |
-| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                  |   true    |
-| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                |   false   |
-| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                      |   1440    |
-| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                               |           |
-| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                  |    15     |
-| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                        |    100    |
-| `--help`, `-h`               |                                    | Show help                                                                    |           |
+| Option (CLI)                 | Environment Variable               | Description                                                                   |  Default   |
+| :--------------------------- | :--------------------------------- | :---------------------------------------------------------------------------- | :--------: |
+| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                             |   "http"   |
+| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                    |            |
+| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                              |    3050    |
+| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                              | localhost  |
+| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com)  |            |
+| `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset) | "loopback" |
+| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                        |            |
+| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                           |   false    |
+| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1) - **Deprecated**                            |   false    |
+| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                             |   false    |
+| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                   |    true    |
+| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                 |   false    |
+| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                       |    1440    |
+| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                |            |
+| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                   |     15     |
+| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                         |    100     |
+| `--help`, `-h`               |                                    | Show help                                                                     |            |
 
 ## Docker
 
@@ -122,8 +126,26 @@ docker run -p 3051:3051 \
 # With external URL for reverse proxy
 docker run -p 3050:3050 \
   -e ONE_MCP_EXTERNAL_URL=https://mcp.example.com \
+  -e ONE_MCP_TRUST_PROXY=true \
   ghcr.io/1mcp-app/agent
 ```
+
+## Trust Proxy Configuration
+
+When running 1MCP behind a reverse proxy, configure trust proxy settings for proper client IP detection:
+
+```bash
+# Default (safe for local development)
+npx -y @1mcp/agent --trust-proxy=loopback
+
+# Behind reverse proxy
+npx -y @1mcp/agent --trust-proxy=192.168.1.1
+
+# Behind CDN/Cloudflare
+npx -y @1mcp/agent --trust-proxy=true
+```
+
+See [docs/TRUST_PROXY.md](docs/TRUST_PROXY.md) for detailed configuration options, security considerations, and reverse proxy setup examples.
 
 ### Understanding Tags
 

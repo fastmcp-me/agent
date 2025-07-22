@@ -107,6 +107,7 @@ describe('ExpressServer', () => {
     // Mock Express app
     mockApp = {
       use: vi.fn(),
+      set: vi.fn(),
       listen: vi.fn((port, host, callback) => {
         if (callback) callback();
       }),
@@ -133,6 +134,7 @@ describe('ExpressServer', () => {
     mockConfigManager = {
       getSessionStoragePath: vi.fn(() => '/tmp/sessions'),
       isEnhancedSecurityEnabled: vi.fn(() => false),
+      getTrustProxy: vi.fn(() => 'loopback'),
       getConfig: vi.fn(() => ({ host: 'localhost', port: 3050 })),
       getRateLimitWindowMs: vi.fn(() => 900000),
       getRateLimitMax: vi.fn(() => 100),
@@ -227,6 +229,81 @@ describe('ExpressServer', () => {
       expressServer.start();
 
       expect(mockApp.listen).toHaveBeenCalled();
+    });
+  });
+
+  describe('Trust Proxy Configuration', () => {
+    it('should set trust proxy to default loopback value', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue('loopback');
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', 'loopback');
+    });
+
+    it('should set trust proxy to boolean true', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue(true);
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', true);
+    });
+
+    it('should set trust proxy to boolean false', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue(false);
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', false);
+    });
+
+    it('should set trust proxy to custom IP address', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue('192.168.1.1');
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', '192.168.1.1');
+    });
+
+    it('should set trust proxy to CIDR range', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue('192.168.0.0/16');
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', '192.168.0.0/16');
+    });
+
+    it('should set trust proxy to preset values', async () => {
+      const presets = ['loopback', 'linklocal', 'uniquelocal'];
+
+      for (const preset of presets) {
+        vi.clearAllMocks();
+        mockConfigManager.getTrustProxy.mockReturnValue(preset);
+
+        expressServer = new ExpressServer(mockServerManager);
+
+        expect(mockApp.set).toHaveBeenCalledWith('trust proxy', preset);
+      }
+    });
+
+    it('should call getTrustProxy exactly once during construction', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue('loopback');
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      expect(mockConfigManager.getTrustProxy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should set trust proxy before middleware setup', async () => {
+      mockConfigManager.getTrustProxy.mockReturnValue('loopback');
+
+      expressServer = new ExpressServer(mockServerManager);
+
+      // Trust proxy should be set before any middleware
+      const setCallIndex = mockApp.set.mock.invocationCallOrder[0];
+      const useCallIndex = mockApp.use.mock.invocationCallOrder[0];
+
+      expect(setCallIndex).toBeLessThan(useCallIndex);
     });
   });
 
