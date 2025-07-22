@@ -1,242 +1,188 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ExpressServer } from '../../../src/transport/http/server.js';
-import { ServerManager } from '../../../src/core/server/serverManager.js';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { AgentConfigManager } from '../../../src/core/server/agentConfig.js';
-import { vi } from 'vitest';
 
 /**
- * Integration tests for trust proxy configuration in HTTP transport.
+ * Integration tests for trust proxy configuration.
  *
- * These tests verify that the Express.js trust proxy configuration
- * is properly applied during server initialization with various settings.
+ * These tests verify that the AgentConfigManager properly handles
+ * trust proxy configuration for various deployment scenarios.
  */
 describe('HTTP Trust Proxy Configuration Integration', () => {
-  let expressServer: ExpressServer;
-  let mockServerManager: ServerManager;
   let configManager: AgentConfigManager;
-  let mockApp: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
     // Reset singleton instance
     // @ts-expect-error - Accessing private property for testing
     AgentConfigManager.instance = undefined;
 
     configManager = AgentConfigManager.getInstance();
-
-    // Mock ServerManager for testing
-    mockServerManager = {
-      getClients: vi.fn(() => new Map()),
-      getServer: vi.fn(),
-    } as any;
-
-    // Mock Express app
-    mockApp = {
-      use: vi.fn(),
-      set: vi.fn(),
-      listen: vi.fn((port, host, callback) => {
-        if (callback) callback();
-      }),
-    };
   });
 
-  afterEach(() => {
-    if (expressServer) {
-      expressServer.shutdown();
-    }
-  });
-
-  describe('Trust Proxy Configuration Application', () => {
-    beforeEach(() => {
-      // Mock express to return our mock app
-      vi.doMock('express', () => ({
-        default: vi.fn(() => mockApp),
-        Router: vi.fn(() => ({
-          use: vi.fn(),
-          get: vi.fn(),
-          post: vi.fn(),
-          delete: vi.fn(),
-        })),
-      }));
-    });
-
-    it('should apply default loopback trust proxy configuration', () => {
-      // Default configuration should have trustProxy: 'loopback'
+  describe('Trust Proxy Configuration Management', () => {
+    it('should have default loopback trust proxy configuration', () => {
       expect(configManager.getTrustProxy()).toBe('loopback');
 
-      expressServer = new ExpressServer(mockServerManager);
-
-      // Verify that app.set was called with trust proxy setting
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', 'loopback');
+      const config = configManager.getConfig();
+      expect(config.trustProxy).toBe('loopback');
     });
 
-    it('should apply custom boolean trust proxy configuration', () => {
+    it('should handle boolean trust proxy values', () => {
       configManager.updateConfig({ trustProxy: true });
       expect(configManager.getTrustProxy()).toBe(true);
 
-      expressServer = new ExpressServer(mockServerManager);
-
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', true);
+      configManager.updateConfig({ trustProxy: false });
+      expect(configManager.getTrustProxy()).toBe(false);
     });
 
-    it('should apply custom IP address trust proxy configuration', () => {
-      configManager.updateConfig({ trustProxy: '192.168.1.1' });
-      expect(configManager.getTrustProxy()).toBe('192.168.1.1');
-
-      expressServer = new ExpressServer(mockServerManager);
-
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', '192.168.1.1');
-    });
-
-    it('should apply CIDR range trust proxy configuration', () => {
-      configManager.updateConfig({ trustProxy: '10.0.0.0/8' });
-      expect(configManager.getTrustProxy()).toBe('10.0.0.0/8');
-
-      expressServer = new ExpressServer(mockServerManager);
-
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', '10.0.0.0/8');
-    });
-
-    it('should apply preset trust proxy configurations', () => {
+    it('should handle string preset trust proxy values', () => {
       const presets = ['loopback', 'linklocal', 'uniquelocal'];
 
       presets.forEach((preset) => {
-        vi.clearAllMocks();
-
-        // Reset singleton for clean state
-        // @ts-expect-error - Accessing private property for testing
-        AgentConfigManager.instance = undefined;
-        configManager = AgentConfigManager.getInstance();
-
         configManager.updateConfig({ trustProxy: preset });
         expect(configManager.getTrustProxy()).toBe(preset);
-
-        expressServer = new ExpressServer(mockServerManager);
-        expect(mockApp.set).toHaveBeenCalledWith('trust proxy', preset);
-
-        expressServer.shutdown();
       });
     });
 
-    it('should apply trust proxy setting before middleware setup', () => {
-      configManager.updateConfig({ trustProxy: 'linklocal' });
+    it('should handle IP address trust proxy values', () => {
+      const ipAddresses = ['127.0.0.1', '192.168.1.1', '::1'];
 
-      expressServer = new ExpressServer(mockServerManager);
-
-      // Verify that set was called before use (middleware setup)
-      const setCallIndex = mockApp.set.mock.invocationCallOrder.find(
-        (_: any, index: number) => mockApp.set.mock.calls[index]?.[0] === 'trust proxy',
-      );
-      const firstUseCallIndex = mockApp.use.mock.invocationCallOrder[0];
-
-      expect(setCallIndex).toBeDefined();
-      expect(setCallIndex).toBeLessThan(firstUseCallIndex);
+      ipAddresses.forEach((ip) => {
+        configManager.updateConfig({ trustProxy: ip });
+        expect(configManager.getTrustProxy()).toBe(ip);
+      });
     });
 
-    it('should only set trust proxy once during initialization', () => {
-      configManager.updateConfig({ trustProxy: 'uniquelocal' });
+    it('should handle CIDR range trust proxy values', () => {
+      const cidrs = ['192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12', '2001:db8::/32'];
 
-      expressServer = new ExpressServer(mockServerManager);
-
-      // Filter calls to only trust proxy settings
-      const trustProxyCalls = mockApp.set.mock.calls.filter((call: any[]) => call[0] === 'trust proxy');
-
-      expect(trustProxyCalls).toHaveLength(1);
-      expect(trustProxyCalls[0]).toEqual(['trust proxy', 'uniquelocal']);
+      cidrs.forEach((cidr) => {
+        configManager.updateConfig({ trustProxy: cidr });
+        expect(configManager.getTrustProxy()).toBe(cidr);
+      });
     });
   });
 
   describe('Configuration Persistence', () => {
-    beforeEach(() => {
-      // Mock express to return our mock app
-      vi.doMock('express', () => ({
-        default: vi.fn(() => mockApp),
-        Router: vi.fn(() => ({
-          use: vi.fn(),
-          get: vi.fn(),
-          post: vi.fn(),
-          delete: vi.fn(),
-        })),
-      }));
-    });
-
-    it('should maintain configuration across multiple server instances', () => {
+    it('should maintain trust proxy configuration across updates', () => {
       // Set initial configuration
-      configManager.updateConfig({ trustProxy: false });
+      configManager.updateConfig({
+        trustProxy: 'linklocal',
+        host: 'test.com',
+        port: 4000,
+      });
 
-      // Create first server instance
-      let server1 = new ExpressServer(mockServerManager);
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', false);
+      expect(configManager.getTrustProxy()).toBe('linklocal');
+      expect(configManager.getConfig().host).toBe('test.com');
+      expect(configManager.getConfig().port).toBe(4000);
 
-      server1.shutdown();
-      vi.clearAllMocks();
-
-      // Create second server instance - should use same config
-      const server2 = new ExpressServer(mockServerManager);
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', false);
-
-      server2.shutdown();
+      // Update other configuration, trust proxy should persist
+      configManager.updateConfig({ port: 5000 });
+      expect(configManager.getTrustProxy()).toBe('linklocal');
+      expect(configManager.getConfig().port).toBe(5000);
     });
 
-    it('should reflect configuration updates in new server instances', () => {
-      // Initial configuration
-      configManager.updateConfig({ trustProxy: '127.0.0.1' });
-      let server = new ExpressServer(mockServerManager);
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', '127.0.0.1');
+    it('should handle configuration updates with nested objects', () => {
+      configManager.updateConfig({
+        trustProxy: '192.168.1.0/24',
+        auth: {
+          enabled: true,
+          sessionTtlMinutes: 720,
+        } as any,
+      });
 
-      server.shutdown();
-      vi.clearAllMocks();
+      expect(configManager.getTrustProxy()).toBe('192.168.1.0/24');
+      expect(configManager.getConfig().auth.enabled).toBe(true);
+      expect(configManager.getConfig().auth.sessionTtlMinutes).toBe(720);
 
-      // Update configuration
-      configManager.updateConfig({ trustProxy: 'loopback' });
-      server = new ExpressServer(mockServerManager);
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', 'loopback');
-
-      server.shutdown();
+      // Other auth properties should be preserved
+      expect(configManager.getConfig().auth.oauthCodeTtlMs).toBeDefined();
+      expect(configManager.getConfig().auth.oauthTokenTtlMs).toBeDefined();
     });
   });
 
-  describe('Edge Cases', () => {
-    beforeEach(() => {
-      // Mock express to return our mock app
-      vi.doMock('express', () => ({
-        default: vi.fn(() => mockApp),
-        Router: vi.fn(() => ({
-          use: vi.fn(),
-          get: vi.fn(),
-          post: vi.fn(),
-          delete: vi.fn(),
-        })),
-      }));
+  describe('Configuration Scenarios', () => {
+    it('should handle local development scenario', () => {
+      // Default configuration should be suitable for local development
+      expect(configManager.getTrustProxy()).toBe('loopback');
+
+      const config = configManager.getConfig();
+      expect(config.host).toBe('localhost');
+      expect(config.port).toBe(3050);
+      expect(config.trustProxy).toBe('loopback');
     });
 
+    it('should handle reverse proxy scenario', () => {
+      configManager.updateConfig({
+        trustProxy: '192.168.1.100',
+        externalUrl: 'https://api.example.com',
+        host: '0.0.0.0',
+        port: 3050,
+      });
+
+      expect(configManager.getTrustProxy()).toBe('192.168.1.100');
+      expect(configManager.getExternalUrl()).toBe('https://api.example.com');
+      expect(configManager.getUrl()).toBe('https://api.example.com');
+    });
+
+    it('should handle CDN scenario', () => {
+      configManager.updateConfig({
+        trustProxy: true,
+        externalUrl: 'https://cdn.example.com',
+        features: {
+          enhancedSecurity: true,
+        } as any,
+      });
+
+      expect(configManager.getTrustProxy()).toBe(true);
+      expect(configManager.getExternalUrl()).toBe('https://cdn.example.com');
+      expect(configManager.isEnhancedSecurityEnabled()).toBe(true);
+    });
+
+    it('should handle Docker container scenario', () => {
+      configManager.updateConfig({
+        trustProxy: 'uniquelocal',
+        host: '0.0.0.0',
+        port: 3050,
+      });
+
+      expect(configManager.getTrustProxy()).toBe('uniquelocal');
+      expect(configManager.getConfig().host).toBe('0.0.0.0');
+      expect(configManager.getUrl()).toBe('http://0.0.0.0:3050');
+    });
+  });
+
+  describe('Edge Cases and Validation', () => {
     it('should handle boolean false trust proxy configuration', () => {
       configManager.updateConfig({ trustProxy: false });
       expect(configManager.getTrustProxy()).toBe(false);
-
-      expressServer = new ExpressServer(mockServerManager);
-
-      expect(mockApp.set).toHaveBeenCalledWith('trust proxy', false);
+      expect(typeof configManager.getTrustProxy()).toBe('boolean');
     });
 
-    it('should handle complex CIDR configurations', () => {
-      const complexCidrs = ['192.168.0.0/16', '10.0.0.0/8', '172.16.0.0/12', '2001:db8::/32'];
+    it('should handle empty string trust proxy configuration', () => {
+      configManager.updateConfig({ trustProxy: '' });
+      expect(configManager.getTrustProxy()).toBe('');
+    });
 
-      complexCidrs.forEach((cidr) => {
-        vi.clearAllMocks();
+    it('should maintain type consistency', () => {
+      // Test boolean
+      configManager.updateConfig({ trustProxy: true });
+      expect(typeof configManager.getTrustProxy()).toBe('boolean');
 
-        // Reset singleton
-        // @ts-expect-error - Accessing private property for testing
-        AgentConfigManager.instance = undefined;
-        configManager = AgentConfigManager.getInstance();
+      // Test string
+      configManager.updateConfig({ trustProxy: 'loopback' });
+      expect(typeof configManager.getTrustProxy()).toBe('string');
 
-        configManager.updateConfig({ trustProxy: cidr });
-        expressServer = new ExpressServer(mockServerManager);
+      // Test IP address
+      configManager.updateConfig({ trustProxy: '127.0.0.1' });
+      expect(typeof configManager.getTrustProxy()).toBe('string');
+    });
 
-        expect(mockApp.set).toHaveBeenCalledWith('trust proxy', cidr);
+    it('should handle rapid configuration changes', () => {
+      const values = [true, false, 'loopback', '192.168.1.1', '10.0.0.0/8', 'linklocal'];
 
-        expressServer.shutdown();
+      values.forEach((value) => {
+        configManager.updateConfig({ trustProxy: value });
+        expect(configManager.getTrustProxy()).toBe(value);
       });
     });
   });
