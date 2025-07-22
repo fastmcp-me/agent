@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2025-07-22
+
+### 🚀 Features
+- Implement trust proxy configuration for Express.js by @xizhibei
+- Integrate authentication middleware into SSE and streamable HTTP routes by @xizhibei
+- Enhance ExpressServer with MCP configuration and scope support by @xizhibei
+- Add startup logo display utility by @xizhibei
+
+### 💼 Other
+- Merge pull request #80 from 1mcp-app/dependabot/npm_and_yarn/npm_and_yarn-e04d5d616f by @xizhibei in [#80](https://github.com/1mcp-app/agent/pull/80)
+
+### 🚜 Refactor
+- Streamline HTTP trust proxy integration tests by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Update development script and SDK version by @xizhibei
+
+
 ## [0.14.0] - 2025-07-21
 
 ### 🚀 Features
@@ -409,6 +427,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.15.0]: https://github.com/1mcp-app/agent/compare/v0.14.0..v0.15.0
 [0.14.0]: https://github.com/1mcp-app/agent/compare/v0.13.1..v0.14.0
 [0.13.1]: https://github.com/1mcp-app/agent/compare/v0.13.0..v0.13.1
 [0.13.0]: https://github.com/1mcp-app/agent/compare/v0.12.0..v0.13.0
