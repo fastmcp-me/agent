@@ -15,6 +15,7 @@ import createOAuthRoutes from './routes/oauthRoutes.js';
 import { AgentConfigManager } from '../../core/server/agentConfig.js';
 import { RATE_LIMIT_CONFIG } from '../../constants.js';
 import { createScopeAuthMiddleware } from './middlewares/scopeAuthMiddleware.js';
+import { McpConfigManager } from '../../config/mcpConfigManager.js';
 
 /**
  * ExpressServer orchestrates the HTTP/SSE transport layer for the MCP server.
@@ -105,9 +106,19 @@ export class ExpressServer {
       legacyHeaders: false,
     };
 
+    // Get available scopes from MCP config
+    const mcpConfigManager = McpConfigManager.getInstance();
+    const availableTags = mcpConfigManager.getAvailableTags();
+
+    // Convert tags to supported scopes
+    const scopesSupported = availableTags.map((tag: string) => `tag:${tag}`);
+
     const authRouter = mcpAuthRouter({
       provider: this.oauthProvider,
       issuerUrl,
+      baseUrl: issuerUrl,
+      scopesSupported,
+      resourceName: '1MCP Agent - Universal MCP Server Proxy',
       authorizationOptions: {
         rateLimit: rateLimitConfig,
       },
