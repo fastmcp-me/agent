@@ -71,10 +71,7 @@ describe('Security Middleware', () => {
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Frame-Options', 'DENY');
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Content-Type-Options', 'nosniff');
       expect(mockResponse.setHeader).toHaveBeenCalledWith('X-XSS-Protection', '1; mode=block');
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'Referrer-Policy',
-        'strict-origin-when-cross-origin'
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
       expect(mockResponse.removeHeader).toHaveBeenCalledWith('X-Powered-By');
       expect(mockNext).toHaveBeenCalled();
     });
@@ -87,7 +84,7 @@ describe('Security Middleware', () => {
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; form-action 'self'; frame-ancestors 'none';"
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; form-action 'self'; frame-ancestors 'none';",
       );
     });
 
@@ -97,10 +94,7 @@ describe('Security Middleware', () => {
 
       securityHeaders(mockRequest, mockResponse, mockNext);
 
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
-        'Content-Security-Policy',
-        expect.any(String)
-      );
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Content-Security-Policy', expect.any(String));
     });
 
     it('should not set CSP header for auth paths', () => {
@@ -109,10 +103,7 @@ describe('Security Middleware', () => {
 
       securityHeaders(mockRequest, mockResponse, mockNext);
 
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
-        'Content-Security-Policy',
-        expect.any(String)
-      );
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Content-Security-Policy', expect.any(String));
     });
 
     it('should not set CSP header for non-HTML requests', () => {
@@ -120,10 +111,7 @@ describe('Security Middleware', () => {
 
       securityHeaders(mockRequest, mockResponse, mockNext);
 
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
-        'Content-Security-Policy',
-        expect.any(String)
-      );
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('Content-Security-Policy', expect.any(String));
     });
   });
 
@@ -245,7 +233,7 @@ describe('Security Middleware', () => {
           ip: '127.0.0.1',
           userAgent: 'test-agent',
           path: '/test',
-        })
+        }),
       );
     });
   });
@@ -256,7 +244,7 @@ describe('Security Middleware', () => {
 
       expect(mockResponse.setHeader).toHaveBeenCalledWith(
         'Cache-Control',
-        'no-store, no-cache, must-revalidate, proxy-revalidate'
+        'no-store, no-cache, must-revalidate, proxy-revalidate',
       );
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Pragma', 'no-cache');
       expect(mockResponse.setHeader).toHaveBeenCalledWith('Expires', '0');
@@ -269,10 +257,7 @@ describe('Security Middleware', () => {
 
       sessionSecurity(mockRequest, mockResponse, mockNext);
 
-      expect(mockResponse.setHeader).toHaveBeenCalledWith(
-        'X-Robots-Tag',
-        'noindex, nofollow, nosnippet, noarchive'
-      );
+      expect(mockResponse.setHeader).toHaveBeenCalledWith('X-Robots-Tag', 'noindex, nofollow, nosnippet, noarchive');
     });
 
     it('should not set robots header for non-OAuth endpoints', () => {
@@ -280,10 +265,7 @@ describe('Security Middleware', () => {
 
       sessionSecurity(mockRequest, mockResponse, mockNext);
 
-      expect(mockResponse.setHeader).not.toHaveBeenCalledWith(
-        'X-Robots-Tag',
-        expect.any(String)
-      );
+      expect(mockResponse.setHeader).not.toHaveBeenCalledWith('X-Robots-Tag', expect.any(String));
     });
   });
 
@@ -291,7 +273,7 @@ describe('Security Middleware', () => {
     it('should log security-relevant requests', async () => {
       const logger = await import('../../../logger/logger.js');
       mockRequest.method = 'POST';
-      mockRequest.headers = { 'mcp-session-id': 'session-123', 'authorization': 'Bearer token' };
+      mockRequest.headers = { 'mcp-session-id': 'session-123', authorization: 'Bearer token' };
 
       securityAuditLogger(mockRequest, mockResponse, mockNext);
 
@@ -304,7 +286,7 @@ describe('Security Middleware', () => {
           userAgent: 'test-agent',
           sessionId: 'session-123',
           authorization: 'Bearer [REDACTED]',
-        })
+        }),
       );
       expect(mockNext).toHaveBeenCalled();
     });
@@ -329,7 +311,7 @@ describe('Security Middleware', () => {
         'Security-relevant request',
         expect.objectContaining({
           path: '/oauth/authorize',
-        })
+        }),
       );
     });
 
@@ -343,7 +325,7 @@ describe('Security Middleware', () => {
         'Security-relevant request',
         expect.objectContaining({
           path: '/auth/login',
-        })
+        }),
       );
     });
 
@@ -364,7 +346,7 @@ describe('Security Middleware', () => {
           path: '/test',
           statusCode: 201,
           duration: expect.any(Number),
-        })
+        }),
       );
     });
 
@@ -379,7 +361,7 @@ describe('Security Middleware', () => {
         'Security-relevant request',
         expect.objectContaining({
           authorization: undefined,
-        })
+        }),
       );
     });
   });
@@ -433,15 +415,12 @@ describe('Security Middleware', () => {
       timingAttackPrevention(mockRequest, mockResponse, mockNext);
 
       const spySetTimeout = vi.spyOn(global, 'setTimeout');
-      
+
       // Simulate immediate response
       vi.advanceTimersByTime(5); // 5ms elapsed
       mockResponse.send('test response');
 
-      expect(spySetTimeout).toHaveBeenCalledWith(
-        expect.any(Function),
-        expect.any(Number)
-      );
+      expect(spySetTimeout).toHaveBeenCalledWith(expect.any(Function), expect.any(Number));
 
       spySetTimeout.mockRestore();
     });
