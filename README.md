@@ -6,18 +6,37 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 [![NPM License](https://img.shields.io/npm/l/@1mcp/agent)](https://www.npmjs.com/package/@1mcp/agent)
 [![smithery badge](https://smithery.ai/badge/@1mcp-app/agent)](https://smithery.ai/server/@1mcp-app/agent)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [Usage](#usage)
+- [Docker](#docker)
+- [Trust Proxy Configuration](#trust-proxy-configuration)
+- [Understanding Tags](#understanding-tags)
+- [Configuration](#configuration)
+- [Authentication](#authentication)
+- [How It Works](#how-it-works)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Overview
 
-1MCP (One MCP) is designed to simplify the way you work with AI assistants. Instead of configuring multiple MCP servers for different clients (Claude Desktop, Cherry Studio, Cursor, Roo Code, Claude, etc.), 1MCP provides a single, unified server that:
+1MCP (One MCP) is designed to simplify the way you work with AI assistants. Instead of configuring multiple MCP servers for different clients (Claude Desktop, Cherry Studio, Cursor, Roo Code, Claude, etc.), 1MCP provides a single, unified server.
 
-- Aggregates multiple MCP servers into one unified interface
-- Reduces system resource usage by eliminating redundant server instances
-- Simplifies configuration management across different AI assistants
-- Provides a standardized way for AI models to interact with external tools and resources
-- Supports dynamic configuration reloading without server restart
-- Handles graceful shutdown and resource cleanup
-- Includes comprehensive authentication and security features
-- Supports advanced filtering, pagination, and request optimization
+## Features
+
+- **Unified Interface**: Aggregates multiple MCP servers into one.
+- **Resource Friendly**: Reduces system resource usage by eliminating redundant server instances.
+- **Simplified Configuration**: Simplifies configuration management across different AI assistants.
+- **Standardized Interaction**: Provides a standardized way for AI models to interact with external tools and resources.
+- **Dynamic Configuration**: Supports dynamic configuration reloading without server restart.
+- **Graceful Shutdown**: Handles graceful shutdown and resource cleanup.
+- **Secure**: Includes comprehensive authentication and security features.
+- **Optimized**: Supports advanced filtering, pagination, and request optimization.
 
 ## Quick Start
 
@@ -43,6 +62,11 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
 ```
 
 3. Enjoy it!
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (version 21 or higher)
+- [pnpm](https://pnpm.io/)
 
 ## Usage
 
@@ -80,7 +104,6 @@ Available options:
 | `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset) | "loopback" |
 | `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                        |            |
 | `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                           |   false    |
-| `--auth`                     | `ONE_MCP_AUTH`                     | Enable authentication (OAuth 2.1) - **Deprecated**                            |   false    |
 | `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                             |   false    |
 | `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                   |    true    |
 | `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                 |   false    |
@@ -147,11 +170,11 @@ npx -y @1mcp/agent --trust-proxy=true
 
 See [docs/TRUST_PROXY.md](docs/TRUST_PROXY.md) for detailed configuration options, security considerations, and reverse proxy setup examples.
 
-### Understanding Tags
+## Understanding Tags
 
 Tags help you control which MCP servers are available to different clients. Think of tags as labels that describe what each server can do.
 
-#### How to Use Tags
+### How to Use Tags
 
 1. **In your server config**: Add tags to each server to describe its capabilities
 
@@ -233,7 +256,15 @@ The server automatically manages configuration in a global location:
 }
 ```
 
+## Authentication
+
+1MCP supports OAuth 2.1 for secure authentication. To enable it, use the `--enable-auth` flag. The `--auth` flag is deprecated and will be removed in a future version.
+
+When authentication is enabled, 1MCP acts as an OAuth 2.1 provider, allowing client applications to securely connect. This ensures that only authorized clients can access the MCP servers.
+
 ## How It Works
+
+1MCP acts as a proxy, managing and aggregating multiple MCP servers. It starts and stops these servers as subprocesses and forwards requests from AI assistants to the appropriate server. This architecture allows for a single point of entry for all MCP traffic, simplifying management and reducing overhead.
 
 ### System Architecture
 
@@ -325,8 +356,16 @@ pnpm inspector
 
 The Inspector will provide a URL to access debugging tools in your browser.
 
-## Debugging & Source Maps
+### Debugging & Source Maps
 
 This project uses [source-map-support](https://www.npmjs.com/package/source-map-support) to enhance stack traces. When you run the server, stack traces will reference the original TypeScript source files instead of the compiled JavaScript. This makes debugging much easier, as error locations and line numbers will match your source code.
 
 No extra setup is required—this is enabled by default. If you see a stack trace, it will point to `.ts` files and the correct line numbers. 🗺️
+
+## Contributing
+
+Contributions are welcome! Please read our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+
+## License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
