@@ -11,5 +11,9 @@ logs/
 .claude/
 mcp.json
 
+# VitePress build artifacts
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 /.ai
 /xnotes
