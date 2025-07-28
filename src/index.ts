@@ -16,12 +16,14 @@ import { AgentConfigManager } from './core/server/agentConfig.js';
 import { PORT, HOST } from './constants.js';
 import { displayLogo } from './utils/logo.js';
 import { setupAppCommands } from './commands/app/index.js';
+import { setupServerCommands } from './commands/server/index.js';
 
 // Parse command line arguments and set up commands
 let yargsInstance = yargs(hideBin(process.argv));
 
-// Register app command group
+// Register command groups
 yargsInstance = setupAppCommands(yargsInstance);
+yargsInstance = setupServerCommands(yargsInstance);
 
 // Continue with main server options
 yargsInstance = yargsInstance
@@ -168,18 +170,18 @@ function setupGracefulShutdown(serverManager: ServerManager, expressServer?: Exp
 }
 
 /**
- * Check if the command is an app command that should not start the server
+ * Check if the command is a CLI command that should not start the server
  */
-function isAppCommand(argv: string[]): boolean {
-  return argv.length >= 3 && argv[2] === 'app';
+function isCliCommand(argv: string[]): boolean {
+  return argv.length >= 3 && (argv[2] === 'app' || argv[2] === 'server');
 }
 
 /**
  * Start the server using the specified transport.
  */
 async function main() {
-  // Check if this is an app command - if so, let yargs handle it and exit
-  if (isAppCommand(process.argv)) {
+  // Check if this is a CLI command - if so, let yargs handle it and exit
+  if (isCliCommand(process.argv)) {
     await yargsInstance.parse();
     return;
   }
