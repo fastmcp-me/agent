@@ -15,9 +15,16 @@ import { ExpressServer } from './transport/http/server.js';
 import { AgentConfigManager } from './core/server/agentConfig.js';
 import { PORT, HOST } from './constants.js';
 import { displayLogo } from './utils/logo.js';
+import { setupAppCommands } from './commands/app/index.js';
 
-// Parse command line arguments
-const argv = yargs(hideBin(process.argv))
+// Parse command line arguments and set up commands
+let yargsInstance = yargs(hideBin(process.argv));
+
+// Register app command group
+yargsInstance = setupAppCommands(yargsInstance);
+
+// Continue with main server options
+yargsInstance = yargsInstance
   .usage('Usage: $0 [options]')
   .env('ONE_MCP') // Enable environment variable parsing with ONE_MCP prefix
   .options({
@@ -118,8 +125,7 @@ const argv = yargs(hideBin(process.argv))
     },
   })
   .help()
-  .alias('help', 'h')
-  .parseSync();
+  .alias('help', 'h');
 
 /**
  * Set up graceful shutdown handling
@@ -162,44 +168,60 @@ function setupGracefulShutdown(serverManager: ServerManager, expressServer?: Exp
 }
 
 /**
+ * Check if the command is an app command that should not start the server
+ */
+function isAppCommand(argv: string[]): boolean {
+  return argv.length >= 3 && argv[2] === 'app';
+}
+
+/**
  * Start the server using the specified transport.
  */
 async function main() {
+  // Check if this is an app command - if so, let yargs handle it and exit
+  if (isAppCommand(process.argv)) {
+    await yargsInstance.parse();
+    return;
+  }
+
+  // Parse arguments asynchronously first
+  const parsedArgv = (await yargsInstance.parse()) as any;
+
   try {
-    if (argv.transport !== 'stdio') {
+    if (parsedArgv.transport !== 'stdio') {
       enableConsoleTransport();
       displayLogo();
     }
 
-    McpConfigManager.getInstance(argv.config);
+    McpConfigManager.getInstance(parsedArgv.config);
 
     // Configure server settings from CLI arguments
     const serverConfigManager = AgentConfigManager.getInstance();
 
     // Handle backward compatibility for auth flag
-    const authEnabled = argv['enable-auth'] ?? argv['auth'] ?? false;
-    const scopeValidationEnabled = argv['enable-scope-validation'] ?? authEnabled;
-    const enhancedSecurityEnabled = argv['enable-enhanced-security'] ?? false;
+    const authEnabled = parsedArgv['enable-auth'] ?? parsedArgv['auth'] ?? false;
+    const scopeValidationEnabled = parsedArgv['enable-scope-validation'] ?? authEnabled;
+    const enhancedSecurityEnabled = parsedArgv['enable-enhanced-security'] ?? false;
 
     // Handle trust proxy configuration (convert 'true'/'false' strings to boolean)
-    const trustProxyValue = argv['trust-proxy'];
+    const trustProxyValue = parsedArgv['trust-proxy'];
     const trustProxy = trustProxyValue === 'true' ? true : trustProxyValue === 'false' ? false : trustProxyValue;
 
     serverConfigManager.updateConfig({
-      host: argv.host,
-      port: argv.port,
-      externalUrl: argv['external-url'],
+      host: parsedArgv.host,
+      port: parsedArgv.port,
+      externalUrl: parsedArgv['external-url'],
       trustProxy,
       auth: {
         enabled: authEnabled,
-        sessionTtlMinutes: argv['session-ttl'],
-        sessionStoragePath: argv['session-storage-path'],
+        sessionTtlMinutes: parsedArgv['session-ttl'],
+        sessionStoragePath: parsedArgv['session-storage-path'],
         oauthCodeTtlMs: 60 * 1000, // 1 minute
-        oauthTokenTtlMs: argv['session-ttl'] * 60 * 1000, // Convert minutes to milliseconds
+        oauthTokenTtlMs: parsedArgv['session-ttl'] * 60 * 1000, // Convert minutes to milliseconds
       },
       rateLimit: {
-        windowMs: argv['rate-limit-window'] * 60 * 1000, // Convert minutes to milliseconds
-        max: argv['rate-limit-max'],
+        windowMs: parsedArgv['rate-limit-window'] * 60 * 1000, // Convert minutes to milliseconds
+        max: parsedArgv['rate-limit-max'],
       },
       features: {
         auth: authEnabled,
@@ -216,20 +238,20 @@ async function main() {
 
     let expressServer: ExpressServer | undefined;
 
-    switch (argv.transport) {
+    switch (parsedArgv.transport) {
       case 'stdio': {
         // Use stdio transport
         const transport = new StdioServerTransport();
         // Parse and validate tags from CLI if provided
         let tags: string[] | undefined;
-        if (argv.tags) {
-          tags = argv.tags.split(',').filter((tag) => tag.trim().length > 0);
-          if (tags.length === 0) {
+        if (parsedArgv.tags) {
+          tags = parsedArgv.tags.split(',').filter((tag: string) => tag.trim().length > 0);
+          if (tags && tags.length === 0) {
             logger.warn('No valid tags provided, ignoring tags parameter');
             tags = undefined;
           }
         }
-        await serverManager.connectTransport(transport, 'stdio', { tags, enablePagination: argv.pagination });
+        await serverManager.connectTransport(transport, 'stdio', { tags, enablePagination: parsedArgv.pagination });
         logger.info('Server started with stdio transport');
         break;
       }
@@ -244,7 +266,7 @@ async function main() {
         break;
       }
       default:
-        logger.error(`Invalid transport: ${argv.transport}`);
+        logger.error(`Invalid transport: ${parsedArgv.transport}`);
         process.exit(1);
     }
 
