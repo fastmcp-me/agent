@@ -18,116 +18,124 @@ import { displayLogo } from './utils/logo.js';
 import { setupAppCommands } from './commands/app/index.js';
 import { setupServerCommands } from './commands/server/index.js';
 
+// Define server options that should only be available for serve commands
+const serverOptions = {
+  transport: {
+    alias: 't',
+    describe: 'Transport type to use (stdio or http, sse is deprecated)',
+    type: 'string' as const,
+    choices: ['stdio', 'http', 'sse'] as const,
+    default: 'http',
+  },
+  port: {
+    alias: 'P',
+    describe: 'HTTP port to listen on, applicable when transport is http',
+    type: 'number' as const,
+    default: PORT,
+  },
+  host: {
+    alias: 'H',
+    describe: 'HTTP host to listen on, applicable when transport is http',
+    type: 'string' as const,
+    default: HOST,
+  },
+  'external-url': {
+    alias: 'u',
+    describe: 'External URL for the server (used for OAuth callbacks and public URLs)',
+    type: 'string' as const,
+    default: undefined,
+  },
+  config: {
+    alias: 'c',
+    describe: 'Path to the config file',
+    type: 'string' as const,
+    default: undefined,
+  },
+  tags: {
+    alias: 'g',
+    describe: 'Tags to filter clients (comma-separated)',
+    type: 'string' as const,
+    default: undefined,
+  },
+  pagination: {
+    alias: 'p',
+    describe: 'Enable pagination',
+    type: 'boolean' as const,
+    default: false,
+  },
+  auth: {
+    describe: 'Enable authentication (OAuth 2.1) - deprecated, use --enable-auth',
+    type: 'boolean' as const,
+    default: false,
+  },
+  'enable-auth': {
+    describe: 'Enable authentication (OAuth 2.1)',
+    type: 'boolean' as const,
+    default: false,
+  },
+  'enable-scope-validation': {
+    describe: 'Enable tag-based scope validation',
+    type: 'boolean' as const,
+    default: true,
+  },
+  'enable-enhanced-security': {
+    describe: 'Enable enhanced security middleware',
+    type: 'boolean' as const,
+    default: false,
+  },
+  'session-ttl': {
+    describe: 'Session expiry time in minutes',
+    type: 'number' as const,
+    default: 24 * 60, // 24 hours
+  },
+  'session-storage-path': {
+    describe: 'Custom session storage directory path',
+    type: 'string' as const,
+    default: undefined,
+  },
+  'rate-limit-window': {
+    describe: 'OAuth rate limit window in minutes',
+    type: 'number' as const,
+    default: 15,
+  },
+  'rate-limit-max': {
+    describe: 'Maximum requests per OAuth rate limit window',
+    type: 'number' as const,
+    default: 100,
+  },
+  'trust-proxy': {
+    describe:
+      'Trust proxy configuration for Express.js (boolean, IP address, subnet, or preset: loopback, linklocal, uniquelocal)',
+    type: 'string' as const,
+    default: 'loopback',
+  },
+  'health-info-level': {
+    describe: 'Health endpoint information detail level (full, basic, minimal)',
+    type: 'string',
+    choices: ['full', 'basic', 'minimal'],
+    default: 'minimal',
+  },
+};
+
 // Parse command line arguments and set up commands
 let yargsInstance = yargs(hideBin(process.argv));
 
-// Register command groups
-yargsInstance = setupAppCommands(yargsInstance);
-yargsInstance = setupServerCommands(yargsInstance);
-
-// Continue with main server options
+// Set up base yargs with serve commands having server options
 yargsInstance = yargsInstance
-  .usage('Usage: $0 [options]')
-  .env('ONE_MCP') // Enable environment variable parsing with ONE_MCP prefix
-  .options({
-    transport: {
-      alias: 't',
-      describe: 'Transport type to use (stdio or http, sse is deprecated)',
-      type: 'string',
-      choices: ['stdio', 'http', 'sse'],
-      default: 'http',
-    },
-    port: {
-      alias: 'P',
-      describe: 'HTTP port to listen on, applicable when transport is http',
-      type: 'number',
-      default: PORT,
-    },
-    host: {
-      alias: 'H',
-      describe: 'HTTP host to listen on, applicable when transport is http',
-      type: 'string',
-      default: HOST,
-    },
-    'external-url': {
-      alias: 'u',
-      describe: 'External URL for the server (used for OAuth callbacks and public URLs)',
-      type: 'string',
-      default: undefined,
-    },
-    config: {
-      alias: 'c',
-      describe: 'Path to the config file',
-      type: 'string',
-      default: undefined,
-    },
-    tags: {
-      alias: 'g',
-      describe: 'Tags to filter clients (comma-separated)',
-      type: 'string',
-      default: undefined,
-    },
-    pagination: {
-      alias: 'p',
-      describe: 'Enable pagination',
-      type: 'boolean',
-      default: false,
-    },
-    auth: {
-      describe: 'Enable authentication (OAuth 2.1) - deprecated, use --enable-auth',
-      type: 'boolean',
-      default: false,
-    },
-    'enable-auth': {
-      describe: 'Enable authentication (OAuth 2.1)',
-      type: 'boolean',
-      default: false,
-    },
-    'enable-scope-validation': {
-      describe: 'Enable tag-based scope validation',
-      type: 'boolean',
-      default: true,
-    },
-    'enable-enhanced-security': {
-      describe: 'Enable enhanced security middleware',
-      type: 'boolean',
-      default: false,
-    },
-    'session-ttl': {
-      describe: 'Session expiry time in minutes',
-      type: 'number',
-      default: 24 * 60, // 24 hours
-    },
-    'session-storage-path': {
-      describe: 'Custom session storage directory path',
-      type: 'string',
-      default: undefined,
-    },
-    'rate-limit-window': {
-      describe: 'OAuth rate limit window in minutes',
-      type: 'number',
-      default: 15,
-    },
-    'rate-limit-max': {
-      describe: 'Maximum requests per OAuth rate limit window',
-      type: 'number',
-      default: 100,
-    },
-    'trust-proxy': {
-      describe:
-        'Trust proxy configuration for Express.js (boolean, IP address, subnet, or preset: loopback, linklocal, uniquelocal)',
-      type: 'string',
-      default: 'loopback',
-    },
-    'health-info-level': {
-      describe: 'Health endpoint information detail level (full, basic, minimal)',
-      type: 'string',
-      choices: ['full', 'basic', 'minimal'],
-      default: 'minimal',
-    },
+  .usage('Usage: $0 [command] [options]')
+  .command('$0', 'Start the 1mcp server (default)', serverOptions, () => {
+    // Default command handler - will be processed by main()
   })
+  .command('serve', 'Start the 1mcp server', serverOptions, () => {
+    // Serve command handler - will be processed by main()
+  })
+  .env('ONE_MCP') // Enable environment variable parsing with ONE_MCP prefix
   .help()
   .alias('help', 'h');
+
+// Register command groups (these will have clean option lists without server options)
+yargsInstance = setupAppCommands(yargsInstance);
+yargsInstance = setupServerCommands(yargsInstance);
 
 /**
  * Set up graceful shutdown handling
@@ -177,11 +185,28 @@ function isCliCommand(argv: string[]): boolean {
 }
 
 /**
+ * Check if the command is the serve command (or should default to serve)
+ */
+function isServeCommand(argv: string[]): boolean {
+  // If no command specified, default to serve
+  if (argv.length < 3) return true;
+  // If explicitly called serve
+  return argv[2] === 'serve';
+}
+
+/**
  * Start the server using the specified transport.
  */
 async function main() {
   // Check if this is a CLI command - if so, let yargs handle it and exit
   if (isCliCommand(process.argv)) {
+    await yargsInstance.parse();
+    return;
+  }
+
+  // Check if this is a serve command or should default to serve
+  if (!isServeCommand(process.argv)) {
+    // Let yargs handle other commands
     await yargsInstance.parse();
     return;
   }
