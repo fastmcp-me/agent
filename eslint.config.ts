@@ -17,7 +17,7 @@ export default [
   },
   eslint.configs.recommended,
   {
-    ignores: ['node_modules', 'dist', 'build', 'eslint.config.*'],
+    ignores: ['node_modules', 'dist', 'build', 'eslint.config.*', 'docs/.vitepress/dist', 'docs/.vitepress/cache'],
   },
   prettierConfig,
   {

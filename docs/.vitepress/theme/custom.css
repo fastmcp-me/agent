@@ -1,0 +1,21 @@
+/* Mermaid diagram styling */
+.mermaid {
+  text-align: center;
+  margin: 1.5rem 0;
+  background: transparent;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+  background: transparent;
+}
+
+/* Ensure Mermaid diagrams are responsive */
+@media (max-width: 768px) {
+  .mermaid {
+    overflow-x: auto;
+    margin: 1rem -1rem;
+    padding: 0 1rem;
+  }
+}
