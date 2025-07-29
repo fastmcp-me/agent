@@ -564,12 +564,8 @@ journalctl -u 1mcp -f --lines=100
 
 ## 🎯 Next Steps
 
-**Level 1 Complete?** → [Learn about use cases](/examples/use-cases)
-**Level 2 Complete?** → [Explore security features](/reference/security)
-**Level 3 Complete?** → [Read deployment guide](/reference/deployment)
-**Level 4 Complete?** → [Advanced architecture](/reference/architecture)
-
-**Want to contribute?** → [Development guide](/reference/contributing)
+- [Explore security features](/reference/security)
+- [Advanced architecture](/reference/architecture)
 
 ---
 
