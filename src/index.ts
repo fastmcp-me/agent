@@ -111,8 +111,8 @@ const serverOptions = {
   },
   'health-info-level': {
     describe: 'Health endpoint information detail level (full, basic, minimal)',
-    type: 'string',
-    choices: ['full', 'basic', 'minimal'],
+    type: 'string' as const,
+    choices: ['full', 'basic', 'minimal'] as const,
     default: 'minimal',
   },
 };
@@ -256,7 +256,7 @@ async function main() {
         enhancedSecurity: enhancedSecurityEnabled,
       },
       health: {
-        detailLevel: argv['health-info-level'] as 'full' | 'basic' | 'minimal',
+        detailLevel: parsedArgv['health-info-level'] as 'full' | 'basic' | 'minimal',
       },
     });
 
