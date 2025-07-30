@@ -6,7 +6,6 @@ The 1MCP Agent provides comprehensive health check endpoints for monitoring syst
 
 Health check endpoints are designed for:
 
-- **Monitoring Systems**: Prometheus, Grafana, DataDog
 - **Load Balancers**: HAProxy, nginx, AWS ALB
 - **Container Orchestration**: Kubernetes, Docker Swarm
 - **CI/CD Pipelines**: Deployment validation
@@ -280,23 +279,6 @@ backend 1mcp_servers
     server 1mcp-2 1mcp-2:3050 check inter 30s
 ```
 
-### Prometheus Monitoring
-
-```yaml
-# prometheus.yml
-scrape_configs:
-  - job_name: '1mcp-health'
-    static_configs:
-      - targets: ['1mcp:3050']
-    metrics_path: /health
-    scrape_interval: 30s
-    scrape_timeout: 10s
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        replacement: '1mcp-agent'
-```
-
 ### Script-Based Monitoring
 
 ```bash
@@ -410,32 +392,6 @@ npx -y @1mcp/agent --config mcp.json
 3. **Configure Retry Logic**: Allow 2-3 retries with exponential backoff
 4. **Monitor Trends**: Track health status changes over time
 5. **Security-First**: Choose appropriate detail level for your network exposure
-
-### Alert Configuration
-
-```yaml
-# Example Prometheus alerting rules
-groups:
-  - name: 1mcp-health
-    rules:
-      - alert: 1MCP_Unhealthy
-        expr: 1mcp_health_status != 0
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: '1MCP service is unhealthy'
-          description: '1MCP has been unhealthy for more than 2 minutes'
-
-      - alert: 1MCP_Degraded
-        expr: 1mcp_health_status == 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: '1MCP service is degraded'
-          description: '1MCP has been degraded for more than 5 minutes'
-```
 
 ### Development Testing
 
