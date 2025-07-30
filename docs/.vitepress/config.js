@@ -12,6 +12,15 @@ export default withMermaid(
       ['meta', { name: 'theme-color', content: '#3eaf7c' }],
       ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
       ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
+      ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-46LFKQ768B' }],
+      [
+        'script',
+        {},
+        `window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-46LFKQ768B');`,
+      ],
     ],
 
     // Vite configuration for proper dependency handling
