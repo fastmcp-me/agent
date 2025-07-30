@@ -22,6 +22,14 @@ The dashboard allows you to:
 - Initiate the OAuth flow for services that require authorization.
 - Approve or deny authorization requests.
 
+Here's a preview of the management dashboard:
+
+![OAuth Management Dashboard](/images/auth-management.png)
+
+When you initiate the authorization flow, you will be prompted to approve or deny the request:
+
+![OAuth Authorize Application](/images/oauth-authorize-application.png)
+
 ## Tag-Based Scope Validation
 
 The agent supports tag-based scope validation, which allows you to control access to backend services based on their tags. When a client requests an access token, it can specify a set of tags as scopes. The agent will then only allow the client to access services that have all the requested tags.
