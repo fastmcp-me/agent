@@ -31,7 +31,7 @@ export default withMermaid(
     },
 
     themeConfig: {
-      logo: 'https://avatars.githubusercontent.com/u/202214283?s=48&v=4',
+      logo: '/images/logo.png',
 
       nav: [
         { text: 'Guide', link: '/guide/getting-started' },

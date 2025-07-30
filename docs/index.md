@@ -6,7 +6,7 @@ hero:
   text: 'One MCP server to aggregate them all'
   tagline: A unified Model Context Protocol server implementation that acts as a proxy/multiplexer for multiple MCP servers
   image:
-    src: /logo.svg
+    src: /images/logo.png
     alt: 1MCP Logo
   actions:
     - theme: brand
