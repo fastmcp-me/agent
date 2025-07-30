@@ -110,6 +110,12 @@ const argv = yargs(hideBin(process.argv))
       type: 'string',
       default: 'loopback',
     },
+    'health-info-level': {
+      describe: 'Health endpoint information detail level (full, basic, minimal)',
+      type: 'string',
+      choices: ['full', 'basic', 'minimal'],
+      default: 'minimal',
+    },
   })
   .help()
   .alias('help', 'h')
@@ -199,6 +205,9 @@ async function main() {
         auth: authEnabled,
         scopeValidation: scopeValidationEnabled,
         enhancedSecurity: enhancedSecurityEnabled,
+      },
+      health: {
+        detailLevel: argv['health-info-level'] as 'full' | 'basic' | 'minimal',
       },
     });
 

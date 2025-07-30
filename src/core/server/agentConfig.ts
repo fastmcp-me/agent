@@ -27,6 +27,9 @@ export interface AgentConfig {
     scopeValidation: boolean;
     enhancedSecurity: boolean;
   };
+  health: {
+    detailLevel: 'full' | 'basic' | 'minimal';
+  };
 }
 
 /**
@@ -75,6 +78,9 @@ export class AgentConfigManager {
         scopeValidation: AUTH_CONFIG.SERVER.DEFAULT_ENABLED,
         enhancedSecurity: false,
       },
+      health: {
+        detailLevel: 'minimal',
+      },
     };
   }
 
@@ -103,7 +109,7 @@ export class AgentConfigManager {
    */
   public updateConfig(updates: Partial<AgentConfig>): void {
     // Handle nested object merging properly
-    const { auth, rateLimit, features, ...otherUpdates } = updates;
+    const { auth, rateLimit, features, health, ...otherUpdates } = updates;
 
     this.config = { ...this.config, ...otherUpdates };
 
@@ -115,6 +121,9 @@ export class AgentConfigManager {
     }
     if (features) {
       this.config.features = { ...this.config.features, ...features };
+    }
+    if (health) {
+      this.config.health = { ...this.config.health, ...health };
     }
   }
 
@@ -236,5 +245,14 @@ export class AgentConfigManager {
    */
   public getUrl(): string {
     return this.config.externalUrl || `http://${this.config.host}:${this.config.port}`;
+  }
+
+  /**
+   * Gets the health endpoint detail level configuration.
+   *
+   * @returns Health detail level ('full' | 'basic' | 'minimal')
+   */
+  public getHealthDetailLevel(): 'full' | 'basic' | 'minimal' {
+    return this.config.health.detailLevel;
   }
 }

@@ -74,9 +74,11 @@ export interface HealthCheckResponse {
 export class HealthService {
   private static instance: HealthService;
   private startTime: number;
+  private agentConfig: AgentConfigManager;
 
   private constructor() {
     this.startTime = Date.now();
+    this.agentConfig = AgentConfigManager.getInstance();
   }
 
   /**
@@ -100,7 +102,7 @@ export class HealthService {
 
       const overallStatus = this.determineOverallHealth(serverHealth, configHealth);
 
-      return {
+      const fullResponse: HealthCheckResponse = {
         status: overallStatus,
         timestamp: new Date().toISOString(),
         version: MCP_SERVER_VERSION,
@@ -108,10 +110,107 @@ export class HealthService {
         servers: serverHealth,
         configuration: configHealth,
       };
+
+      // Apply security configuration to sanitize response
+      return this.sanitizeHealthResponse(fullResponse);
     } catch (error) {
       logger.error('Health check failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * Sanitize health response based on security configuration
+   */
+  private sanitizeHealthResponse(response: HealthCheckResponse): HealthCheckResponse {
+    const detailLevel = this.agentConfig.getHealthDetailLevel();
+
+    // Apply detail level restrictions
+    switch (detailLevel) {
+      case 'minimal':
+        // Minimal: Only basic status, no sensitive details
+        return {
+          status: response.status,
+          timestamp: response.timestamp,
+          version: response.version,
+          system: {
+            uptime: response.system.uptime,
+            memory: { used: 0, total: 0, percentage: 0 },
+            process: { pid: 0, nodeVersion: '', platform: '', arch: '' },
+          },
+          servers: {
+            total: response.servers.total,
+            healthy: response.servers.healthy,
+            unhealthy: response.servers.unhealthy,
+            details: [],
+          },
+          configuration: {
+            loaded: response.configuration.loaded,
+            serverCount: 0,
+            enabledCount: 0,
+            disabledCount: 0,
+            authEnabled: false,
+            transport: 'http',
+          },
+        };
+
+      case 'basic':
+        // Basic: Some server info but sanitized errors and no sensitive system details
+        return {
+          ...response,
+          system: {
+            uptime: response.system.uptime,
+            memory: {
+              used: Math.round(response.system.memory.used),
+              total: Math.round(response.system.memory.total),
+              percentage: response.system.memory.percentage,
+            },
+            process: { pid: 0, nodeVersion: '', platform: '', arch: '' },
+          },
+          servers: {
+            ...response.servers,
+            details: response.servers.details.map((server) => ({
+              name: server.name,
+              status: server.status,
+              healthy: server.healthy,
+              lastConnected: server.lastConnected,
+              lastError: this.sanitizeErrorMessage(server.lastError),
+              tags: server.tags,
+            })),
+          },
+        };
+
+      case 'full':
+      default:
+        // Full: All details but with basic error sanitization
+        return {
+          ...response,
+          servers: {
+            ...response.servers,
+            details: response.servers.details.map((server) => ({
+              ...server,
+              lastError: this.sanitizeErrorMessage(server.lastError),
+            })),
+          },
+        };
+    }
+  }
+
+  /**
+   * Sanitize error messages to prevent information leakage
+   */
+  private sanitizeErrorMessage(errorMessage?: string): string | undefined {
+    if (!errorMessage) return undefined;
+
+    // Remove potentially sensitive information from error messages
+    return errorMessage
+      .replace(/\b(?:password|token|key|secret|auth)\s*[:=]\s*[^\s]+/gi, '[REDACTED_CREDENTIAL]') // Key-value credentials
+      .replace(/\b[\w.-]+:[\w.-]+@/gi, '[REDACTED_CREDENTIAL]') // User:password@ patterns
+      .replace(/\bhttps?:\/\/[\w.-]+(?::\d+)?(?:\/[^\s]*)?/gi, '[REDACTED_URL]') // Complete URLs
+      .replace(/(?:[A-Za-z]:)?[/\\][\w.-]+(?:[/\\][\w.-]+)*\.(?:json|js|ts|py|yml|yaml|conf|ini)\b/g, '[REDACTED_PATH]') // File paths
+      .replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[REDACTED_IP]') // IP addresses
+      .replace(/\blocalhost(?::\d+)?\b/gi, '[REDACTED_HOST]') // Localhost references
+      .substring(0, 100); // Limit error message length
   }
 
   /**

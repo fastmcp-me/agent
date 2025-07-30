@@ -75,6 +75,9 @@ describe('AgentConfigManager', () => {
           scopeValidation: false,
           enhancedSecurity: false,
         },
+        health: {
+          detailLevel: 'minimal',
+        },
       });
     });
 

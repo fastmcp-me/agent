@@ -39,7 +39,6 @@ describe('HealthService', () => {
   beforeEach(async () => {
     // Reset the singleton instance
     (HealthService as any).instance = undefined;
-    healthService = HealthService.getInstance();
 
     // Mock ServerManager
     mockServerManager = {
@@ -54,6 +53,7 @@ describe('HealthService', () => {
     // Mock AgentConfigManager
     mockAgentConfig = {
       isAuthEnabled: vi.fn(),
+      getHealthDetailLevel: vi.fn().mockReturnValue('minimal'),
     };
 
     // Setup mocks
@@ -65,6 +65,9 @@ describe('HealthService', () => {
 
     const { AgentConfigManager } = await import('../core/server/agentConfig.js');
     vi.mocked(AgentConfigManager.getInstance).mockReturnValue(mockAgentConfig);
+
+    // Create HealthService instance after mocks are set up
+    healthService = HealthService.getInstance();
   });
 
   afterEach(() => {
@@ -81,6 +84,8 @@ describe('HealthService', () => {
 
   describe('performHealthCheck', () => {
     it('should return healthy status when all servers are connected', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       // Setup mocks
       const mockClients = new Map([
         [
@@ -121,6 +126,8 @@ describe('HealthService', () => {
     });
 
     it('should return degraded status when some servers are unhealthy', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       const mockClients = new Map([
         [
           'server1',
@@ -168,6 +175,8 @@ describe('HealthService', () => {
     });
 
     it('should return unhealthy status when majority of servers are down', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       const mockClients = new Map([
         [
           'server1',
@@ -213,6 +222,8 @@ describe('HealthService', () => {
     });
 
     it('should return degraded status when no servers are configured', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       mockServerManager.getClients.mockReturnValue(new Map());
       mockMcpConfig.getTransportConfig.mockReturnValue({});
       mockAgentConfig.isAuthEnabled.mockReturnValue(false);
@@ -229,6 +240,8 @@ describe('HealthService', () => {
     });
 
     it('should return unhealthy status when configuration fails to load', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       mockServerManager.getClients.mockReturnValue(new Map());
       mockMcpConfig.getTransportConfig.mockImplementation(() => {
         throw new Error('Config load failed');
@@ -243,6 +256,8 @@ describe('HealthService', () => {
     });
 
     it('should include system health metrics', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       mockServerManager.getClients.mockReturnValue(new Map());
       mockMcpConfig.getTransportConfig.mockReturnValue({});
       mockAgentConfig.isAuthEnabled.mockReturnValue(false);
@@ -261,6 +276,8 @@ describe('HealthService', () => {
     });
 
     it('should handle server manager being null', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       const { ServerManager } = await import('../core/server/serverManager.js');
       (ServerManager as any).current = null;
 
@@ -276,6 +293,8 @@ describe('HealthService', () => {
     });
 
     it('should include server details with error messages', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
       const mockClients = new Map([
         [
           'server1',
@@ -327,6 +346,112 @@ describe('HealthService', () => {
     it('should return 500 for unknown status', () => {
       const code = healthService.getHttpStatusCode('unknown' as HealthStatus);
       expect(code).toBe(500);
+    });
+  });
+
+  describe('Health Security Features', () => {
+    beforeEach(() => {
+      const mockClients = new Map([
+        [
+          'test-server',
+          {
+            status: ClientStatus.Connected,
+            lastConnected: new Date(),
+            lastError: new Error('Connection failed with credentials user:password@localhost:5432/database'),
+            transport: { tags: ['test'] },
+          },
+        ],
+      ]);
+
+      mockServerManager.getClients.mockReturnValue(mockClients);
+      mockMcpConfig.getTransportConfig.mockReturnValue({
+        'test-server': { command: 'test' },
+      });
+      mockAgentConfig.isAuthEnabled.mockReturnValue(false);
+    });
+
+    it('should return minimal detail level with no sensitive information', async () => {
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('minimal');
+
+      const result = await healthService.performHealthCheck();
+
+      expect(result.system.memory.used).toBe(0);
+      expect(result.system.memory.total).toBe(0);
+      expect(result.system.process.pid).toBe(0);
+      expect(result.system.process.nodeVersion).toBe('');
+      expect(result.servers.details).toEqual([]);
+      expect(result.configuration.serverCount).toBe(0);
+      expect(result.configuration.authEnabled).toBe(false);
+    });
+
+    it('should return basic detail level with sanitized errors', async () => {
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('basic');
+
+      const result = await healthService.performHealthCheck();
+
+      expect(result.system.memory.used).toBeGreaterThan(0);
+      expect(result.system.process.pid).toBe(0);
+      expect(result.system.process.nodeVersion).toBe('');
+      expect(result.servers.details).toHaveLength(1);
+      expect(result.servers.details[0].lastError).toBe(
+        'Connection failed with credentials [REDACTED_CREDENTIAL][REDACTED_HOST]/database',
+      );
+    });
+
+    it('should return full detail level with sanitized errors', async () => {
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
+
+      const result = await healthService.performHealthCheck();
+
+      expect(result.system.memory.used).toBeGreaterThan(0);
+      expect(result.system.process.pid).toBe(process.pid);
+      expect(result.system.process.nodeVersion).toBe(process.version);
+      expect(result.servers.details).toHaveLength(1);
+      expect(result.servers.details[0].lastError).toBe(
+        'Connection failed with credentials [REDACTED_CREDENTIAL][REDACTED_HOST]/database',
+      );
+    });
+
+    it('should sanitize error messages containing URLs', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
+      const mockClients = new Map([
+        [
+          'web-server',
+          {
+            status: ClientStatus.Error,
+            lastError: new Error('Failed to connect to https://api.example.com/v1/endpoint'),
+            transport: { tags: ['web'] },
+          },
+        ],
+      ]);
+
+      mockServerManager.getClients.mockReturnValue(mockClients);
+
+      const result = await healthService.performHealthCheck();
+
+      expect(result.servers.details[0].lastError).toBe('Failed to connect to [REDACTED_URL]');
+    });
+
+    it('should sanitize error messages containing file paths', async () => {
+      // Set to full detail level for this test
+      mockAgentConfig.getHealthDetailLevel.mockReturnValue('full');
+      const mockClients = new Map([
+        [
+          'file-server',
+          {
+            status: ClientStatus.Error,
+            lastError: new Error('Cannot read config file /etc/app/config.json'),
+            transport: { tags: ['file'] },
+          },
+        ],
+      ]);
+
+      mockServerManager.getClients.mockReturnValue(mockClients);
+
+      const result = await healthService.performHealthCheck();
+
+      expect(result.servers.details[0].lastError).toBe('Cannot read config file [REDACTED_PATH]');
     });
   });
 });

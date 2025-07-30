@@ -12,6 +12,34 @@ Health check endpoints are designed for:
 - **CI/CD Pipelines**: Deployment validation
 - **Manual Debugging**: System status inspection
 
+## Security Configuration
+
+The health endpoints include configurable security features to control information exposure:
+
+**Detail Levels**:
+
+- **`full`**: Complete system information with error sanitization
+- **`basic`**: Limited system details, sanitized errors, server status
+- **`minimal`** (default): Only essential status information, no sensitive details
+
+**Configuration**:
+
+```bash
+# CLI option (default is minimal)
+npx -y @1mcp/agent --config mcp.json --health-info-level basic
+
+# Environment variable
+export ONE_MCP_HEALTH_INFO_LEVEL=basic
+npx -y @1mcp/agent --config mcp.json
+```
+
+**Sanitization Features**:
+
+- Automatic error message sanitization
+- Credential pattern removal (user:password@, tokens, keys)
+- URL and file path redaction
+- IP address anonymization
+
 ## Endpoints
 
 ### `GET /health`
@@ -336,6 +364,43 @@ fi
 }
 ```
 
+## Security Considerations
+
+### Production Deployment
+
+**Network-Level Protection** (Recommended):
+
+- Restrict health endpoints to monitoring networks only
+- Use firewall rules to limit access to trusted IPs
+- Consider VPN or private network access for detailed endpoints
+
+**Information Exposure Control**:
+
+- Use `basic` or `minimal` detail levels for public-facing deployments
+- `full` detail level recommended only for private networks
+- Error sanitization is always enabled to prevent credential leakage
+
+**Example Security Configuration**:
+
+```bash
+# Development environment
+npx -y @1mcp/agent --config mcp.json --health-info-level full
+
+# Staging environment
+npx -y @1mcp/agent --config mcp.json --health-info-level basic
+
+# Production environment (default minimal level is secure)
+npx -y @1mcp/agent --config mcp.json
+```
+
+### Detail Level Impact
+
+| Level     | System Info | Server Details       | Error Messages | Use Case              |
+| --------- | ----------- | -------------------- | -------------- | --------------------- |
+| `full`    | Complete    | Complete + sanitized | Sanitized      | Internal monitoring   |
+| `basic`   | Limited     | Status + sanitized   | Sanitized      | Restricted monitoring |
+| `minimal` | Basic only  | Counts only          | None           | Public/Load balancer  |
+
 ## Best Practices
 
 ### Monitoring Setup
@@ -344,6 +409,7 @@ fi
 2. **Set Appropriate Timeouts**: Health checks should complete within 5-10 seconds
 3. **Configure Retry Logic**: Allow 2-3 retries with exponential backoff
 4. **Monitor Trends**: Track health status changes over time
+5. **Security-First**: Choose appropriate detail level for your network exposure
 
 ### Alert Configuration
 
