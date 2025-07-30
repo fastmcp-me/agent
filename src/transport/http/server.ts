@@ -12,6 +12,7 @@ import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import createOAuthRoutes from './routes/oauthRoutes.js';
+import createHealthRoutes from './routes/healthRoutes.js';
 import { AgentConfigManager } from '../../core/server/agentConfig.js';
 import { RATE_LIMIT_CONFIG } from '../../constants.js';
 import { createScopeAuthMiddleware } from './middlewares/scopeAuthMiddleware.js';
@@ -140,6 +141,9 @@ export class ExpressServer {
 
     // Setup OAuth management routes (no auth required)
     this.app.use('/oauth', createOAuthRoutes(this.oauthProvider));
+
+    // Setup health check routes (no auth required for monitoring)
+    this.app.use('/health', createHealthRoutes());
 
     // Setup MCP transport routes (auth is handled per-route via scopeAuthMiddleware)
     const router = express.Router();

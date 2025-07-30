@@ -82,6 +82,10 @@ export default withMermaid(
             ],
           },
           {
+            text: 'API Reference',
+            items: [{ text: 'Health Check API', link: '/reference/health-check' }],
+          },
+          {
             text: 'Configuration',
             items: [{ text: 'Trust Proxy', link: '/reference/trust-proxy' }],
           },

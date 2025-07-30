@@ -304,6 +304,110 @@ INFO: Scope operation: authorization_granted {
 
 ---
 
+### **💊 Health Monitoring & Observability**
+
+**What it does**: Comprehensive health check endpoints with system metrics and server status
+**Why you need it**: Monitor production deployments, enable automated health checks, and debugging
+**How it helps**: Real-time system status, automated alerts, load balancer integration
+
+**Health Check Endpoints**:
+
+```bash
+# Complete health status
+GET /health
+
+# Liveness probe (Kubernetes ready)
+GET /health/live
+
+# Readiness probe (configuration loaded)
+GET /health/ready
+```
+
+**Health Response Example**:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-30T12:00:00.000Z",
+  "version": "0.15.0",
+  "system": {
+    "uptime": 3600,
+    "memory": {
+      "used": 50.5,
+      "total": 100.0,
+      "percentage": 50.5
+    }
+  },
+  "servers": {
+    "total": 3,
+    "healthy": 2,
+    "unhealthy": 1,
+    "details": [
+      {
+        "name": "filesystem-server",
+        "status": "connected",
+        "healthy": true,
+        "lastConnected": "2025-01-30T11:30:00.000Z",
+        "tags": ["filesystem"]
+      },
+      {
+        "name": "web-server",
+        "status": "error",
+        "healthy": false,
+        "lastError": "Connection timeout",
+        "tags": ["network", "web"]
+      }
+    ]
+  },
+  "configuration": {
+    "loaded": true,
+    "serverCount": 3,
+    "enabledCount": 2,
+    "disabledCount": 1,
+    "authEnabled": true,
+    "transport": "http"
+  }
+}
+```
+
+**Health Status Levels**:
+
+- **`healthy`** (200) - All systems operational
+- **`degraded`** (200) - Some issues but functional
+- **`unhealthy`** (503) - Critical issues affecting service
+
+**Integration Examples**:
+
+```yaml
+# Kubernetes deployment
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 3050
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 3050
+  initialDelaySeconds: 5
+  periodSeconds: 5
+
+# Docker Compose healthcheck
+healthcheck:
+  test: ['CMD', 'curl', '-f', 'http://localhost:3050/health']
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
+
+**⏱️ Setup Time**: Available immediately (built-in)
+**🎯 Perfect For**: Production monitoring, DevOps automation, debugging server issues
+**✅ You Get**: System metrics, server status, Kubernetes probes, load balancer health checks
+
+---
+
 ### **🔧 Advanced Configuration Management**
 
 **What it does**: Environment-specific configs, secret management, feature flags

@@ -12,6 +12,7 @@ export const HOST = 'localhost';
 export const SSE_ENDPOINT = '/sse';
 export const MESSAGES_ENDPOINT = '/messages';
 export const STREAMABLE_HTTP_ENDPOINT = '/mcp';
+export const HEALTH_ENDPOINT = '/health';
 
 // MCP constants
 export const MCP_CONFIG_FILE = 'mcp.json';

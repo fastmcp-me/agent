@@ -122,9 +122,9 @@ npx @modelcontextprotocol/inspector
 # - Debug authentication flows
 # - Monitor real-time MCP protocol messages
 
-# Alternative: Check the OAuth dashboard via curl
-curl http://localhost:3050/oauth
-# Or visit http://localhost:3050/oauth in your browser
+# Alternative: Check the health via curl
+curl http://localhost:3050/health
+# Or visit http://localhost:3050/health in your browser
 ```
 
 ### **✅ Level 1 Complete!**
@@ -133,7 +133,7 @@ curl http://localhost:3050/oauth
 
 - [ ] 1MCP server running on port 3050
 - [ ] MCP Inspector connects successfully at http://localhost:5173
-- [ ] OAuth dashboard shows servers connected at http://localhost:3050/oauth
+- [ ] Health endpoint shows servers connected at http://localhost:3050/health
 - [ ] Can test filesystem and memory tools via Inspector UI
 
 **🔧 Common Issues**:
@@ -327,7 +327,7 @@ sudo systemctl status 1mcp
 # Simple health check script
 cat > /usr/local/bin/1mcp-health-check << 'EOF'
 #!/bin/bash
-HEALTH_URL="http://localhost:3050/oauth"
+HEALTH_URL="http://localhost:3050/health"
 RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL")
 
 if [ "$RESPONSE" = "200" ]; then
@@ -388,7 +388,7 @@ chmod +x ~/1mcp-backup.sh
 - [ ] Service starts automatically on boot
 - [ ] Health check script working
 - [ ] Configuration backed up
-- [ ] Service accessible at http://localhost:3050/oauth
+- [ ] Health endpoint accessible at http://localhost:3050/health
 
 **🔧 Production Checklist**:
 

@@ -18,6 +18,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - [Understanding Tags](#understanding-tags)
 - [Configuration](#configuration)
 - [Authentication](#authentication)
+- [Health Monitoring](#health-monitoring)
 - [How It Works](#how-it-works)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -37,6 +38,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - **Graceful Shutdown**: Handles graceful shutdown and resource cleanup.
 - **Secure**: Includes comprehensive authentication and security features.
 - **Optimized**: Supports advanced filtering, pagination, and request optimization.
+- **Health Monitoring**: Built-in health check endpoints for monitoring and observability.
 
 ## Quick Start
 
@@ -261,6 +263,30 @@ The server automatically manages configuration in a global location:
 1MCP supports OAuth 2.1 for secure authentication. To enable it, use the `--enable-auth` flag. The `--auth` flag is deprecated and will be removed in a future version.
 
 When authentication is enabled, 1MCP acts as an OAuth 2.1 provider, allowing client applications to securely connect. This ensures that only authorized clients can access the MCP servers.
+
+## Health Monitoring
+
+1MCP provides comprehensive health check endpoints for monitoring and observability:
+
+### Health Check Endpoints
+
+- **`GET /health`** - Complete health status including system metrics, server status, and configuration
+- **`GET /health/live`** - Simple liveness probe (always returns 200 if server is running)
+- **`GET /health/ready`** - Readiness probe (returns 200 if configuration is loaded and ready)
+
+### Health Status Levels
+
+- **`healthy`** - All systems operational (HTTP 200)
+- **`degraded`** - Some issues but still functional (HTTP 200)
+- **`unhealthy`** - Critical issues affecting functionality (HTTP 503)
+
+### Monitoring Integration
+
+Use these endpoints with:
+
+- Load balancers (health checks)
+- Container orchestration (Kubernetes health probes)
+- CI/CD pipelines (deployment validation)
 
 ## How It Works
 

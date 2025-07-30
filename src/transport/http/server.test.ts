@@ -24,6 +24,7 @@ vi.mock('express', () => {
 
   return {
     default: mockExpress,
+    Router: mockRouter,
   };
 });
 
@@ -77,6 +78,10 @@ vi.mock('./routes/sseRoutes.js', () => ({
 
 vi.mock('./routes/oauthRoutes.js', () => ({
   default: vi.fn(() => 'oauth-routes'),
+}));
+
+vi.mock('./routes/healthRoutes.js', () => ({
+  default: vi.fn(() => 'health-routes'),
 }));
 
 vi.mock('../../auth/sdkOAuthServerProvider.js', () => ({
