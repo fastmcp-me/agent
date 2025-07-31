@@ -35,6 +35,7 @@ export default withMermaid(
 
       nav: [
         { text: 'Guide', link: '/guide/getting-started' },
+        { text: 'Commands', link: '/commands/' },
         { text: 'Reference', link: '/reference/architecture' },
         {
           text: 'v0.15.0',
@@ -69,6 +70,49 @@ export default withMermaid(
               { text: 'Feature Overview', link: '/guide/features' },
               { text: 'Server Filtering', link: '/guide/server-filtering' },
               { text: 'Proxy Support', link: '/guide/proxy-support' },
+              { text: 'Server Management', link: '/guide/server-management' },
+              { text: 'App Consolidation', link: '/guide/app-consolidation' },
+            ],
+          },
+        ],
+        '/commands/': [
+          {
+            text: 'Overview',
+            items: [{ text: 'Command Reference', link: '/commands/' }],
+          },
+          {
+            text: 'Server Management',
+            items: [
+              { text: 'serve', link: '/commands/serve' },
+              {
+                text: 'server',
+                link: '/commands/server/',
+                items: [
+                  { text: 'add', link: '/commands/server/add' },
+                  { text: 'remove', link: '/commands/server/remove' },
+                  { text: 'update', link: '/commands/server/update' },
+                  { text: 'enable/disable', link: '/commands/server/enable' },
+                  { text: 'list', link: '/commands/server/list' },
+                  { text: 'status', link: '/commands/server/status' },
+                ],
+              },
+            ],
+          },
+          {
+            text: 'App Integration',
+            items: [
+              {
+                text: 'app',
+                link: '/commands/app/',
+                items: [
+                  { text: 'consolidate', link: '/commands/app/consolidate' },
+                  { text: 'restore', link: '/commands/app/restore' },
+                  { text: 'list', link: '/commands/app/list' },
+                  { text: 'discover', link: '/commands/app/discover' },
+                  { text: 'status', link: '/commands/app/status' },
+                  { text: 'backups', link: '/commands/app/backups' },
+                ],
+              },
             ],
           },
         ],
