@@ -144,19 +144,19 @@ export const APP_PRESETS: Record<string, AppPreset> = {
     locations: [
       {
         platform: 'darwin',
-        path: '~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json',
+        path: '~/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
         level: 'user',
         priority: 10,
       },
       {
         platform: 'win32',
-        path: '%APPDATA%/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json',
+        path: '%APPDATA%/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
         level: 'user',
         priority: 10,
       },
       {
         platform: 'linux',
-        path: '~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/mcp_settings.json',
+        path: '~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
         level: 'user',
         priority: 10,
       },
