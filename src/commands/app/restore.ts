@@ -220,7 +220,7 @@ async function restoreAllApps(options: RestoreOptions): Promise<void> {
           message: 'Dry run completed',
         });
       } else {
-        await rollbackFromBackupPath(backup.metaPath);
+        await rollbackFromBackupPath(backup.backupPath);
         console.log(`   ✅ Restored successfully`);
         results.push({
           app,
@@ -303,7 +303,7 @@ async function restoreSpecificApp(appName: string, options: RestoreOptions): Pro
   }
 
   try {
-    await rollbackFromBackupPath(latestBackup.metaPath);
+    await rollbackFromBackupPath(latestBackup.backupPath);
 
     console.log(`✅ Successfully restored ${getAppPreset(appName)?.displayName || appName}`);
     console.log('🔄 Restart the application to use the restored configuration.');

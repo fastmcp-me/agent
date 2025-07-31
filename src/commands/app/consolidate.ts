@@ -1,4 +1,5 @@
 import fs from 'fs';
+import path from 'path';
 import readline from 'readline';
 import { getServer1mcpUrl, validateServer1mcpUrl } from '../../utils/urlDetection.js';
 import {
@@ -11,6 +12,7 @@ import {
 import { isAppSupported, isAppConfigurable, generateManualInstructions, getAppPreset } from '../../utils/appPresets.js';
 import { validateOperation, generateOperationPreview } from '../../utils/validationHelpers.js';
 import { createBackup, withFileLock } from '../../utils/backupManager.js';
+import { getAppBackupDir } from '../../constants.js';
 import { McpConfigManager } from '../../config/mcpConfigManager.js';
 import { setServer } from '../mcp/utils/configUtils.js';
 import { MCPServerParams } from '../../core/types/index.js';
@@ -239,8 +241,13 @@ async function consolidateApp(
     }
   }
 
-  // Generate preview
-  const backupPath = `${targetConfig.path}.backup.${Date.now()}`;
+  // Generate preview with correct backup path
+  const timestamp = Date.now();
+  const dateStr = new Date(timestamp).toISOString().replace(/[:.-]/g, '').slice(0, 15); // YYYYMMDDTHHMMSS
+  const appBackupDir = getAppBackupDir(appName);
+  const backupFileName = `${dateStr}_consolidate.backup`;
+  const backupPath = path.join(appBackupDir, backupFileName);
+
   const preview = generateOperationPreview(
     appName,
     targetConfig.path,

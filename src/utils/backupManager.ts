@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
+import { getGlobalBackupDir, getAppBackupDir } from '../constants.js';
 
 /**
  * Backup and recovery system for app configuration consolidation.
@@ -43,7 +44,16 @@ export function createBackup(configPath: string, app: string, operation: string,
   }
 
   const timestamp = Date.now();
-  const backupPath = `${configPath}.backup.${timestamp}`;
+  const dateStr = new Date(timestamp).toISOString().replace(/[:.-]/g, '').slice(0, 15); // YYYYMMDDTHHMMSS
+
+  // Create app-specific backup directory
+  const appBackupDir = getAppBackupDir(app);
+  fs.mkdirSync(appBackupDir, { recursive: true });
+
+  // Use descriptive filename in centralized location
+  const backupFileName = `${dateStr}_${operation}.backup`;
+  const backupPath = path.join(appBackupDir, backupFileName);
+
   const content = fs.readFileSync(configPath, 'utf8');
   const checksum = crypto.createHash('sha256').update(content).digest('hex');
   const stats = fs.statSync(configPath);
@@ -113,55 +123,34 @@ export async function rollbackFromBackupPath(backupPath: string): Promise<void> 
  */
 export function listAppBackups(app?: string): BackupListItem[] {
   const backups: BackupListItem[] = [];
-  const searchPaths = getBackupSearchPaths();
 
-  for (const searchPath of searchPaths) {
-    if (!fs.existsSync(searchPath)) {
-      continue;
-    }
-
-    try {
-      const files = fs.readdirSync(searchPath);
-
-      for (const file of files) {
-        if (file.endsWith('.backup.meta')) {
-          const metaPath = path.join(searchPath, file);
-
-          try {
-            const metaContent = fs.readFileSync(metaPath, 'utf8');
-            const backupInfo: BackupInfo = JSON.parse(metaContent);
-
-            // Filter by app if specified
-            if (app && backupInfo.metadata.app !== app) {
-              continue;
-            }
-
-            const backupPath = backupInfo.backupPath;
-
-            // Check if backup file still exists
-            if (!fs.existsSync(backupPath)) {
-              continue;
-            }
-
-            backups.push({
-              app: backupInfo.metadata.app,
-              backupPath,
-              metaPath,
-              timestamp: backupInfo.timestamp,
-              operation: backupInfo.metadata.operation,
-              serverCount: backupInfo.metadata.serverCount,
-              age: formatAge(backupInfo.timestamp),
-            });
-          } catch (_error) {
-            // Skip invalid metadata files
-            continue;
+  // First, check the centralized backup directory (most efficient)
+  const centralBackupDir = getGlobalBackupDir();
+  if (fs.existsSync(centralBackupDir)) {
+    if (app) {
+      // Search specific app directory
+      const appBackupDir = getAppBackupDir(app);
+      scanBackupsInDirectory(appBackupDir, backups, app);
+    } else {
+      // Search all app directories
+      try {
+        const appDirs = fs.readdirSync(centralBackupDir);
+        for (const appDir of appDirs) {
+          const appBackupPath = path.join(centralBackupDir, appDir);
+          if (fs.statSync(appBackupPath).isDirectory()) {
+            scanBackupsInDirectory(appBackupPath, backups);
           }
         }
+      } catch (_error) {
+        // Skip if can't read central directory
       }
-    } catch (_error) {
-      // Skip directories we can't read
-      continue;
     }
+  }
+
+  // Then check legacy locations for existing backups
+  const legacyPaths = getBackupSearchPaths().slice(1); // Skip central directory (already checked)
+  for (const searchPath of legacyPaths) {
+    scanBackupsInDirectory(searchPath, backups, app);
   }
 
   // Sort by timestamp (newest first)
@@ -171,16 +160,73 @@ export function listAppBackups(app?: string): BackupListItem[] {
 }
 
 /**
+ * Scan a directory for backup files
+ */
+function scanBackupsInDirectory(dirPath: string, backups: BackupListItem[], filterApp?: string): void {
+  if (!fs.existsSync(dirPath)) {
+    return;
+  }
+
+  try {
+    const files = fs.readdirSync(dirPath);
+
+    for (const file of files) {
+      if (file.endsWith('.backup.meta')) {
+        const metaPath = path.join(dirPath, file);
+
+        try {
+          const metaContent = fs.readFileSync(metaPath, 'utf8');
+          const backupInfo: BackupInfo = JSON.parse(metaContent);
+
+          // Filter by app if specified
+          if (filterApp && backupInfo.metadata.app !== filterApp) {
+            continue;
+          }
+
+          const backupPath = backupInfo.backupPath;
+
+          // Check if backup file still exists
+          if (!fs.existsSync(backupPath)) {
+            continue;
+          }
+
+          backups.push({
+            app: backupInfo.metadata.app,
+            backupPath,
+            metaPath,
+            timestamp: backupInfo.timestamp,
+            operation: backupInfo.metadata.operation,
+            serverCount: backupInfo.metadata.serverCount,
+            age: formatAge(backupInfo.timestamp),
+          });
+        } catch (_error) {
+          // Skip invalid metadata files
+          continue;
+        }
+      }
+    }
+  } catch (_error) {
+    // Skip directories we can't read
+    return;
+  }
+}
+
+/**
  * Get search paths for backup files
  */
 function getBackupSearchPaths(): string[] {
   const paths = [
-    process.cwd(), // Current directory
+    // Primary location: centralized backup directory
+    getGlobalBackupDir(),
   ];
 
-  // Add common app config directories
+  // Legacy fallback locations for existing backups
   const homeDir = os.homedir();
 
+  // Add current directory as fallback
+  paths.push(process.cwd());
+
+  // Add common app config directories as fallback
   if (process.platform === 'darwin') {
     paths.push(
       path.join(homeDir, 'Library/Application Support/Claude'),
