@@ -50,7 +50,7 @@ export async function updateCommand(argv: UpdateCommandArgs): Promise<void> {
 
     // Check if server exists
     if (!serverExists(name, configPath)) {
-      throw new Error(`Server '${name}' does not exist. Use 'server add' to create it first.`);
+      throw new Error(`Server '${name}' does not exist. Use 'mcp add' to create it first.`);
     }
 
     // Get current server configuration

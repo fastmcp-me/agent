@@ -1,4 +1,4 @@
-# Server Commands
+# MCP Commands
 
 Manage MCP server configurations within your 1MCP instance.
 
@@ -13,7 +13,7 @@ For a detailed guide on server management, including transport types and best pr
 Add a new MCP server to the configuration.
 
 ```bash
-1mcp server add my-server --type=stdio --command="node server.js"
+1mcp mcp add my-server --type=stdio --command="node server.js"
 ```
 
 ### [remove](./remove.md)
@@ -21,7 +21,7 @@ Add a new MCP server to the configuration.
 Remove an MCP server from the configuration.
 
 ```bash
-1mcp server remove my-server
+1mcp mcp remove my-server
 ```
 
 ### [update](./update.md)
@@ -29,7 +29,7 @@ Remove an MCP server from the configuration.
 Update an existing MCP server's configuration.
 
 ```bash
-1mcp server update my-server --tags=prod
+1mcp mcp update my-server --tags=prod
 ```
 
 ### [enable](./enable.md) / [disable](./disable.md)
@@ -37,7 +37,7 @@ Update an existing MCP server's configuration.
 Enable or disable an MCP server without removing it.
 
 ```bash
-1mcp server disable my-server
+1mcp mcp disable my-server
 ```
 
 ### [list](./list.md)
@@ -45,7 +45,7 @@ Enable or disable an MCP server without removing it.
 List all configured MCP servers.
 
 ```bash
-1mcp server list --tags=prod
+1mcp mcp list --tags=prod
 ```
 
 ### [status](./status.md)
@@ -53,7 +53,7 @@ List all configured MCP servers.
 Check the status and details of configured servers.
 
 ```bash
-1mcp server status my-server
+1mcp mcp status my-server
 ```
 
 ## See Also

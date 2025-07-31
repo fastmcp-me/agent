@@ -1,18 +1,18 @@
 import type { Argv } from 'yargs';
 
 /**
- * Server command group entry point.
+ * MCP command group entry point.
  *
  * Manages MCP server configurations, allowing users to add, remove, update,
  * enable/disable, list, and check status of MCP servers in their 1mcp configuration.
  */
 
 /**
- * Register server command group and subcommands
+ * Register MCP command group and subcommands
  */
-export function setupServerCommands(yargs: Argv): Argv {
+export function setupMcpCommands(yargs: Argv): Argv {
   return yargs.command(
-    'server',
+    'mcp',
     'Manage MCP server configurations',
     (yargs) => {
       return yargs
@@ -81,11 +81,11 @@ export function setupServerCommands(yargs: Argv): Argv {
                 string: true,
               })
               .example([
-                ['$0 server add myserver --type=stdio --command=node --args=server.js', 'Add stdio server'],
-                ['$0 server add webserver --type=http --url=http://localhost:3000/mcp', 'Add HTTP server'],
-                ['$0 server add tagged --type=stdio --command=echo --tags=dev,test', 'Add server with tags'],
+                ['$0 mcp add myserver --type=stdio --command=node --args=server.js', 'Add stdio server'],
+                ['$0 mcp add webserver --type=http --url=http://localhost:3000/mcp', 'Add HTTP server'],
+                ['$0 mcp add tagged --type=stdio --command=echo --tags=dev,test', 'Add server with tags'],
                 [
-                  '$0 server add custom --type=stdio --command=python --env=PATH=/custom/path --disabled',
+                  '$0 mcp add custom --type=stdio --command=python --env=PATH=/custom/path --disabled',
                   'Add disabled server with custom env',
                 ],
               ]);
@@ -117,8 +117,8 @@ export function setupServerCommands(yargs: Argv): Argv {
                 alias: 'y',
               })
               .example([
-                ['$0 server remove myserver', 'Remove server with confirmation'],
-                ['$0 server remove myserver --yes', 'Remove server without confirmation'],
+                ['$0 mcp remove myserver', 'Remove server with confirmation'],
+                ['$0 mcp remove myserver --yes', 'Remove server without confirmation'],
               ]);
           },
           handler: async (argv) => {
@@ -185,9 +185,9 @@ export function setupServerCommands(yargs: Argv): Argv {
                 string: true,
               })
               .example([
-                ['$0 server update myserver --tags=prod,api', 'Update server tags'],
-                ['$0 server update myserver --env=NODE_ENV=production', 'Update environment'],
-                ['$0 server update myserver --timeout=10000', 'Update timeout'],
+                ['$0 mcp update myserver --tags=prod,api', 'Update server tags'],
+                ['$0 mcp update myserver --env=NODE_ENV=production', 'Update environment'],
+                ['$0 mcp update myserver --timeout=10000', 'Update timeout'],
               ]);
           },
           handler: async (argv) => {
@@ -210,7 +210,7 @@ export function setupServerCommands(yargs: Argv): Argv {
                 type: 'string',
                 alias: 'c',
               })
-              .example([['$0 server enable myserver', 'Enable a disabled server']]);
+              .example([['$0 mcp enable myserver', 'Enable a disabled server']]);
           },
           handler: async (argv) => {
             const { enableCommand } = await import('./enable.js');
@@ -232,7 +232,7 @@ export function setupServerCommands(yargs: Argv): Argv {
                 type: 'string',
                 alias: 'c',
               })
-              .example([['$0 server disable myserver', 'Disable a server temporarily']]);
+              .example([['$0 mcp disable myserver', 'Disable a server temporarily']]);
           },
           handler: async (argv) => {
             const { disableCommand } = await import('./enable.js');
@@ -266,10 +266,10 @@ export function setupServerCommands(yargs: Argv): Argv {
                 alias: 'v',
               })
               .example([
-                ['$0 server list', 'List all enabled servers'],
-                ['$0 server list --show-disabled', 'List all servers including disabled'],
-                ['$0 server list --tags=prod,api', 'List servers with specific tags'],
-                ['$0 server list --verbose', 'List servers with detailed config'],
+                ['$0 mcp list', 'List all enabled servers'],
+                ['$0 mcp list --show-disabled', 'List all servers including disabled'],
+                ['$0 mcp list --tags=prod,api', 'List servers with specific tags'],
+                ['$0 mcp list --verbose', 'List servers with detailed config'],
               ]);
           },
           handler: async (argv) => {
@@ -298,9 +298,9 @@ export function setupServerCommands(yargs: Argv): Argv {
                 alias: 'v',
               })
               .example([
-                ['$0 server status', 'Show status of all servers'],
-                ['$0 server status myserver', 'Show status of specific server'],
-                ['$0 server status --verbose', 'Show detailed status information'],
+                ['$0 mcp status', 'Show status of all servers'],
+                ['$0 mcp status myserver', 'Show status of specific server'],
+                ['$0 mcp status --verbose', 'Show detailed status information'],
               ]);
           },
           handler: async (argv) => {
@@ -310,9 +310,9 @@ export function setupServerCommands(yargs: Argv): Argv {
         })
         .demandCommand(1, 'You must specify a subcommand')
         .help().epilogue(`
-Server Command Group - MCP Server Configuration Management
+MCP Command Group - MCP Server Configuration Management
 
-The server command group helps you manage MCP server configurations in your 1mcp instance.
+The mcp command group helps you manage MCP server configurations in your 1mcp instance.
 
 This allows you to:
 • Add new MCP servers with various transport types (stdio, HTTP, SSE)
@@ -322,11 +322,11 @@ This allows you to:
 • List and filter servers by tags or status
 • Check the status and details of configured servers
 
-For more information about each command, use: $0 server <command> --help
+For more information about each command, use: $0 mcp <command> --help
         `);
     },
     () => {
-      // This handler runs when 'server' is called without a subcommand
+      // This handler runs when 'mcp' is called without a subcommand
       console.log('Please specify a subcommand. Use --help for available commands.');
       process.exit(1);
     },

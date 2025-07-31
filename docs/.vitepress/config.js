@@ -85,15 +85,15 @@ export default withMermaid(
             items: [
               { text: 'serve', link: '/commands/serve' },
               {
-                text: 'server',
-                link: '/commands/server/',
+                text: 'mcp',
+                link: '/commands/mcp/',
                 items: [
-                  { text: 'add', link: '/commands/server/add' },
-                  { text: 'remove', link: '/commands/server/remove' },
-                  { text: 'update', link: '/commands/server/update' },
-                  { text: 'enable/disable', link: '/commands/server/enable' },
-                  { text: 'list', link: '/commands/server/list' },
-                  { text: 'status', link: '/commands/server/status' },
+                  { text: 'add', link: '/commands/mcp/add' },
+                  { text: 'remove', link: '/commands/mcp/remove' },
+                  { text: 'update', link: '/commands/mcp/update' },
+                  { text: 'enable/disable', link: '/commands/mcp/enable' },
+                  { text: 'list', link: '/commands/mcp/list' },
+                  { text: 'status', link: '/commands/mcp/status' },
                 ],
               },
             ],

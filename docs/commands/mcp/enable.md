@@ -1,4 +1,4 @@
-# server enable / disable
+# mcp enable / disable
 
 Enables or disables an MCP server without removing its configuration.
 
@@ -7,8 +7,8 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
-1mcp server enable <name>
-1mcp server disable <name>
+1mcp mcp enable <name>
+1mcp mcp disable <name>
 ```
 
 ## Arguments
@@ -25,10 +25,10 @@ Disabling a server is a non-destructive way to temporarily remove it from the po
 
 ```bash
 # Disable a server
-1mcp server disable my-server
+1mcp mcp disable my-server
 
 # Re-enable the server later
-1mcp server enable my-server
+1mcp mcp enable my-server
 ```
 
 ## See Also

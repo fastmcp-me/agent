@@ -58,7 +58,7 @@ async function showAllServersStatus(configPath?: string, verbose: boolean = fals
 
   if (Object.keys(allServers).length === 0) {
     console.log('No MCP servers are configured.');
-    console.log('\n💡 Use "server add <name>" to add your first server.');
+    console.log('\n💡 Use "mcp add <name>" to add your first server.');
     return;
   }
 
@@ -103,7 +103,7 @@ async function showAllServersStatus(configPath?: string, verbose: boolean = fals
   }
 
   if (verbose) {
-    console.log(`\n💡 Use "server status <name>" to see detailed information for a specific server.`);
+    console.log(`\n💡 Use "mcp status <name>" to see detailed information for a specific server.`);
   }
 }
 
@@ -216,7 +216,7 @@ function displayDetailedServerStatus(name: string, config: MCPServerParams, verb
 
   if (config.disabled) {
     console.log(`   Runtime Status: ⏹️  Not running (disabled)`);
-    console.log(`   Note: Use 'server enable ${name}' to enable this server.`);
+    console.log(`   Note: Use 'mcp enable ${name}' to enable this server.`);
   } else {
     console.log(`   Runtime Status: ❓ Unknown (requires 1mcp to be running)`);
     console.log(`   Note: Start 1mcp to see actual runtime status.`);
@@ -235,11 +235,11 @@ function displayDetailedServerStatus(name: string, config: MCPServerParams, verb
   // Quick actions
   console.log(`\n🚀 Quick Actions:`);
   if (config.disabled) {
-    console.log(`   • Enable: server enable ${name}`);
+    console.log(`   • Enable: mcp enable ${name}`);
   } else {
-    console.log(`   • Disable: server disable ${name}`);
+    console.log(`   • Disable: mcp disable ${name}`);
   }
-  console.log(`   • Update: server update ${name} [options]`);
+  console.log(`   • Update: mcp update ${name} [options]`);
   console.log(`   • Remove: server remove ${name}`);
 }
 

@@ -31,7 +31,7 @@ export async function enableCommand(argv: EnableDisableCommandArgs): Promise<voi
 
     // Check if server exists
     if (!serverExists(name, configPath)) {
-      throw new Error(`Server '${name}' does not exist. Use 'server add' to create it first.`);
+      throw new Error(`Server '${name}' does not exist. Use 'mcp add' to create it first.`);
     }
 
     // Get current server configuration
@@ -92,7 +92,7 @@ export async function disableCommand(argv: EnableDisableCommandArgs): Promise<vo
 
     // Check if server exists
     if (!serverExists(name, configPath)) {
-      throw new Error(`Server '${name}' does not exist. Use 'server add' to create it first.`);
+      throw new Error(`Server '${name}' does not exist. Use 'mcp add' to create it first.`);
     }
 
     // Get current server configuration
@@ -127,7 +127,7 @@ export async function disableCommand(argv: EnableDisableCommandArgs): Promise<vo
     console.log(`   Status: Enabled → Disabled`);
     console.log(`   Backup created: ${backupPath}`);
     console.log(`\n💡 Server disabled. If 1mcp is running, the server will be stopped automatically.`);
-    console.log(`   Use 'server enable ${name}' to re-enable it later.`);
+    console.log(`   Use 'mcp enable ${name}' to re-enable it later.`);
   } catch (error) {
     console.error(`❌ Failed to disable server: ${error instanceof Error ? error.message : error}`);
     process.exit(1);

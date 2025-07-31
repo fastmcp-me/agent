@@ -1,4 +1,4 @@
-# server add
+# mcp add
 
 Adds a new MCP server to the 1MCP configuration.
 
@@ -7,7 +7,7 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
-1mcp server add <name> --type <type> [options]
+1mcp mcp add <name> --type <type> [options]
 ```
 
 ## Arguments
@@ -47,10 +47,10 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # Add a local filesystem server
-1mcp server add files --type=stdio --command="mcp-server-fs" --args="--root,./"
+1mcp mcp add files --type=stdio --command="mcp-server-fs" --args="--root,./"
 
 # Add a remote HTTP server with tags
-1mcp server add remote-api --type=http --url="https://api.example.com/mcp" --tags="api,prod"
+1mcp mcp add remote-api --type=http --url="https://api.example.com/mcp" --tags="api,prod"
 ```
 
 ## See Also

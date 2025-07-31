@@ -65,7 +65,7 @@ export async function addCommand(argv: AddCommandArgs): Promise<void> {
     // Check if server already exists
     if (serverExists(name, configPath)) {
       throw new Error(
-        `Server '${name}' already exists. Use 'server update' to modify it or 'server remove' to delete it first.`,
+        `Server '${name}' already exists. Use 'mcp update' to modify it or 'mcp remove' to delete it first.`,
       );
     }
 
@@ -164,7 +164,7 @@ export async function addCommand(argv: AddCommandArgs): Promise<void> {
     }
 
     if (disabled) {
-      console.log(`   Status: Disabled (use 'server enable ${name}' to activate)`);
+      console.log(`   Status: Disabled (use 'mcp enable ${name}' to activate)`);
     } else {
       console.log(`   Status: Enabled`);
     }

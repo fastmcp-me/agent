@@ -1,4 +1,4 @@
-# server status
+# mcp status
 
 Checks the status and details of configured MCP servers.
 
@@ -7,7 +7,7 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
-1mcp server status [name] [options]
+1mcp mcp status [name] [options]
 ```
 
 ## Arguments
@@ -28,13 +28,13 @@ This command provides a quick overview of your MCP servers. For `stdio` servers,
 
 ```bash
 # Check the status of all servers
-1mcp server status
+1mcp mcp status
 
 # Check the status of a specific server
-1mcp server status my-server
+1mcp mcp status my-server
 
 # Get detailed status information
-1mcp server status --verbose
+1mcp mcp status --verbose
 ```
 
 ## See Also

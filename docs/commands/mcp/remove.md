@@ -1,4 +1,4 @@
-# server remove
+# mcp remove
 
 Removes an MCP server from the 1MCP configuration.
 
@@ -7,7 +7,7 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
-1mcp server remove <name> [options]
+1mcp mcp remove <name> [options]
 ```
 
 ## Arguments
@@ -25,10 +25,10 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # Remove a server
-1mcp server remove my-server
+1mcp mcp remove my-server
 
 # Remove a server without prompting for confirmation
-1mcp server remove old-server --yes
+1mcp mcp remove old-server --yes
 ```
 
 ## See Also

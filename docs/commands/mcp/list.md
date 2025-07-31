@@ -1,4 +1,4 @@
-# server list
+# mcp list
 
 Lists all configured MCP servers.
 
@@ -7,7 +7,7 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
-1mcp server list [options]
+1mcp mcp list [options]
 ```
 
 ## Options
@@ -25,16 +25,16 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # List all enabled servers
-1mcp server list
+1mcp mcp list
 
 # List all servers, including disabled ones
-1mcp server list --show-disabled
+1mcp mcp list --show-disabled
 
 # List all servers with the "prod" tag
-1mcp server list --tags=prod
+1mcp mcp list --tags=prod
 
 # Show detailed information for all servers
-1mcp server list --verbose
+1mcp mcp list --verbose
 ```
 
 ## See Also

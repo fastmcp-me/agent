@@ -16,7 +16,7 @@ import { AgentConfigManager } from './core/server/agentConfig.js';
 import { PORT, HOST } from './constants.js';
 import { displayLogo } from './utils/logo.js';
 import { setupAppCommands } from './commands/app/index.js';
-import { setupServerCommands } from './commands/server/index.js';
+import { setupMcpCommands } from './commands/mcp/index.js';
 
 // Define server options that should only be available for serve commands
 const serverOptions = {
@@ -135,7 +135,7 @@ yargsInstance = yargsInstance
 
 // Register command groups (these will have clean option lists without server options)
 yargsInstance = setupAppCommands(yargsInstance);
-yargsInstance = setupServerCommands(yargsInstance);
+yargsInstance = setupMcpCommands(yargsInstance);
 
 /**
  * Set up graceful shutdown handling
@@ -181,7 +181,7 @@ function setupGracefulShutdown(serverManager: ServerManager, expressServer?: Exp
  * Check if the command is a CLI command that should not start the server
  */
 function isCliCommand(argv: string[]): boolean {
-  return argv.length >= 3 && (argv[2] === 'app' || argv[2] === 'server');
+  return argv.length >= 3 && (argv[2] === 'app' || argv[2] === 'mcp');
 }
 
 /**
