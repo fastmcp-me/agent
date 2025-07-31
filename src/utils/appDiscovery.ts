@@ -1,4 +1,5 @@
 import fs from 'fs';
+import JSON5 from 'json5';
 import { getAppConfigPaths, getAppPreset, isAppConfigurable } from './appPresets.js';
 
 /**
@@ -217,7 +218,8 @@ async function analyzeConfigFile(
     let parsedContent: any;
 
     try {
-      parsedContent = JSON.parse(content);
+      // For VS Code settings, use JSON5 parser to handle comments
+      parsedContent = format === 'vscode' ? JSON5.parse(content) : JSON.parse(content);
     } catch (parseError) {
       return {
         servers: [],
