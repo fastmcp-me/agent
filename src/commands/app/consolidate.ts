@@ -12,6 +12,8 @@ import { isAppSupported, isAppConfigurable, generateManualInstructions, getAppPr
 import { validateOperation, generateOperationPreview } from '../../utils/validationHelpers.js';
 import { createBackup, withFileLock } from '../../utils/backupManager.js';
 import { McpConfigManager } from '../../config/mcpConfigManager.js';
+import { setServer } from '../mcp/utils/configUtils.js';
+import { MCPServerParams } from '../../core/types/index.js';
 
 /**
  * Consolidate command - Main consolidation logic for MCP servers.
@@ -319,6 +321,40 @@ async function consolidateApp(
 }
 
 /**
+ * Convert MCPServerConfig to MCPServerParams format
+ */
+function convertToMCPServerParams(server: any): MCPServerParams {
+  const params: MCPServerParams = {
+    disabled: false,
+  };
+
+  // Determine transport type and set appropriate parameters
+  if (server.command) {
+    // Stdio transport
+    params.type = 'stdio';
+    params.command = server.command;
+    if (server.args && server.args.length > 0) {
+      params.args = server.args;
+    }
+    if (server.env) {
+      params.env = server.env;
+    }
+  } else if (server.url) {
+    // HTTP transport - determine if SSE or regular HTTP
+    if (server.url.includes('/sse') || server.url.includes('text/event-stream')) {
+      params.type = 'sse';
+    } else {
+      params.type = 'http';
+    }
+    params.url = server.url;
+  } else {
+    throw new Error(`Invalid server configuration: ${server.name} has neither command nor url`);
+  }
+
+  return params;
+}
+
+/**
  * Import MCP servers to 1mcp configuration
  */
 async function importServersTo1mcp(servers: any[]): Promise<void> {
@@ -334,25 +370,28 @@ async function importServersTo1mcp(servers: any[]): Promise<void> {
       continue;
     }
 
-    // This is a simplified implementation - in a real scenario,
-    // we would need to modify the McpConfigManager to support adding servers
-    // or directly modify the config file
-    console.log(`📋 Would import server: ${server.name}`);
+    try {
+      // Convert to proper MCPServerParams format
+      const serverParams = convertToMCPServerParams(server);
 
-    // For now, just log what would be imported
-    if (server.command) {
-      console.log(`   Command: ${server.command}`);
-      if (server.args) console.log(`   Args: ${server.args.join(' ')}`);
-    } else if (server.url) {
-      console.log(`   URL: ${server.url}`);
+      // Add server to configuration
+      setServer(server.name, serverParams);
+
+      console.log(`✅ Imported server: ${server.name}`);
+
+      // Log what was imported
+      if (serverParams.type === 'stdio') {
+        console.log(`   Type: stdio`);
+        console.log(`   Command: ${serverParams.command}`);
+        if (serverParams.args) console.log(`   Args: ${serverParams.args.join(' ')}`);
+      } else if (serverParams.type === 'http' || serverParams.type === 'sse') {
+        console.log(`   Type: ${serverParams.type}`);
+        console.log(`   URL: ${serverParams.url}`);
+      }
+    } catch (error: any) {
+      console.error(`❌ Failed to import server "${server.name}": ${error.message}`);
     }
   }
-
-  // Note: In a complete implementation, we would need to:
-  // 1. Read the current config file
-  // 2. Add the new servers
-  // 3. Write the updated config back
-  // This would require extending McpConfigManager or creating a config writer utility
 }
 
 /**
