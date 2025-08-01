@@ -3,6 +3,7 @@ import logger from '../../../logger/logger.js';
 import { McpLoadingManager } from '../../../core/loading/mcpLoadingManager.js';
 import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 import { getValidatedTags } from './scopeAuthMiddleware.js';
+import { McpConfigManager } from '../../../config/mcpConfigManager.js';
 
 /**
  * Extended request interface to include MCP loading information
@@ -15,6 +16,8 @@ export interface McpRequest extends Request {
     oauthRequiredServers: string[];
     hasPartialAvailability: boolean;
     allServersReady: boolean;
+    requestedTags?: string[];
+    totalServersBeforeFiltering?: number;
   };
 }
 
@@ -87,14 +90,37 @@ export function createMcpAvailabilityMiddleware(
       const allStates = stateTracker.getAllServerStates();
 
       // Filter servers based on requested tags
+      // Tags are used to control which MCP servers are available for requests.
+      // When tags are specified, only servers that have ALL the requested tags will be included.
+      const allServers = Array.from(allStates.keys());
       let relevantServers: string[];
+
       if (requestedTags && requestedTags.length > 0) {
-        // TODO: Implement tag-based filtering based on server configuration
-        // For now, include all servers if tags are specified
-        relevantServers = Array.from(allStates.keys());
-        logger.debug(`Checking availability for servers with tags: ${requestedTags.join(', ')}`);
+        // Get server configurations to access tags
+        const configManager = McpConfigManager.getInstance();
+        const transportConfig = configManager.getTransportConfig();
+
+        // Filter servers that have ALL requested tags
+        // This implements the "AND" logic: servers must have every requested tag
+        relevantServers = allServers.filter((serverName) => {
+          const serverConfig = transportConfig[serverName];
+          if (!serverConfig || !serverConfig.tags) {
+            // Server has no tags, so it doesn't match any tag request
+            return false;
+          }
+
+          // Check if server has ALL requested tags (case-insensitive matching)
+          const serverTags = serverConfig.tags.map((tag) => tag.toLowerCase());
+          const requestedTagsLower = requestedTags.map((tag) => tag.toLowerCase());
+
+          return requestedTagsLower.every((requestedTag) => serverTags.includes(requestedTag));
+        });
+
+        logger.debug(
+          `Filtered ${relevantServers.length}/${allServers.length} servers ` + `with tags: ${requestedTags.join(', ')}`,
+        );
       } else {
-        relevantServers = Array.from(allStates.keys());
+        relevantServers = allServers;
         logger.debug(`Checking availability for all ${relevantServers.length} servers`);
       }
 
@@ -146,13 +172,19 @@ export function createMcpAvailabilityMiddleware(
         oauthRequiredServers,
         hasPartialAvailability,
         allServersReady,
+        requestedTags: requestedTags && requestedTags.length > 0 ? requestedTags : undefined,
+        totalServersBeforeFiltering: requestedTags && requestedTags.length > 0 ? allServers.length : undefined,
       };
 
       // Log availability status
+      const tagInfo =
+        requestedTags && requestedTags.length > 0
+          ? ` (filtered by tags: ${requestedTags.join(', ')}, ${allServers.length} total)`
+          : '';
       logger.debug(
         `MCP Availability: ${availableServers.length}/${relevantServers.length} ready, ` +
           `${loadingServers.length} loading, ${unavailableServers.length} failed, ` +
-          `${oauthRequiredServers.length} OAuth required`,
+          `${oauthRequiredServers.length} OAuth required${tagInfo}`,
       );
 
       // Decide whether to proceed based on availability
