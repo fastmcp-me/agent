@@ -188,10 +188,17 @@ function isCliCommand(argv: string[]): boolean {
  * Check if the command is the serve command (or should default to serve)
  */
 function isServeCommand(argv: string[]): boolean {
-  // If no command specified, default to serve
+  // If no command specified (length < 3) or first arg is not a known command, default to serve
   if (argv.length < 3) return true;
+
   // If explicitly called serve
-  return argv[2] === 'serve';
+  if (argv[2] === 'serve') return true;
+
+  // If the third argument starts with '-', it's likely a flag, so default to serve
+  if (argv[2].startsWith('-')) return true;
+
+  // Otherwise it's some other command
+  return false;
 }
 
 /**
