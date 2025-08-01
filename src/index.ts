@@ -17,6 +17,7 @@ import { PORT, HOST } from './constants.js';
 import { displayLogo } from './utils/logo.js';
 import { setupAppCommands } from './commands/app/index.js';
 import { setupMcpCommands } from './commands/mcp/index.js';
+import { McpLoadingManager } from './core/loading/mcpLoadingManager.js';
 
 // Define server options that should only be available for serve commands
 const serverOptions = {
@@ -140,12 +141,26 @@ yargsInstance = setupMcpCommands(yargsInstance);
 /**
  * Set up graceful shutdown handling
  */
-function setupGracefulShutdown(serverManager: ServerManager, expressServer?: ExpressServer): void {
+function setupGracefulShutdown(
+  serverManager: ServerManager,
+  loadingManager?: McpLoadingManager,
+  expressServer?: ExpressServer,
+): void {
   const shutdown = async () => {
     logger.info('Shutting down server...');
 
     // Stop the configuration reload service
     configReloadService.stop();
+
+    // Shutdown loading manager if it exists
+    if (loadingManager && typeof loadingManager.shutdown === 'function') {
+      try {
+        loadingManager.shutdown();
+        logger.info('Loading manager shutdown complete');
+      } catch (error) {
+        logger.error(`Error shutting down loading manager: ${error}`);
+      }
+    }
 
     // Shutdown ExpressServer if it exists
     if (expressServer) {
@@ -268,7 +283,7 @@ async function main() {
     });
 
     // Initialize server and get server manager with custom config path if provided
-    const serverManager = await setupServer();
+    const { serverManager, loadingManager } = await setupServer();
 
     let expressServer: ExpressServer | undefined;
 
@@ -295,7 +310,7 @@ async function main() {
       // eslint-disable-next-line no-fallthrough
       case 'http': {
         // Use HTTP/SSE transport
-        expressServer = new ExpressServer(serverManager);
+        expressServer = new ExpressServer(serverManager, loadingManager);
         expressServer.start();
         break;
       }
@@ -305,7 +320,20 @@ async function main() {
     }
 
     // Set up graceful shutdown handling
-    setupGracefulShutdown(serverManager, expressServer);
+    setupGracefulShutdown(serverManager, loadingManager, expressServer);
+
+    // Log MCP loading progress (non-blocking)
+    loadingManager.on('loading-progress', (summary) => {
+      logger.info(
+        `MCP loading progress: ${summary.ready}/${summary.totalServers} servers ready (${summary.loading} loading, ${summary.failed} failed)`,
+      );
+    });
+
+    loadingManager.on('loading-complete', (summary) => {
+      logger.info(
+        `MCP loading complete: ${summary.ready}/${summary.totalServers} servers ready (${summary.successRate.toFixed(1)}% success rate)`,
+      );
+    });
   } catch (error) {
     logger.error('Server error:', error);
     process.exit(1);

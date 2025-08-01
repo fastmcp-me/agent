@@ -2,11 +2,13 @@ import { Router, Request, Response, RequestHandler } from 'express';
 import rateLimit from 'express-rate-limit';
 import logger from '../../../logger/logger.js';
 import { HealthService, HealthStatus } from '../../../services/healthService.js';
+import { McpLoadingManager } from '../../../core/loading/mcpLoadingManager.js';
+import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 
 /**
  * Creates health check routes
  */
-export function createHealthRoutes(): Router {
+export function createHealthRoutes(loadingManager?: McpLoadingManager): Router {
   const router: Router = Router();
   const healthService = HealthService.getInstance();
 
@@ -124,6 +126,190 @@ export function createHealthRoutes(): Router {
   };
 
   router.get('/ready', readinessHandler);
+
+  /**
+   * MCP servers loading status endpoint
+   * GET /health/mcp
+   *
+   * Returns real-time status of MCP server loading process
+   */
+  const mcpLoadingHandler: RequestHandler = (req: Request, res: Response) => {
+    try {
+      if (!loadingManager) {
+        res.status(404).json({
+          error: 'MCP loading manager not available',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const summary = loadingManager.getSummary();
+      const allStates = loadingManager.getStateTracker().getAllServerStates();
+
+      // Group servers by state for better organization
+      const serversByState = {
+        pending: [] as string[],
+        loading: [] as string[],
+        ready: [] as string[],
+        failed: [] as string[],
+        awaitingOAuth: [] as string[],
+        cancelled: [] as string[],
+      };
+
+      const serverDetails: Record<string, any> = {};
+
+      for (const [name, info] of allStates) {
+        // Add to state groups
+        switch (info.state) {
+          case LoadingState.Pending:
+            serversByState.pending.push(name);
+            break;
+          case LoadingState.Loading:
+            serversByState.loading.push(name);
+            break;
+          case LoadingState.Ready:
+            serversByState.ready.push(name);
+            break;
+          case LoadingState.Failed:
+            serversByState.failed.push(name);
+            break;
+          case LoadingState.AwaitingOAuth:
+            serversByState.awaitingOAuth.push(name);
+            break;
+          case LoadingState.Cancelled:
+            serversByState.cancelled.push(name);
+            break;
+        }
+
+        // Add detailed info
+        serverDetails[name] = {
+          state: info.state,
+          retryCount: info.retryCount,
+          duration: info.duration,
+          startTime: info.startTime,
+          endTime: info.endTime,
+          error: info.error?.message,
+          progress: info.progress,
+          authorizationUrl: info.authorizationUrl,
+        };
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('X-Loading-Complete', summary.isComplete.toString());
+      res.setHeader('X-Success-Rate', summary.successRate.toFixed(1));
+
+      const responseData = {
+        loading: {
+          isComplete: summary.isComplete,
+          startTime: summary.startTime,
+          successRate: summary.successRate,
+          averageLoadTime: summary.averageLoadTime,
+        },
+        summary: {
+          total: summary.totalServers,
+          pending: summary.pending,
+          loading: summary.loading,
+          ready: summary.ready,
+          failed: summary.failed,
+          awaitingOAuth: summary.awaitingOAuth,
+          cancelled: summary.cancelled,
+        },
+        servers: {
+          byState: serversByState,
+          details: serverDetails,
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      // Set status code based on loading state
+      const statusCode = summary.isComplete ? 200 : 202; // 202 = Accepted (still processing)
+      res.status(statusCode).json(responseData);
+    } catch (error) {
+      logger.error('MCP loading status check failed:', error);
+
+      res.status(500).json({
+        error: 'MCP loading status check failed',
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
+  router.get('/mcp', mcpLoadingHandler);
+
+  /**
+   * Detailed server-specific loading status
+   * GET /health/mcp/:serverName
+   */
+  const serverSpecificHandler: RequestHandler = (req: Request, res: Response) => {
+    try {
+      if (!loadingManager) {
+        res.status(404).json({
+          error: 'MCP loading manager not available',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const serverName = req.params.serverName;
+      const serverInfo = loadingManager.getStateTracker().getServerState(serverName);
+
+      if (!serverInfo) {
+        res.status(404).json({
+          error: `Server '${serverName}' not found`,
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('X-Server-State', serverInfo.state);
+
+      const responseData = {
+        name: serverInfo.name,
+        state: serverInfo.state,
+        retryCount: serverInfo.retryCount,
+        duration: serverInfo.duration,
+        startTime: serverInfo.startTime,
+        endTime: serverInfo.endTime,
+        lastRetryTime: serverInfo.lastRetryTime,
+        error: serverInfo.error
+          ? {
+              message: serverInfo.error.message,
+              name: serverInfo.error.name,
+            }
+          : undefined,
+        progress: serverInfo.progress,
+        authorizationUrl: serverInfo.authorizationUrl,
+        oauthStartTime: serverInfo.oauthStartTime,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Set status code based on server state
+      let statusCode = 200;
+      if (serverInfo.state === LoadingState.Loading) {
+        statusCode = 202; // Still processing
+      } else if (serverInfo.state === LoadingState.Failed) {
+        statusCode = 503; // Service unavailable
+      } else if (serverInfo.state === LoadingState.AwaitingOAuth) {
+        statusCode = 401; // Unauthorized - needs OAuth
+      }
+
+      res.status(statusCode).json(responseData);
+    } catch (error) {
+      logger.error(`Server-specific loading status check failed for ${req.params.serverName}:`, error);
+
+      res.status(500).json({
+        error: 'Server-specific loading status check failed',
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
+  router.get('/mcp/:serverName', serverSpecificHandler);
 
   return router;
 }

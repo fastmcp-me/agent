@@ -1,0 +1,390 @@
+import { EventEmitter } from 'events';
+import { OutboundConnections, AuthProviderTransport } from '../types/index.js';
+import { ClientManager } from '../client/clientManager.js';
+import { LoadingStateTracker, LoadingState, LoadingSummary } from './loadingStateTracker.js';
+import logger from '../../logger/logger.js';
+
+/**
+ * Configuration options for MCP loading behavior
+ */
+export interface McpLoadingConfig {
+  /** Maximum time to wait for each server (ms) */
+  readonly serverTimeoutMs: number;
+  /** Maximum number of retry attempts per server */
+  readonly maxRetries: number;
+  /** Initial delay between retries (ms) */
+  readonly retryDelayMs: number;
+  /** Maximum number of servers to initialize concurrently */
+  readonly maxConcurrentLoads: number;
+  /** Whether to continue loading other servers if some fail */
+  readonly continueOnFailure: boolean;
+  /** Whether to enable background retry for failed servers */
+  readonly enableBackgroundRetry: boolean;
+  /** Interval for background retry attempts (ms) */
+  readonly backgroundRetryIntervalMs: number;
+}
+
+/**
+ * Default configuration for MCP loading
+ */
+export const DEFAULT_LOADING_CONFIG: McpLoadingConfig = {
+  serverTimeoutMs: 30000, // 30 seconds per server
+  maxRetries: 3,
+  retryDelayMs: 2000, // 2 seconds initial delay
+  maxConcurrentLoads: 5, // Load 5 servers at once
+  continueOnFailure: true,
+  enableBackgroundRetry: true,
+  backgroundRetryIntervalMs: 60000, // Retry every minute
+};
+
+/**
+ * Result of loading a specific server
+ */
+interface ServerLoadResult {
+  readonly name: string;
+  readonly success: boolean;
+  readonly error?: Error;
+  readonly duration: number;
+  readonly retryCount: number;
+}
+
+/**
+ * Events emitted by McpLoadingManager
+ */
+export interface McpLoadingEvents {
+  'loading-started': (serverNames: string[]) => void;
+  'server-loading': (name: string) => void;
+  'server-loaded': (name: string, result: ServerLoadResult) => void;
+  'server-failed': (name: string, result: ServerLoadResult) => void;
+  'oauth-required': (name: string, authUrl?: string) => void;
+  'loading-progress': (summary: LoadingSummary) => void;
+  'loading-complete': (summary: LoadingSummary) => void;
+  'background-retry': (name: string, attempt: number) => void;
+}
+
+/**
+ * Manages asynchronous loading of MCP servers without blocking HTTP server startup
+ *
+ * This manager coordinates the initialization of multiple MCP servers in parallel,
+ * provides real-time status updates, and handles retries and error recovery.
+ * The HTTP server can start immediately while this manager loads servers in the background.
+ *
+ * @example
+ * ```typescript
+ * const manager = new McpLoadingManager(clientManager, config);
+ * manager.on('loading-complete', (summary) => {
+ *   console.log(`${summary.ready}/${summary.totalServers} servers ready`);
+ * });
+ *
+ * // Start loading asynchronously
+ * const loadingPromise = manager.startAsyncLoading(transports);
+ *
+ * // HTTP server can start immediately
+ * const expressServer = new ExpressServer(serverManager);
+ * expressServer.start();
+ *
+ * // Optionally wait for loading to complete
+ * await loadingPromise;
+ * ```
+ */
+export class McpLoadingManager extends EventEmitter {
+  private clientManager: ClientManager;
+  private config: McpLoadingConfig;
+  private stateTracker: LoadingStateTracker;
+  private loadingSemaphore: Map<string, Promise<ServerLoadResult>> = new Map();
+  private backgroundRetryTimer?: ReturnType<typeof setTimeout>;
+  private isShuttingDown: boolean = false;
+
+  constructor(clientManager: ClientManager, config: Partial<McpLoadingConfig> = {}) {
+    super();
+    this.clientManager = clientManager;
+    this.config = { ...DEFAULT_LOADING_CONFIG, ...config };
+    this.stateTracker = new LoadingStateTracker();
+
+    // Forward state tracker events
+    this.stateTracker.on('server-state-changed', (name, info) => {
+      if (info.state === LoadingState.Ready) {
+        this.emit('server-loaded', name, {
+          name,
+          success: true,
+          duration: info.duration || 0,
+          retryCount: info.retryCount,
+        });
+      } else if (info.state === LoadingState.Failed) {
+        this.emit('server-failed', name, {
+          name,
+          success: false,
+          error: info.error,
+          duration: info.duration || 0,
+          retryCount: info.retryCount,
+        });
+      } else if (info.state === LoadingState.AwaitingOAuth) {
+        this.emit('oauth-required', name, info.authorizationUrl);
+      }
+    });
+
+    this.stateTracker.on('loading-progress', (summary) => {
+      this.emit('loading-progress', summary);
+    });
+
+    this.stateTracker.on('loading-complete', (summary) => {
+      this.emit('loading-complete', summary);
+      this.setupBackgroundRetry();
+    });
+
+    this.setMaxListeners(100); // Allow many listeners
+  }
+
+  /**
+   * Start asynchronous loading of MCP servers
+   * Returns immediately, loading happens in background
+   */
+  public async startAsyncLoading(transports: Record<string, AuthProviderTransport>): Promise<OutboundConnections> {
+    const serverNames = Object.keys(transports);
+
+    if (serverNames.length === 0) {
+      logger.info('No MCP servers to load');
+      return new Map();
+    }
+
+    logger.info(`Starting async loading of ${serverNames.length} MCP servers`);
+    this.stateTracker.startLoading(serverNames);
+    this.emit('loading-started', serverNames);
+
+    // Start loading servers with concurrency control
+    this.loadServersWithConcurrency(transports);
+
+    // Return current connections (may be empty initially)
+    return this.clientManager.getClients();
+  }
+
+  /**
+   * Load servers with concurrency control
+   */
+  private async loadServersWithConcurrency(transports: Record<string, AuthProviderTransport>): Promise<void> {
+    const serverEntries = Object.entries(transports);
+    const semaphore = new Map<string, Promise<void>>();
+
+    // Process servers in batches based on maxConcurrentLoads
+    for (let i = 0; i < serverEntries.length; i += this.config.maxConcurrentLoads) {
+      const batch = serverEntries.slice(i, i + this.config.maxConcurrentLoads);
+
+      // Start all servers in this batch
+      const batchPromises = batch.map(([name, transport]) => {
+        const loadPromise = this.loadSingleServer(name, transport);
+        semaphore.set(name, loadPromise);
+        return loadPromise;
+      });
+
+      // Wait for this batch to complete before starting next batch
+      await Promise.allSettled(batchPromises);
+
+      // Clean up completed promises
+      for (const [name] of batch) {
+        semaphore.delete(name);
+      }
+
+      if (this.isShuttingDown) {
+        logger.info('Loading cancelled due to shutdown');
+        break;
+      }
+    }
+
+    logger.info('Initial server loading phase completed');
+  }
+
+  /**
+   * Load a single server with retry logic
+   */
+  private async loadSingleServer(name: string, transport: AuthProviderTransport): Promise<void> {
+    if (this.isShuttingDown) return;
+
+    this.emit('server-loading', name);
+    this.stateTracker.updateServerState(name, LoadingState.Loading, {
+      progress: { phase: 'initializing', message: 'Starting server connection' },
+    });
+
+    let lastError: Error | undefined;
+    let retryCount = 0;
+
+    while (retryCount <= this.config.maxRetries && !this.isShuttingDown) {
+      try {
+        this.stateTracker.updateServerState(name, LoadingState.Loading, {
+          progress: {
+            phase: retryCount > 0 ? 'retrying' : 'connecting',
+            message: retryCount > 0 ? `Retry attempt ${retryCount}` : 'Connecting to server',
+          },
+        });
+
+        // Attempt to create and connect client
+        await this.createClientWithTimeout(name, transport);
+
+        // Success!
+        this.stateTracker.updateServerState(name, LoadingState.Ready);
+        logger.info(`Successfully loaded MCP server: ${name} (${retryCount} retries)`);
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        retryCount++;
+        this.stateTracker.incrementRetryCount(name);
+
+        // Handle OAuth case specially
+        if (lastError.name === 'OAuthRequiredError') {
+          logger.info(`OAuth required for ${name}`);
+          this.stateTracker.updateServerState(name, LoadingState.AwaitingOAuth, {
+            error: lastError,
+          });
+          return; // Don't retry OAuth errors
+        }
+
+        // Handle other errors
+        logger.warn(`Failed to load ${name} (attempt ${retryCount}): ${lastError.message}`);
+
+        if (retryCount <= this.config.maxRetries && !this.isShuttingDown) {
+          const delay = this.config.retryDelayMs * Math.pow(2, retryCount - 1); // Exponential backoff
+          logger.info(`Retrying ${name} in ${delay}ms...`);
+          await this.sleep(delay);
+        }
+      }
+    }
+
+    // All retries exhausted
+    this.stateTracker.updateServerState(name, LoadingState.Failed, {
+      error: lastError || new Error('Unknown error'),
+    });
+
+    if (this.config.continueOnFailure) {
+      logger.error(`Failed to load ${name} after ${this.config.maxRetries} retries, continuing with other servers`);
+    } else {
+      logger.error(`Failed to load ${name}, stopping loading process`);
+      throw lastError;
+    }
+  }
+
+  /**
+   * Create client with timeout wrapper
+   */
+  private async createClientWithTimeout(name: string, transport: AuthProviderTransport): Promise<void> {
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Timeout loading ${name} after ${this.config.serverTimeoutMs}ms`));
+      }, this.config.serverTimeoutMs);
+    });
+
+    const loadPromise = this.clientManager.createSingleClient(name, transport);
+
+    await Promise.race([loadPromise, timeoutPromise]);
+  }
+
+  /**
+   * Set up background retry for failed servers
+   */
+  private setupBackgroundRetry(): void {
+    if (!this.config.enableBackgroundRetry || this.isShuttingDown) {
+      return;
+    }
+
+    this.backgroundRetryTimer = setInterval(() => {
+      this.performBackgroundRetry();
+    }, this.config.backgroundRetryIntervalMs);
+
+    logger.info('Background retry enabled for failed servers');
+  }
+
+  /**
+   * Perform background retry for failed servers
+   */
+  private async performBackgroundRetry(): Promise<void> {
+    if (this.isShuttingDown) return;
+
+    const failedServers = this.stateTracker.getServersByState(LoadingState.Failed);
+
+    if (failedServers.length === 0) {
+      return;
+    }
+
+    logger.info(`Background retry for ${failedServers.length} failed servers`);
+
+    // Retry a subset of failed servers to avoid overwhelming the system
+    const serversToRetry = failedServers.slice(0, 3); // Retry max 3 at a time
+
+    for (const serverInfo of serversToRetry) {
+      if (this.isShuttingDown) break;
+
+      const transport = this.clientManager.getTransport(serverInfo.name);
+      if (transport) {
+        this.emit('background-retry', serverInfo.name, serverInfo.retryCount + 1);
+
+        // Don't wait for completion, let it run in background
+        this.loadSingleServer(serverInfo.name, transport).catch((error) => {
+          logger.debug(`Background retry failed for ${serverInfo.name}: ${error.message}`);
+        });
+      }
+    }
+  }
+
+  /**
+   * Get current loading state tracker
+   */
+  public getStateTracker(): LoadingStateTracker {
+    return this.stateTracker;
+  }
+
+  /**
+   * Get current loading summary
+   */
+  public getSummary(): LoadingSummary {
+    return this.stateTracker.getSummary();
+  }
+
+  /**
+   * Check if a specific server is ready
+   */
+  public isServerReady(name: string): boolean {
+    const state = this.stateTracker.getServerState(name);
+    return state?.state === LoadingState.Ready;
+  }
+
+  /**
+   * Get list of ready servers
+   */
+  public getReadyServers(): string[] {
+    return this.stateTracker.getServersByState(LoadingState.Ready).map((s) => s.name);
+  }
+
+  /**
+   * Get list of failed servers
+   */
+  public getFailedServers(): string[] {
+    return this.stateTracker.getServersByState(LoadingState.Failed).map((s) => s.name);
+  }
+
+  /**
+   * Shutdown the loading manager
+   */
+  public shutdown(): void {
+    this.isShuttingDown = true;
+
+    if (this.backgroundRetryTimer) {
+      clearInterval(this.backgroundRetryTimer);
+      this.backgroundRetryTimer = undefined;
+    }
+
+    // Cancel any pending servers
+    const pendingServers = this.stateTracker.getServersByState(LoadingState.Pending);
+    const loadingServers = this.stateTracker.getServersByState(LoadingState.Loading);
+
+    for (const server of [...pendingServers, ...loadingServers]) {
+      this.stateTracker.updateServerState(server.name, LoadingState.Cancelled);
+    }
+
+    logger.info('MCP loading manager shutdown complete');
+  }
+
+  /**
+   * Utility method for sleeping
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}

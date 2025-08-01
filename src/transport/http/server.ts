@@ -9,6 +9,7 @@ import { setupSecurityMiddleware } from './middlewares/securityMiddleware.js';
 import { httpRequestLogger } from './middlewares/httpRequestLogger.js';
 import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
+import { McpLoadingManager } from '../../core/loading/mcpLoadingManager.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import createOAuthRoutes from './routes/oauthRoutes.js';
@@ -16,6 +17,7 @@ import createHealthRoutes from './routes/healthRoutes.js';
 import { AgentConfigManager } from '../../core/server/agentConfig.js';
 import { RATE_LIMIT_CONFIG } from '../../constants.js';
 import { createScopeAuthMiddleware } from './middlewares/scopeAuthMiddleware.js';
+import { createMcpAvailabilityMiddleware } from './middlewares/mcpAvailabilityMiddleware.js';
 import { McpConfigManager } from '../../config/mcpConfigManager.js';
 
 /**
@@ -34,6 +36,7 @@ import { McpConfigManager } from '../../config/mcpConfigManager.js';
 export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
+  private loadingManager?: McpLoadingManager;
   private oauthProvider: SDKOAuthServerProvider;
   private configManager: AgentConfigManager;
 
@@ -44,11 +47,13 @@ export class ExpressServer {
    * and configures all routes for MCP transport and OAuth endpoints.
    *
    * @param serverManager - The server manager instance for handling MCP operations
+   * @param loadingManager - Optional loading manager for async MCP server initialization
    */
-  constructor(serverManager: ServerManager) {
+  constructor(serverManager: ServerManager, loadingManager?: McpLoadingManager) {
     this.app = express();
 
     this.serverManager = serverManager;
+    this.loadingManager = loadingManager;
     this.configManager = AgentConfigManager.getInstance();
 
     // Configure trust proxy setting before any middleware
@@ -143,15 +148,19 @@ export class ExpressServer {
     this.app.use('/oauth', createOAuthRoutes(this.oauthProvider));
 
     // Setup health check routes (no auth required for monitoring)
-    this.app.use('/health', createHealthRoutes());
+    this.app.use('/health', createHealthRoutes(this.loadingManager));
 
     // Setup MCP transport routes (auth is handled per-route via scopeAuthMiddleware)
     const router = express.Router();
 
     const scopeAuthMiddleware = createScopeAuthMiddleware(this.oauthProvider);
+    const availabilityMiddleware = createMcpAvailabilityMiddleware(this.loadingManager, {
+      allowPartialAvailability: true,
+      includeOAuthServers: false,
+    });
 
-    setupStreamableHttpRoutes(router, this.serverManager, scopeAuthMiddleware);
-    setupSseRoutes(router, this.serverManager, scopeAuthMiddleware);
+    setupStreamableHttpRoutes(router, this.serverManager, scopeAuthMiddleware, availabilityMiddleware);
+    setupSseRoutes(router, this.serverManager, scopeAuthMiddleware, availabilityMiddleware);
     this.app.use(router);
 
     // Log authentication status

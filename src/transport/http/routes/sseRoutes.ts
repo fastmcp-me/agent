@@ -8,8 +8,18 @@ import { ServerStatus } from '../../../core/types/index.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
-export function setupSseRoutes(router: Router, serverManager: ServerManager, authMiddleware: any): void {
+export function setupSseRoutes(
+  router: Router,
+  serverManager: ServerManager,
+  authMiddleware: any,
+  availabilityMiddleware?: any,
+): void {
   const middlewares = [tagsExtractor, authMiddleware];
+
+  // Add availability middleware if provided
+  if (availabilityMiddleware) {
+    middlewares.push(availabilityMiddleware);
+  }
 
   router.get(SSE_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {

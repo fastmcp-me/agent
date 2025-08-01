@@ -218,6 +218,140 @@ export class ClientManager {
   }
 
   /**
+   * Creates a single client for async loading (used by McpLoadingManager)
+   * @param name The name of the client
+   * @param transport The transport to connect to
+   * @returns Promise that resolves when client is connected
+   */
+  public async createSingleClient(name: string, transport: AuthProviderTransport): Promise<void> {
+    // Prevent concurrent creation of the same client
+    const existingPromise = this.connectionSemaphore.get(name);
+    if (existingPromise) {
+      await existingPromise;
+      return;
+    }
+
+    // Create connection promise
+    const connectionPromise = this.createSingleClientInternal(name, transport);
+    this.connectionSemaphore.set(name, connectionPromise);
+
+    try {
+      await connectionPromise;
+    } finally {
+      this.connectionSemaphore.delete(name);
+    }
+  }
+
+  /**
+   * Internal method to create and connect a single client
+   */
+  private async createSingleClientInternal(name: string, transport: AuthProviderTransport): Promise<void> {
+    logger.info(`Creating client for ${name}`);
+
+    // Store transport reference
+    this.transports[name] = transport;
+
+    try {
+      const client = this.createClient();
+
+      // Connect with retry logic
+      const connectedClient = await this.connectWithRetry(client, transport, name);
+
+      this.outboundConns.set(name, {
+        name,
+        transport,
+        client: connectedClient,
+        status: ClientStatus.Connected,
+        lastConnected: new Date(),
+      });
+      logger.info(`Client created for ${name}`);
+
+      connectedClient.onclose = () => {
+        const clientInfo = this.outboundConns.get(name);
+        if (clientInfo) {
+          clientInfo.status = ClientStatus.Disconnected;
+        }
+        logger.info(`Client ${name} disconnected`);
+      };
+
+      connectedClient.onerror = (error) => {
+        logger.error(`Client ${name} error: ${error}`);
+      };
+    } catch (error) {
+      if (error instanceof OAuthRequiredError) {
+        // Handle OAuth required - set client to AwaitingOAuth status
+        logger.info(`OAuth authorization required for ${name}`);
+
+        // Try to get authorization URL from OAuth provider
+        let authorizationUrl: string | undefined;
+        try {
+          // Extract OAuth provider from transport if available
+          const oauthProvider = transport.oauthProvider;
+          if (oauthProvider && typeof oauthProvider.getAuthorizationUrl === 'function') {
+            authorizationUrl = oauthProvider.getAuthorizationUrl();
+          }
+        } catch (urlError) {
+          logger.warn(`Could not extract authorization URL for ${name}:`, urlError);
+        }
+
+        this.outboundConns.set(name, {
+          name,
+          transport,
+          client: error.client,
+          status: ClientStatus.AwaitingOAuth,
+          authorizationUrl,
+          oauthStartTime: new Date(),
+        });
+
+        // Re-throw OAuth error for loading manager to handle
+        throw error;
+      } else {
+        logger.error(`Failed to create client for ${name}: ${error}`);
+        this.outboundConns.set(name, {
+          name,
+          transport,
+          client: this.createClient(),
+          status: ClientStatus.Error,
+          lastError: error instanceof Error ? error : new Error(String(error)),
+        });
+
+        // Re-throw error for loading manager to handle
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Initialize clients storage without connecting (for async loading)
+   * @param transports Record of transport instances
+   * @returns Empty connections map (to be populated by async loading)
+   */
+  public initializeClientsAsync(transports: Record<string, AuthProviderTransport>): OutboundConnections {
+    this.transports = transports;
+    this.outboundConns.clear();
+
+    logger.info(`Initialized client storage for ${Object.keys(transports).length} transports`);
+    return this.outboundConns;
+  }
+
+  /**
+   * Get transport by name (used by loading manager for retries)
+   * @param name The transport name
+   * @returns The transport instance or undefined
+   */
+  public getTransport(name: string): AuthProviderTransport | undefined {
+    return this.transports[name];
+  }
+
+  /**
+   * Get all transport names
+   * @returns Array of transport names
+   */
+  public getTransportNames(): string[] {
+    return Object.keys(this.transports);
+  }
+
+  /**
    * Executes a client operation with error handling and retry logic
    * @param clientName The name of the client to use
    * @param operation The operation to execute
