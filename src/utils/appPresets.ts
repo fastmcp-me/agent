@@ -26,6 +26,7 @@ export interface AppLocation {
 
 /**
  * Supported desktop applications with their configuration presets
+ * TODO: Verify Windows and Linux paths
  */
 export const APP_PRESETS: Record<string, AppPreset> = {
   'claude-desktop': {
@@ -40,18 +41,18 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         level: 'user',
         priority: 10,
       },
-      {
-        platform: 'win32',
-        path: '%APPDATA%/Claude/claude_desktop_config.json',
-        level: 'user',
-        priority: 10,
-      },
-      {
-        platform: 'linux',
-        path: '~/.config/claude/claude_desktop_config.json',
-        level: 'user',
-        priority: 10,
-      },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Claude\\claude_desktop_config.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.config/claude/claude_desktop_config.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -68,11 +69,23 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         priority: 20,
       },
       {
-        platform: 'all',
+        platform: 'darwin',
         path: '~/.cursor/mcp.json',
         level: 'user',
         priority: 10,
       },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Cursor\\User\\settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.cursor/mcp.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -83,23 +96,29 @@ export const APP_PRESETS: Record<string, AppPreset> = {
     configFormat: 'vscode',
     locations: [
       {
+        platform: 'all',
+        path: '.vscode/mcp.json',
+        level: 'project',
+        priority: 20,
+      },
+      {
         platform: 'darwin',
         path: '~/Library/Application Support/Code/User/settings.json',
         level: 'user',
         priority: 10,
       },
-      {
-        platform: 'win32',
-        path: '%APPDATA%/Code/User/settings.json',
-        level: 'user',
-        priority: 10,
-      },
-      {
-        platform: 'linux',
-        path: '~/.config/Code/User/settings.json',
-        level: 'user',
-        priority: 10,
-      },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Code\\User\\settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.config/Code/User/settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -110,10 +129,10 @@ export const APP_PRESETS: Record<string, AppPreset> = {
     configFormat: 'generic',
     locations: [
       {
-        platform: 'darwin',
-        path: '~/Library/Application Support/Claude/claude_code_config.json',
-        level: 'user',
-        priority: 10,
+        platform: 'all',
+        path: '.mcp.json',
+        level: 'project',
+        priority: 20,
       },
     ],
   },
@@ -130,18 +149,45 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         level: 'user',
         priority: 10,
       },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Gemini\\settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.gemini/settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+    ],
+  },
+
+  'augment-code': {
+    name: 'augment-code',
+    displayName: 'Augment Code',
+    configurable: true,
+    configFormat: 'augment',
+    locations: [
       {
-        platform: 'win32',
-        path: '%APPDATA%/Gemini/settings.json',
+        platform: 'darwin',
+        path: '~/Library/Application Support/Code/User/settings.json',
         level: 'user',
         priority: 10,
       },
-      {
-        platform: 'linux',
-        path: '~/.gemini/settings.json',
-        level: 'user',
-        priority: 10,
-      },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Code\\User\\settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.config/Code/User/settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -163,18 +209,18 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         level: 'user',
         priority: 10,
       },
-      {
-        platform: 'win32',
-        path: '%APPDATA%/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json',
-        level: 'user',
-        priority: 10,
-      },
-      {
-        platform: 'linux',
-        path: '~/.config/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json',
-        level: 'user',
-        priority: 10,
-      },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Code\\User\\globalStorage\\rooveterinaryinc.roo-cline\\settings\\mcp_settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.config/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -190,18 +236,18 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         level: 'user',
         priority: 10,
       },
-      {
-        platform: 'win32',
-        path: '%APPDATA%/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
-        level: 'user',
-        priority: 10,
-      },
-      {
-        platform: 'linux',
-        path: '~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
-        level: 'user',
-        priority: 10,
-      },
+      // {
+      //   platform: 'win32',
+      //   path: '%APPDATA%\\Code\\User\\globalStorage\\saoudrizwan.claude-dev\\settings\\cline_mcp_settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
+      // {
+      //   platform: 'linux',
+      //   path: '~/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
+      //   level: 'user',
+      //   priority: 10,
+      // },
     ],
   },
 
@@ -217,7 +263,7 @@ export const APP_PRESETS: Record<string, AppPreset> = {
 2. Remove any existing MCP server configurations (if any)
 3. Add new server with these details:
 
-   Name: 1mcp-proxy
+   Name: 1mcp
    URL: {url}
 
 4. Save and restart Cherry Studio
@@ -246,32 +292,6 @@ export const APP_PRESETS: Record<string, AppPreset> = {
 5. Save settings and restart VS Code
 
 ✅ After setup, Continue will connect to 1mcp which can proxy
-   to all your MCP servers from other clients!
-
-💡 Add servers to 1mcp: npx @1mcp/agent server add <server-config>`,
-  },
-
-  copilot: {
-    name: 'copilot',
-    displayName: 'GitHub Copilot',
-    configurable: false,
-    configFormat: 'generic',
-    locations: [],
-    manualInstructions: `
-═══ GitHub Copilot Setup Instructions ═══
-Note: GitHub Copilot uses enterprise-managed configuration.
-Manual MCP server setup may not be available depending on your organization's settings.
-
-If MCP configuration is available:
-1. Access GitHub Copilot settings through your IDE
-2. Look for MCP or external server configuration options
-3. Add new server:
-
-   URL: {url}
-
-4. Save and restart your IDE
-
-✅ After setup, Copilot will connect to 1mcp which can proxy
    to all your MCP servers from other clients!
 
 💡 Add servers to 1mcp: npx @1mcp/agent server add <server-config>`,
