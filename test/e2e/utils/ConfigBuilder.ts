@@ -14,7 +14,8 @@ export interface TestServerConfig {
 }
 
 export interface TestConfig {
-  servers: TestServerConfig[];
+  mcpServers: Record<string, any>;
+  servers: any[]; // Legacy compatibility, always initialized
   transport?: {
     stdio?: boolean;
     http?: {
@@ -30,11 +31,34 @@ export interface TestConfig {
 }
 
 export class ConfigBuilder {
-  private config: TestConfig = { servers: [] };
+  private config: TestConfig = { mcpServers: {}, servers: [] };
   private tempFiles: string[] = [];
+  private disabledServers: Set<string> = new Set();
 
   addServer(server: TestServerConfig): this {
-    this.config.servers.push(server);
+    const mcpServer: any = {
+      transport: server.transport,
+    };
+
+    if (server.transport === 'stdio') {
+      mcpServer.command = server.command;
+      if (server.args) mcpServer.args = server.args;
+      if (server.env) mcpServer.env = server.env;
+    } else if (server.transport === 'http') {
+      mcpServer.url = server.endpoint;
+    }
+
+    if (server.tags) mcpServer.tags = server.tags;
+    if (this.disabledServers.has(server.name)) {
+      mcpServer.disabled = true;
+    }
+
+    this.config.mcpServers[server.name] = mcpServer;
+    return this;
+  }
+
+  disableServer(serverName: string): this {
+    this.disabledServers.add(serverName);
     return this;
   }
 

@@ -17,7 +17,7 @@ export function setupAppCommands(yargs: Argv): Argv {
     (yargs) => {
       return yargs
         .command({
-          command: 'consolidate <app-name..>',
+          command: 'consolidate [app-name..]',
           describe: 'Consolidate MCP servers from desktop applications into 1mcp',
           builder: (yargs) => {
             return yargs
@@ -25,7 +25,7 @@ export function setupAppCommands(yargs: Argv): Argv {
                 describe: 'Desktop app(s) to consolidate (claude-desktop, cursor, vscode, etc.)',
                 type: 'string',
                 array: true,
-                demandOption: true,
+                default: [],
               })
               .option('url', {
                 describe: 'Override auto-detected 1mcp server URL',

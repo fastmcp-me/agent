@@ -103,6 +103,48 @@ export const APP_PRESETS: Record<string, AppPreset> = {
     ],
   },
 
+  'claude-code': {
+    name: 'claude-code',
+    displayName: 'Claude Code',
+    configurable: true,
+    configFormat: 'generic',
+    locations: [
+      {
+        platform: 'darwin',
+        path: '~/Library/Application Support/Claude/claude_code_config.json',
+        level: 'user',
+        priority: 10,
+      },
+    ],
+  },
+
+  'gemini-code': {
+    name: 'gemini-code',
+    displayName: 'Gemini Code',
+    configurable: true,
+    configFormat: 'generic',
+    locations: [
+      {
+        platform: 'darwin',
+        path: '~/.gemini/settings.json',
+        level: 'user',
+        priority: 10,
+      },
+      {
+        platform: 'win32',
+        path: '%APPDATA%/Gemini/settings.json',
+        level: 'user',
+        priority: 10,
+      },
+      {
+        platform: 'linux',
+        path: '~/.gemini/settings.json',
+        level: 'user',
+        priority: 10,
+      },
+    ],
+  },
+
   'roo-code': {
     name: 'roo-code',
     displayName: 'Roo Code',

@@ -49,6 +49,15 @@ interface ConsolidationResult {
 export async function consolidateCommand(options: ConsolidateOptions): Promise<void> {
   const appNames = options['app-name'];
 
+  // Check if app names were provided
+  if (!appNames || appNames.length === 0) {
+    console.error('❌ Error: No application names provided.');
+    console.log('Please specify at least one application to consolidate.');
+    console.log('Example: npx @1mcp/agent app consolidate claude-desktop');
+    console.log('Use "npx @1mcp/agent app list" to see supported applications.');
+    process.exit(1);
+  }
+
   console.log('🔍 Starting MCP server consolidation...\n');
 
   // Validate all app names first
