@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2025-07-30
+
+### 🚀 Features
+- Add health info level configuration and sanitization features by @xizhibei
+- Implement health monitoring endpoints and service by @xizhibei
+
+### 💼 Other
+- Merge pull request #86 from 1mcp-app/docs-website by @xizhibei in [#86](https://github.com/1mcp-app/agent/pull/86)
+
+### 📚 Documentation
+- Remove outdated Prometheus monitoring examples from health check documentation by @xizhibei
+- Update logo references and add new logo image by @xizhibei
+- Enhance authentication guide with management dashboard visuals by @xizhibei
+- Add Google Analytics tracking script to VitePress configuration by @xizhibei
+- Refine getting started guide by consolidating next steps by @xizhibei
+- Add VitePress documentation and deployment workflow by @xizhibei
+- Update README.md with enhanced structure and new sections by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Streamline pnpm setup in deployment workflow by @xizhibei
+- Enhance package.json scripts and clean up test files by @xizhibei
+
+
 ## [0.15.0] - 2025-07-22
 
 ### 🚀 Features
@@ -427,6 +450,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.16.0]: https://github.com/1mcp-app/agent/compare/v0.15.0..v0.16.0
 [0.15.0]: https://github.com/1mcp-app/agent/compare/v0.14.0..v0.15.0
 [0.14.0]: https://github.com/1mcp-app/agent/compare/v0.13.1..v0.14.0
 [0.13.1]: https://github.com/1mcp-app/agent/compare/v0.13.0..v0.13.1
