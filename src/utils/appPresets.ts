@@ -399,3 +399,27 @@ export function isAppConfigurable(appName: string): boolean {
   const preset = getAppPreset(appName);
   return preset ? preset.configurable : false;
 }
+
+/**
+ * Generate dynamic supported apps list for CLI help text
+ */
+export function generateSupportedAppsHelp(): string {
+  const configurableApps = getConfigurableApps();
+  const manualApps = getManualOnlyApps();
+
+  let helpText = 'SUPPORTED APPS:\n';
+
+  // Add configurable apps
+  configurableApps.forEach((appName) => {
+    const preset = APP_PRESETS[appName];
+    helpText += `  - ${appName}: ${preset.displayName}\n`;
+  });
+
+  // Add manual apps with note
+  manualApps.forEach((appName) => {
+    const preset = APP_PRESETS[appName];
+    helpText += `  - ${appName}: ${preset.displayName} (manual setup only)\n`;
+  });
+
+  return helpText.trimEnd();
+}

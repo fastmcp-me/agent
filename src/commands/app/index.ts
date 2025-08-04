@@ -1,4 +1,5 @@
 import type { Argv } from 'yargs';
+import { generateSupportedAppsHelp } from '../../utils/appPresets.js';
 
 /**
  * App command group entry point.
@@ -75,14 +76,7 @@ EXAMPLE WORKFLOW:
   Before: Claude Desktop → [filesystem, postgres, sequential] servers directly
   After:  Claude Desktop → 1mcp → [filesystem, postgres, sequential] servers
 
-SUPPORTED APPS:
-  - claude-desktop: Claude Desktop application
-  - cursor: Cursor code editor
-  - vscode: Visual Studio Code
-  - roo-code: Roo Code / Cline extension
-  - cherry-studio: Cherry Studio (manual setup only)
-  - continue: Continue VS Code extension (manual setup only)
-  - copilot: GitHub Copilot (manual setup only)
+${generateSupportedAppsHelp()}
               `);
           },
           handler: async (argv) => {
