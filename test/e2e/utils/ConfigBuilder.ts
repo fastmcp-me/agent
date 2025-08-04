@@ -54,6 +54,27 @@ export class ConfigBuilder {
     }
 
     this.config.mcpServers[server.name] = mcpServer;
+
+    // Also add to servers array for backwards compatibility with tests
+    const legacyServer: any = {
+      name: server.name,
+      transport: server.transport,
+    };
+
+    if (server.transport === 'stdio') {
+      legacyServer.command = server.command;
+      if (server.args) legacyServer.args = server.args;
+      if (server.env) legacyServer.env = server.env;
+    } else if (server.transport === 'http') {
+      legacyServer.endpoint = server.endpoint;
+    }
+
+    if (server.tags) legacyServer.tags = server.tags;
+    if (this.disabledServers.has(server.name)) {
+      legacyServer.disabled = true;
+    }
+
+    this.config.servers.push(legacyServer);
     return this;
   }
 

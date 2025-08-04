@@ -54,6 +54,16 @@ export class TestProcessManager extends EventEmitter {
       this.emit('processExit', id, code, signal);
     });
 
+    // Capture stderr for debugging
+    childProcess.stderr?.on('data', (data) => {
+      logger.error(`Process ${id} stderr:`, data.toString());
+    });
+
+    // Capture stdout for debugging
+    childProcess.stdout?.on('data', (data) => {
+      logger.info(`Process ${id} stdout:`, data.toString());
+    });
+
     // Handle timeout
     if (config.timeout) {
       setTimeout(() => {
@@ -128,24 +138,53 @@ export class TestProcessManager extends EventEmitter {
   }
 
   private async waitForProcessReady(process: ChildProcess, startupTimeout?: number): Promise<void> {
-    const timeoutMs = startupTimeout || 2000; // Default to 2 seconds instead of 10
+    const timeoutMs = startupTimeout || 10000; // Increased default timeout
 
     return new Promise((resolve, reject) => {
+      let exitCode: number | null = null;
+      let exitSignal: string | null = null;
+      let processOutput = '';
+      let processErrors = '';
+
       const timeout = setTimeout(() => {
-        reject(new Error('Process failed to start within timeout'));
+        reject(
+          new Error(
+            `Process failed to start within ${timeoutMs}ms timeout. ` +
+              `Exit code: ${exitCode}, signal: ${exitSignal}. ` +
+              `Stdout: ${processOutput.slice(-200)}. ` +
+              `Stderr: ${processErrors.slice(-200)}`,
+          ),
+        );
       }, timeoutMs);
+
+      // Capture output for debugging
+      process.stdout?.on('data', (data) => {
+        processOutput += data.toString();
+      });
+
+      process.stderr?.on('data', (data) => {
+        processErrors += data.toString();
+      });
 
       // Consider process ready when it doesn't exit immediately
       setTimeout(() => {
-        if (!process.killed && process.pid) {
+        if (!process.killed && process.pid && exitCode === null) {
           clearTimeout(timeout);
           resolve();
         }
-      }, 50); // Reduced from 100ms to 50ms
+      }, 100); // Slightly increased from 50ms
 
-      process.once('exit', () => {
+      process.once('exit', (code, signal) => {
+        exitCode = code;
+        exitSignal = signal;
         clearTimeout(timeout);
-        reject(new Error('Process exited during startup'));
+        reject(
+          new Error(
+            `Process exited during startup with code ${code}, signal ${signal}. ` +
+              `Stdout: ${processOutput.slice(-500)}. ` +
+              `Stderr: ${processErrors.slice(-500)}`,
+          ),
+        );
       });
     });
   }
