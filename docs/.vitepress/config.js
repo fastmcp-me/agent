@@ -1,5 +1,13 @@
 import { defineConfig } from 'vitepress';
 import { withMermaid } from 'vitepress-plugin-mermaid';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8'));
+const version = `v${packageJson.version}`;
 
 export default withMermaid(
   defineConfig({
@@ -37,7 +45,7 @@ export default withMermaid(
         { text: 'Guide', link: '/guide/getting-started' },
         { text: 'Reference', link: '/reference/architecture' },
         {
-          text: 'v0.15.0',
+          text: version,
           items: [
             { text: 'Changelog', link: 'https://github.com/1mcp-app/agent/blob/main/CHANGELOG.md' },
             { text: 'Contributing', link: 'https://github.com/1mcp-app/agent/blob/main/CONTRIBUTING.md' },
