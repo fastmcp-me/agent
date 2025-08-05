@@ -48,10 +48,9 @@ graph TB
 ### **Hard Constraints**
 
 - **Single Binary**: Must deploy as one executable, no external dependencies
-- **MCP Protocol**: Must be 100% compatible with MCP 1.x specification
-- **Stdio Transport**: Backend servers communicate only via stdio (security boundary)
+- **MCP Protocol**: Must be 100% compatible with MCP [Latest specification](https://modelcontextprotocol.io/specification/latest)
+- **Stdio Transport**: Backend servers communicate via stdio or streamable http (security boundary)
 - **Configuration**: All config via single JSON file, hot-reloadable
-- **Memory**: Must run in <2GB RAM (Kubernetes pod limits)
 
 ### **Soft Constraints**
 
@@ -64,8 +63,7 @@ graph TB
 ### **Why These Constraints**
 
 - **Single Binary**: Enterprise deployment requirement - no complex setup
-- **Stdio Only**: Security isolation between proxy and backends
-- **2GB Memory**: Customer Kubernetes cluster limitations
+- **Multi-Transport**: Backend servers support stdio, HTTP, and streamable HTTP transports
 - **Hot Reload**: Zero-downtime configuration updates required
 
 ## 🏗️ Architectural Principles
@@ -79,7 +77,7 @@ graph TB
 ### **Principle 2: Security by Default**
 
 - All endpoints require authentication unless explicitly disabled
-- Backend servers run in isolated processes (stdio only)
+- Backend servers run in isolated processes with secure transport protocols
 - Input sanitization on all external data
 - No sensitive data in logs
 
@@ -182,7 +180,7 @@ graph TB
     end
 
     subgraph "South Bound (Backends)"
-        SB[stdio processes<br/>No network access]
+        SB[Backend MCP Servers<br/>stdio/HTTP transports]
     end
 
     subgraph "East/West (Peers)"
