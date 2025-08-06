@@ -65,6 +65,10 @@ export default withMermaid(
             ],
           },
           {
+            text: 'Integration',
+            items: [{ text: 'Claude Desktop Integration', link: '/guide/claude-desktop-integration' }],
+          },
+          {
             text: 'Features',
             items: [
               { text: 'Feature Overview', link: '/guide/features' },
