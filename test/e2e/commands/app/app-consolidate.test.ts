@@ -31,7 +31,7 @@ describe('App Consolidate Command E2E', () => {
 
     it('should perform dry-run consolidation for specific app', async () => {
       const result = await runner.runAppCommand('consolidate', {
-        args: ['vscode', '--dry-run'],
+        args: ['vscode', '--dry-run', '--force'],
       });
 
       runner.assertSuccess(result);
@@ -57,7 +57,7 @@ describe('App Consolidate Command E2E', () => {
 
     it('should support multiple apps', async () => {
       const result = await runner.runAppCommand('consolidate', {
-        args: ['vscode', 'cursor', '--dry-run'],
+        args: ['vscode', 'cursor', '--dry-run', '--force'],
       });
 
       runner.assertSuccess(result);
@@ -69,7 +69,7 @@ describe('App Consolidate Command E2E', () => {
 
     it('should support backup-only mode', async () => {
       const result = await runner.runAppCommand('consolidate', {
-        args: ['vscode', '--backup-only'],
+        args: ['vscode', '--backup-only', '--force'],
       });
 
       runner.assertSuccess(result);
@@ -81,7 +81,7 @@ describe('App Consolidate Command E2E', () => {
 
     it('should support manual-only mode', async () => {
       const result = await runner.runAppCommand('consolidate', {
-        args: ['cherry-studio', '--manual-only'],
+        args: ['cherry-studio', '--manual-only', '--force'],
       });
 
       runner.assertSuccess(result);
@@ -113,7 +113,7 @@ describe('App Consolidate Command E2E', () => {
 
     it('should support yes flag for automation', async () => {
       const result = await runner.runAppCommand('consolidate', {
-        args: ['vscode', '--yes', '--dry-run'],
+        args: ['vscode', '--yes', '--dry-run', '--force'],
       });
 
       runner.assertSuccess(result);

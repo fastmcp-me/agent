@@ -1,10 +1,26 @@
 # Claude Desktop Integration
 
-Learn how to connect your 1MCP server directly with Claude Desktop using the built-in custom connector feature.
+Learn how to integrate your 1MCP server with Claude Desktop using two different approaches: **local configuration consolidation** (recommended for simplicity) and **remote custom connectors** (for advanced use cases).
 
-## Overview
+## Integration Approaches
 
-Claude Desktop supports connecting to remote MCP servers through its **custom connector** feature. This allows you to connect directly to your 1MCP server running with HTTP or SSE transport without needing local configuration files or bridge scripts.
+### 1. Local Configuration Consolidation (Recommended)
+
+The simplest approach is to consolidate your existing MCP servers into Claude Desktop's configuration using 1MCP as a local proxy. This approach:
+
+- Uses stdio transport (no network setup required)
+- Automatically configures Claude Desktop to use 1MCP
+- Preserves your existing MCP server configurations
+- Works entirely offline with no HTTPS/tunneling requirements
+
+### 2. Remote Custom Connectors (Advanced)
+
+For advanced scenarios, you can connect to a remote 1MCP server using Claude Desktop's custom connector feature with HTTP or SSE transport. This approach:
+
+- Requires public HTTPS URL (tunneling/reverse proxy)
+- Supports OAuth authentication
+- Enables remote access to centralized 1MCP servers
+- Useful for team/enterprise deployments
 
 ## Why Use 1MCP with Claude Desktop?
 
@@ -14,13 +30,112 @@ Claude Desktop supports connecting to remote MCP servers through its **custom co
 - **Server Management**: Centralized management of all your MCP tools
 - **Hot Reloading**: Add/remove servers without restarting Claude Desktop
 
-## Prerequisites
+## Method 1: Local Configuration Consolidation (Recommended)
+
+This is the simplest way to integrate 1MCP with Claude Desktop. It automatically configures Claude Desktop to use 1MCP as a local proxy via stdio transport.
+
+### Prerequisites
+
+- **Claude Desktop**: Download and install from [claude.ai](https://claude.ai/desktop)
+- **1MCP Agent**: Install the 1MCP agent locally
+- **Existing MCP Servers**: Optionally have other MCP servers configured
+
+### Step 1: Install 1MCP Agent
+
+```bash
+npm install -g @1mcp/agent
+```
+
+### Step 2: Configure Your MCP Servers (Optional)
+
+If you have existing MCP servers, add them to 1MCP first:
+
+```bash
+# Add some popular MCP servers
+npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
+npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
+npx -y @1mcp/agent mcp add playwright https://github.com/1mcp-app/playwright
+
+# Or add servers from other apps if you have them configured
+npx -y @1mcp/agent app discover  # See what's available to consolidate
+```
+
+### Step 3: Consolidate Claude Desktop Configuration
+
+Use the consolidation command to automatically configure Claude Desktop:
+
+```bash
+# Consolidate Claude Desktop configuration
+npx -y @1mcp/agent app consolidate claude-desktop
+
+# Or with additional options
+npx -y @1mcp/agent app consolidate claude-desktop --dry-run  # Preview changes first
+npx -y @1mcp/agent app consolidate claude-desktop --force    # Skip connectivity checks
+```
+
+This command will:
+
+1. **Discover** your existing Claude Desktop configuration
+2. **Import** any existing MCP servers from Claude Desktop into 1MCP
+3. **Replace** the Claude Desktop configuration to use 1MCP via stdio transport
+4. **Create** a backup of your original configuration
+
+### Step 4: Restart Claude Desktop
+
+After consolidation, restart Claude Desktop to load the new configuration. Your tools should now be available through 1MCP.
+
+### Step 5: Verify Integration
+
+1. **Check Available Tools**: In Claude Desktop, your consolidated MCP tools should appear
+2. **Test Functionality**: Try using one of your tools to confirm it's working
+3. **View Logs** (if needed):
+
+   ```bash
+   # Check 1MCP server status
+   npx -y @1mcp/agent mcp status
+
+   # View server logs for debugging
+   npx -y @1mcp/agent serve --transport stdio --verbose
+   ```
+
+### Generated Configuration
+
+The consolidation process creates a configuration like this in Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "1mcp": {
+      "command": "npx",
+      "args": ["-y", "@1mcp/agent", "serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+### Backup and Restore
+
+Your original configuration is automatically backed up:
+
+```bash
+# List available backups
+npx -y @1mcp/agent app backups claude-desktop
+
+# Restore original configuration if needed
+npx -y @1mcp/agent app restore claude-desktop
+```
+
+## Method 2: Remote Custom Connectors (Advanced)
+
+For advanced use cases where you need remote access to a centralized 1MCP server.
+
+### Prerequisites
 
 - **Claude Desktop**: Download and install from [claude.ai](https://claude.ai/desktop)
 - **Paid Plan**: Custom connectors require Claude Pro, Max, Team, or Enterprise plan
 - **1MCP Server**: A running 1MCP server instance accessible via HTTP/HTTPS
 
-## Step-by-Step Integration Guide
+### Step-by-Step Remote Integration Guide
 
 ### Step 1: Start Your 1MCP Server
 
@@ -212,7 +327,75 @@ If you want to use OAuth authentication:
 
 ## Troubleshooting
 
-### Common Issues
+### Local Configuration Issues
+
+#### Tools Not Appearing After Consolidation
+
+**Symptoms**: Consolidation completes but tools don't appear in Claude Desktop.
+
+**Solutions**:
+
+1. **Restart Claude Desktop**: Ensure you've completely restarted Claude Desktop after consolidation
+
+2. **Check Configuration**: Verify the consolidation worked correctly
+
+   ```bash
+   # Check the generated configuration
+   cat "~/Library/Application Support/Claude/claude_desktop_config.json"
+   ```
+
+3. **Test 1MCP Server**: Verify 1MCP is working correctly
+
+   ```bash
+   # Check server status
+   npx -y @1mcp/agent mcp status
+
+   # Test stdio transport
+   echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}' | npx -y @1mcp/agent serve --transport stdio
+   ```
+
+#### "Consolidation Failed" Error
+
+**Symptoms**: The consolidation command fails with errors.
+
+**Solutions**:
+
+1. **Use Force Flag**: Skip connectivity validation
+
+   ```bash
+   npx -y @1mcp/agent app consolidate claude-desktop --force
+   ```
+
+2. **Check Permissions**: Ensure write access to Claude Desktop's config directory
+
+   ```bash
+   ls -la "~/Library/Application Support/Claude/"
+   ```
+
+3. **Manual Cleanup**: If consolidation is partially complete
+
+   ```bash
+   # Restore from backup
+   npx -y @1mcp/agent app restore claude-desktop
+
+   # Or manually reset
+   npx -y @1mcp/agent app consolidate claude-desktop --force
+   ```
+
+#### "Configuration Backup Failed" Error
+
+**Symptoms**: Unable to create backup of existing configuration.
+
+**Solutions**:
+
+1. **Check Disk Space**: Ensure sufficient disk space
+2. **Check Permissions**: Verify write access to backup directory
+3. **Use Force Mode**: Proceed without backup (use with caution)
+   ```bash
+   npx -y @1mcp/agent app consolidate claude-desktop --force --backup-only
+   ```
+
+### Remote Custom Connector Issues
 
 #### "Failed to Connect" Error
 
@@ -340,6 +523,17 @@ npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequentia
 
 ## Best Practices
 
+### For Local Configuration Consolidation
+
+1. **Start with Discovery**: Use `app discover` to see what's available before consolidating
+2. **Preview Changes**: Always use `--dry-run` first to preview what will happen
+3. **Backup First**: The consolidation automatically creates backups, but verify they exist
+4. **Test After Restart**: Always restart Claude Desktop and test a tool after consolidation
+5. **Keep 1MCP Updated**: Regularly update 1MCP agent: `npm update -g @1mcp/agent`
+6. **Monitor Server Health**: Use `mcp status` to check server health periodically
+
+### For Remote Custom Connectors
+
 1. **Start Simple**: Begin with HTTP and no authentication, then add security features
 2. **Use HTTPS**: Always use HTTPS/SSL in production environments
 3. **Monitor Health**: Implement health checks and monitoring for your 1MCP server
@@ -348,11 +542,47 @@ npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequentia
 6. **Backup Configuration**: Keep backups of your 1MCP server configuration
 7. **Test Connections**: Verify connectivity before adding connectors to Claude Desktop
 
-## Example: Complete Setup
+## Complete Setup Examples
 
-Here's a complete example of setting up 1MCP for Claude Desktop:
+### Example 1: Local Configuration (Recommended for Most Users)
 
-### Development with ngrok
+```bash
+# 1. Install 1MCP agent
+npm install -g @1mcp/agent
+
+# 2. Add some useful MCP servers
+npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
+npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
+npx -y @1mcp/agent mcp add playwright https://github.com/1mcp-app/playwright
+
+# 3. Preview what consolidation will do
+npx -y @1mcp/agent app consolidate claude-desktop --dry-run
+
+# 4. Consolidate Claude Desktop configuration
+npx -y @1mcp/agent app consolidate claude-desktop
+
+# 5. Restart Claude Desktop
+
+# 6. Verify tools are available in Claude Desktop
+npx -y @1mcp/agent mcp status  # Check server health
+```
+
+Your Claude Desktop will now use the following configuration automatically:
+
+```json
+{
+  "mcpServers": {
+    "1mcp": {
+      "command": "npx",
+      "args": ["-y", "@1mcp/agent", "serve", "--transport", "stdio"]
+    }
+  }
+}
+```
+
+### Example 2: Remote Development with ngrok
+
+For development setups where you need remote access:
 
 ```bash
 # 1. Install and configure 1MCP
@@ -373,7 +603,7 @@ ngrok http 3001
 # 5. Verify tools are available in Claude Desktop
 ```
 
-### Production with Nginx
+### Example 3: Production with Nginx
 
 ```bash
 # 1. Start 1MCP server (bind to localhost for security)
@@ -393,15 +623,38 @@ npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
 If you encounter issues:
 
 1. Check the [troubleshooting section](#troubleshooting) above
-2. Review Anthropic's documentation on:
-   - [Custom connectors via remote MCP servers](https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers)
-   - [Browsing and connecting to tools](https://support.anthropic.com/en/articles/11724452-browsing-and-connecting-to-tools-from-the-directory)
-3. Open an issue on our [GitHub repository](https://github.com/1mcp-app/agent)
-4. Check the [1MCP documentation](./getting-started) for server configuration help
+2. For **local configuration issues**:
+   - Try `npx -y @1mcp/agent app consolidate claude-desktop --force`
+   - Check `npx -y @1mcp/agent mcp status` for server health
+   - Use `npx -y @1mcp/agent app restore claude-desktop` to rollback
+3. For **remote connector issues**:
+   - Review Anthropic's documentation on:
+     - [Custom connectors via remote MCP servers](https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers)
+     - [Browsing and connecting to tools](https://support.anthropic.com/en/articles/11724452-browsing-and-connecting-to-tools-from-the-directory)
+4. Open an issue on our [GitHub repository](https://github.com/1mcp-app/agent)
+5. Check the [1MCP documentation](./getting-started) for server configuration help
+
+## Which Approach Should I Use?
+
+### Choose **Local Configuration Consolidation** if:
+
+- ✅ You want the simplest setup
+- ✅ You're using Claude Desktop on your local machine
+- ✅ You don't need remote access
+- ✅ You want offline functionality
+- ✅ You don't want to deal with HTTPS/tunneling
+
+### Choose **Remote Custom Connectors** if:
+
+- ✅ You have a Claude Pro/Max/Team/Enterprise plan
+- ✅ You need to access a centralized 1MCP server
+- ✅ You're comfortable with networking/HTTPS setup
+- ✅ You want to share MCP servers across multiple clients
+- ✅ You need OAuth authentication
 
 ## Next Steps
 
 - Learn about [authentication configuration](./authentication)
 - Explore [server filtering options](./server-filtering)
 - Set up [server management](./server-management) for your MCP servers
-- Configure [app consolidation](./app-consolidation) for seamless management
+- Configure [app consolidation](./app-consolidation) for seamless management of other apps

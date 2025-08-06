@@ -13,7 +13,7 @@ export interface AppPreset {
   displayName: string;
   configurable: boolean;
   locations: AppLocation[];
-  configFormat: 'augment' | 'vscode' | 'generic';
+  configFormat: 'augment' | 'vscode' | 'generic' | 'claude-desktop';
   manualInstructions?: string;
 }
 
@@ -47,7 +47,7 @@ export const APP_PRESETS: Record<string, AppPreset> = {
     name: 'claude-desktop',
     displayName: 'Claude Desktop',
     configurable: true,
-    configFormat: 'generic',
+    configFormat: 'claude-desktop',
     locations: [
       {
         platform: 'darwin',

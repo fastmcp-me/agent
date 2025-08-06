@@ -406,6 +406,16 @@ export function generateAppConfig(appName: string, url: string): any {
         },
       };
 
+    case 'claude-desktop':
+      return {
+        mcpServers: {
+          '1mcp': {
+            command: 'npx',
+            args: ['-y', '@1mcp/agent', 'serve', '--transport', 'stdio'],
+          },
+        },
+      };
+
     case 'generic':
     default:
       return {
