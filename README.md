@@ -73,26 +73,26 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
 
 ### Core Commands
 
-- **`1mcp [serve]`** - Start the 1MCP server (default command)
+- **`npx -y @1mcp/agent [serve]`** - Start the 1MCP server (default command)
   - `--transport` - Choose transport type (stdio, http, sse)
   - `--config` - Use specific config file
   - `--port` - Change HTTP port
 
 ### MCP Management
 
-- **`1mcp mcp add <name>`** - Add a new MCP server to configuration
-- **`1mcp mcp remove <name>`** - Remove an MCP server
-- **`1mcp mcp list`** - List all configured MCP servers
-- **`1mcp mcp status [name]`** - Show server status and details
-- **`1mcp mcp enable/disable <name>`** - Enable or disable servers
-- **`1mcp mcp update <name>`** - Update server configuration
+- **`npx -y @1mcp/agent mcp add <name>`** - Add a new MCP server to configuration
+- **`npx -y @1mcp/agent mcp remove <name>`** - Remove an MCP server
+- **`npx -y @1mcp/agent mcp list`** - List all configured MCP servers
+- **`npx -y @1mcp/agent mcp status [name]`** - Show server status and details
+- **`npx -y @1mcp/agent mcp enable/disable <name>`** - Enable or disable servers
+- **`npx -y @1mcp/agent mcp update <name>`** - Update server configuration
 
 ### App Integration
 
-- **`1mcp app consolidate`** - Consolidate configurations from other MCP apps
-- **`1mcp app discover`** - Discover MCP servers from installed applications
-- **`1mcp app list`** - List discovered applications
-- **`1mcp app status`** - Show consolidation status
+- **`npx -y @1mcp/agent app consolidate`** - Consolidate configurations from other MCP apps
+- **`npx -y @1mcp/agent app discover`** - Discover MCP servers from installed applications
+- **`npx -y @1mcp/agent app list`** - List discovered applications
+- **`npx -y @1mcp/agent app status`** - Show consolidation status
 
 For detailed command usage, run: `1mcp <command> --help`
 
@@ -146,8 +146,10 @@ Available options:
 | `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                |            |
 | `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                   |     15     |
 | `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                         |    100     |
-| `--health-info-level`        | `ONE_MCP_HEALTH_INFO_LEVEL`        | Health endpoint information detail level ("full", "basic", "minimal")         | "minimal"  |
-| `--help`, `-h`               |                                    | Show help                                                                     |            |
+
+| `--enable-async-loading` | `ONE_MCP_ENABLE_ASYNC_LOADING` | Enable asynchronous MCP server loading(boolean) | false |
+| `--health-info-level` | `ONE_MCP_HEALTH_INFO_LEVEL` | Health endpoint information detail level ("full", "basic", "minimal") | "minimal" |
+| `--help`, `-h` | | Show help | |
 
 ## Docker
 
