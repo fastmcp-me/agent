@@ -68,6 +68,7 @@ export default withMermaid(
             text: 'Features',
             items: [
               { text: 'Feature Overview', link: '/guide/features' },
+              { text: 'Fast Startup', link: '/guide/fast-startup' },
               { text: 'Server Filtering', link: '/guide/server-filtering' },
               { text: 'Proxy Support', link: '/guide/proxy-support' },
               { text: 'Server Management', link: '/guide/server-management' },
