@@ -116,6 +116,11 @@ const serverOptions = {
     choices: ['full', 'basic', 'minimal'] as const,
     default: 'minimal',
   },
+  'enable-async-loading': {
+    describe: 'Enable asynchronous MCP server loading with listChanged notifications',
+    type: 'boolean' as const,
+    default: false,
+  },
 };
 
 // Parse command line arguments and set up commands
@@ -280,10 +285,15 @@ async function main() {
       health: {
         detailLevel: parsedArgv['health-info-level'] as 'full' | 'basic' | 'minimal',
       },
+      ...(parsedArgv['enable-async-loading'] && {
+        asyncLoading: {
+          enabled: true,
+        },
+      }),
     });
 
     // Initialize server and get server manager with custom config path if provided
-    const { serverManager, loadingManager } = await setupServer();
+    const { serverManager, loadingManager, asyncOrchestrator } = await setupServer();
 
     let expressServer: ExpressServer | undefined;
 
@@ -301,6 +311,16 @@ async function main() {
           }
         }
         await serverManager.connectTransport(transport, 'stdio', { tags, enablePagination: parsedArgv.pagination });
+
+        // Initialize notifications for async loading if enabled
+        if (asyncOrchestrator) {
+          const inboundConnection = serverManager.getServer('stdio');
+          if (inboundConnection) {
+            asyncOrchestrator.initializeNotifications(inboundConnection);
+            logger.info('Async loading notifications initialized for stdio transport');
+          }
+        }
+
         logger.info('Server started with stdio transport');
         break;
       }
@@ -310,7 +330,7 @@ async function main() {
       // eslint-disable-next-line no-fallthrough
       case 'http': {
         // Use HTTP/SSE transport
-        expressServer = new ExpressServer(serverManager, loadingManager);
+        expressServer = new ExpressServer(serverManager, loadingManager, asyncOrchestrator);
         expressServer.start();
         break;
       }

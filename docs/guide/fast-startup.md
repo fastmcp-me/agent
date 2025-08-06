@@ -1,10 +1,10 @@
 # Fast Startup: Async Server Loading
 
-Get your 1MCP agent running instantly, even when some servers take time to connect.
+Get your 1MCP agent running instantly with real-time capability updates, even when some servers take time to connect.
 
 ## What's This About?
 
-When you start 1MCP, it needs to connect to all your configured MCP servers. Previously, if even one server was slow or unreachable, your entire 1MCP instance would be stuck waiting. Now, 1MCP starts immediately and connects to servers in the background.
+When you start 1MCP, it needs to connect to all your configured MCP servers. Previously, if even one server was slow or unreachable, your entire 1MCP instance would be stuck waiting. Now, 1MCP starts immediately and connects to servers in the background, sending real-time `listChanged` notifications to clients as capabilities become available.
 
 ## The Problem We Solved
 
@@ -18,6 +18,7 @@ When you start 1MCP, it needs to connect to all your configured MCP servers. Pre
 
 - 1MCP starts in under 1 second
 - Servers connect in the background
+- Real-time notifications as capabilities become available
 - You can work immediately with available servers
 
 ## How It Works
@@ -77,6 +78,56 @@ curl http://localhost:3000/health/mcp/context7
 - Real-time status of all servers
 - Detailed error messages when things fail
 - Progress tracking for long connections
+
+## Enabling Async Loading
+
+Async loading is an opt-in feature that's disabled by default to maintain backward compatibility.
+
+### CLI Flag
+
+```bash
+# Enable async loading with CLI flag
+npx -y @1mcp/agent --config mcp.json --enable-async-loading
+```
+
+### Environment Variable
+
+```bash
+# Enable via environment variable
+export ONE_MCP_ENABLE_ASYNC_LOADING=true
+npx -y @1mcp/agent --config mcp.json
+```
+
+### Real-Time Notifications
+
+When async loading is enabled, clients receive `listChanged` notifications as servers become ready:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant 1MCP
+    participant Server1
+    participant Server2
+
+    Client->>1MCP: Connect
+    1MCP-->>Client: Immediate connection (empty capabilities)
+
+    par Background Loading
+        1MCP->>Server1: Start server
+        Server1-->>1MCP: Ready with tools
+        1MCP-->>Client: listChanged notification (tools)
+    and
+        1MCP->>Server2: Start server
+        Server2-->>1MCP: Ready with resources
+        1MCP-->>Client: listChanged notification (resources)
+    end
+```
+
+**Benefits:**
+
+- **Progressive Discovery**: New capabilities appear in real-time
+- **Batched Notifications**: Multiple changes grouped to prevent spam
+- **Better UX**: No need to manually refresh or reconnect
 
 ## Configuration Options
 

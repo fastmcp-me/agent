@@ -5,6 +5,7 @@ import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import { ServerStatus } from '../../../core/types/index.js';
+import { AsyncLoadingOrchestrator } from '../../../core/capabilities/asyncLoadingOrchestrator.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
@@ -13,6 +14,7 @@ export function setupSseRoutes(
   serverManager: ServerManager,
   authMiddleware: any,
   availabilityMiddleware?: any,
+  asyncOrchestrator?: AsyncLoadingOrchestrator,
 ): void {
   const middlewares = [tagsExtractor, authMiddleware];
 
@@ -33,6 +35,15 @@ export function setupSseRoutes(
         tags,
         enablePagination: req.query.pagination === 'true',
       });
+
+      // Initialize notifications for async loading if enabled
+      if (asyncOrchestrator) {
+        const inboundConnection = serverManager.getServer(transport.sessionId);
+        if (inboundConnection) {
+          asyncOrchestrator.initializeNotifications(inboundConnection);
+          logger.debug(`Async loading notifications initialized for SSE session ${transport.sessionId}`);
+        }
+      }
 
       transport.onclose = () => {
         serverManager.disconnectTransport(transport.sessionId);

@@ -271,6 +271,59 @@ graph TB
 
 ---
 
+### **⚡ Async Loading & Real-Time Updates**
+
+**What it does**: Loads MCP servers asynchronously with real-time capability notifications
+**Why you need it**: Get immediate access to the server while other MCP servers start up in background
+**How it helps**: Faster startup times, progressive capability discovery, listChanged notifications
+
+**Loading Strategy**:
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant 1MCP
+    participant Server1
+    participant Server2
+
+    Client->>1MCP: Connect
+    1MCP-->>Client: Immediate connection
+
+    par Background Loading
+        1MCP->>Server1: Start server 1
+        Server1-->>1MCP: Server ready
+        1MCP-->>Client: listChanged notification (tools)
+    and
+        1MCP->>Server2: Start server 2
+        Server2-->>1MCP: Server ready
+        1MCP-->>Client: listChanged notification (resources)
+    end
+```
+
+**Configuration Example**:
+
+```bash
+# Enable async loading with CLI flag
+npx -y @1mcp/agent --config mcp.json --enable-async-loading
+
+# Or via environment variable
+export ONE_MCP_ENABLE_ASYNC_LOADING=true
+npx -y @1mcp/agent --config mcp.json
+```
+
+**Real-World Impact**:
+
+- **Startup Time**: Immediate connection vs. waiting for all servers
+- **Progressive Loading**: Capabilities appear as servers come online
+- **Better UX**: No blocking on slow-starting servers
+- **Batched Notifications**: Prevents client spam during initialization
+
+**⏱️ Setup Time**: Single CLI flag
+**🎯 Perfect For**: Fast startup times, better user experience, large server configurations
+**✅ You Get**: Immediate connection, progressive capabilities, real-time updates, batched notifications
+
+---
+
 ### **📋 Security Operation Logging**
 
 **What it does**: Logs security-related operations including authentication and scope validation
@@ -538,18 +591,19 @@ npx -y @1mcp/agent --config staging.json --port 3052
 
 ## 🚀 Feature Matrix by User Type
 
-| Feature               | End User       | Developer       | Admin         | DevOps         | Enterprise      |
-| --------------------- | -------------- | --------------- | ------------- | -------------- | --------------- |
-| **MCP Aggregation**   | ✅ Essential   | ✅ Essential    | ✅ Essential  | ✅ Essential   | ✅ Essential    |
-| **Hot Reload**        | 🔄 Automatic   | 🔧 Debug Tool   | ⚡ Critical   | ⚡ Critical    | ⚡ Critical     |
-| **Health Monitoring** | 👁️ Basic       | 🔧 Debug Data   | 📊 API Access | 📊 Logging     | 📊 Custom       |
-| **OAuth 2.1**         | 🔒 Transparent | 🔌 Integration  | 🛡️ Required   | 🛡️ Required    | 🛡️ Custom       |
-| **Tag-Based Access**  | 🚫 Hidden      | 🔧 Configurable | ✅ Management | ✅ Policies    | ✅ Custom       |
-| **Rate Limiting**     | 🚫 Transparent | 🔧 Configurable | 🛡️ Protection | 📊 Monitoring  | 📊 Custom       |
-| **Request Handling**  | ⚡ Automatic   | ⚡ Reliable     | ⚡ Stable     | ⚡ Monitored   | ⚡ Scalable     |
-| **Single-Instance**   | ✅ Simple      | ✅ Easy Deploy  | ✅ Manageable | ✅ Reliable    | 🔧 Custom Setup |
-| **Basic Logging**     | 🚫 Hidden      | 🔍 Debug        | 📋 Monitoring | 📋 Analysis    | 📋 Custom       |
-| **HTTP Transport**    | ⚡ Automatic   | 🔌 API Feature  | 📊 Monitoring | 📊 Integration | 📊 Custom       |
+| Feature               | End User       | Developer       | Admin          | DevOps         | Enterprise      |
+| --------------------- | -------------- | --------------- | -------------- | -------------- | --------------- |
+| **MCP Aggregation**   | ✅ Essential   | ✅ Essential    | ✅ Essential   | ✅ Essential   | ✅ Essential    |
+| **Hot Reload**        | 🔄 Automatic   | 🔧 Debug Tool   | ⚡ Critical    | ⚡ Critical    | ⚡ Critical     |
+| **Async Loading**     | ⚡ Faster UX   | 🔧 Optional     | ⚡ Performance | ⚡ Scalability | ⚡ Enterprise   |
+| **Health Monitoring** | 👁️ Basic       | 🔧 Debug Data   | 📊 API Access  | 📊 Logging     | 📊 Custom       |
+| **OAuth 2.1**         | 🔒 Transparent | 🔌 Integration  | 🛡️ Required    | 🛡️ Required    | 🛡️ Custom       |
+| **Tag-Based Access**  | 🚫 Hidden      | 🔧 Configurable | ✅ Management  | ✅ Policies    | ✅ Custom       |
+| **Rate Limiting**     | 🚫 Transparent | 🔧 Configurable | 🛡️ Protection  | 📊 Monitoring  | 📊 Custom       |
+| **Request Handling**  | ⚡ Automatic   | ⚡ Reliable     | ⚡ Stable      | ⚡ Monitored   | ⚡ Scalable     |
+| **Single-Instance**   | ✅ Simple      | ✅ Easy Deploy  | ✅ Manageable  | ✅ Reliable    | 🔧 Custom Setup |
+| **Basic Logging**     | 🚫 Hidden      | 🔍 Debug        | 📋 Monitoring  | 📋 Analysis    | 📋 Custom       |
+| **HTTP Transport**    | ⚡ Automatic   | 🔌 API Feature  | 📊 Monitoring  | 📊 Integration | 📊 Custom       |
 
 **Legend**:
 

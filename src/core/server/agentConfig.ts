@@ -30,6 +30,14 @@ export interface AgentConfig {
   health: {
     detailLevel: 'full' | 'basic' | 'minimal';
   };
+  asyncLoading: {
+    enabled: boolean;
+    notifyOnServerReady: boolean;
+    waitForMinimumServers: number;
+    initialLoadTimeoutMs: number;
+    batchNotifications: boolean;
+    batchDelayMs: number;
+  };
 }
 
 /**
@@ -81,6 +89,14 @@ export class AgentConfigManager {
       health: {
         detailLevel: 'minimal',
       },
+      asyncLoading: {
+        enabled: false, // Default: disabled (opt-in behavior)
+        notifyOnServerReady: true,
+        waitForMinimumServers: 0,
+        initialLoadTimeoutMs: 30000, // 30 seconds
+        batchNotifications: true,
+        batchDelayMs: 1000, // 1 second
+      },
     };
   }
 
@@ -109,7 +125,7 @@ export class AgentConfigManager {
    */
   public updateConfig(updates: Partial<AgentConfig>): void {
     // Handle nested object merging properly
-    const { auth, rateLimit, features, health, ...otherUpdates } = updates;
+    const { auth, rateLimit, features, health, asyncLoading, ...otherUpdates } = updates;
 
     this.config = { ...this.config, ...otherUpdates };
 
@@ -124,6 +140,9 @@ export class AgentConfigManager {
     }
     if (health) {
       this.config.health = { ...this.config.health, ...health };
+    }
+    if (asyncLoading) {
+      this.config.asyncLoading = { ...this.config.asyncLoading, ...asyncLoading };
     }
   }
 
@@ -254,5 +273,68 @@ export class AgentConfigManager {
    */
   public getHealthDetailLevel(): 'full' | 'basic' | 'minimal' {
     return this.config.health.detailLevel;
+  }
+
+  /**
+   * Checks if async loading is enabled.
+   *
+   * @returns True if MCP servers should load asynchronously, false for legacy synchronous loading
+   */
+  public isAsyncLoadingEnabled(): boolean {
+    return this.config.asyncLoading.enabled;
+  }
+
+  /**
+   * Checks if server readiness notifications are enabled.
+   *
+   * @returns True if listChanged notifications should be sent when servers become ready
+   */
+  public isNotifyOnServerReadyEnabled(): boolean {
+    return this.config.asyncLoading.notifyOnServerReady;
+  }
+
+  /**
+   * Gets the minimum number of servers to wait for during startup.
+   *
+   * @returns Number of servers to wait for (0 = don't wait)
+   */
+  public getWaitForMinimumServers(): number {
+    return this.config.asyncLoading.waitForMinimumServers;
+  }
+
+  /**
+   * Gets the initial loading timeout in milliseconds.
+   *
+   * @returns Maximum time to wait for initial server loading in milliseconds
+   */
+  public getInitialLoadTimeoutMs(): number {
+    return this.config.asyncLoading.initialLoadTimeoutMs;
+  }
+
+  /**
+   * Checks if notification batching is enabled.
+   *
+   * @returns True if notifications should be batched to reduce client spam
+   */
+  public isBatchNotificationsEnabled(): boolean {
+    return this.config.asyncLoading.batchNotifications;
+  }
+
+  /**
+   * Gets the batching delay in milliseconds.
+   *
+   * @returns Delay before sending batched notifications in milliseconds
+   */
+  public getBatchDelayMs(): number {
+    return this.config.asyncLoading.batchDelayMs;
+  }
+
+  /**
+   * Gets the complete async loading configuration.
+   *
+   * @returns Copy of async loading configuration
+   */
+  public getAsyncLoadingConfig(): AgentConfig['asyncLoading'] {
+    return { ...this.config.asyncLoading };
   }
 }

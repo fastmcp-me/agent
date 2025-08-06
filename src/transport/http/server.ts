@@ -10,6 +10,7 @@ import { httpRequestLogger } from './middlewares/httpRequestLogger.js';
 import { ServerManager } from '../../core/server/serverManager.js';
 import { SDKOAuthServerProvider } from '../../auth/sdkOAuthServerProvider.js';
 import { McpLoadingManager } from '../../core/loading/mcpLoadingManager.js';
+import { AsyncLoadingOrchestrator } from '../../core/capabilities/asyncLoadingOrchestrator.js';
 import { setupStreamableHttpRoutes } from './routes/streamableHttpRoutes.js';
 import { setupSseRoutes } from './routes/sseRoutes.js';
 import createOAuthRoutes from './routes/oauthRoutes.js';
@@ -37,6 +38,7 @@ export class ExpressServer {
   private app: express.Application;
   private serverManager: ServerManager;
   private loadingManager?: McpLoadingManager;
+  private asyncOrchestrator?: AsyncLoadingOrchestrator;
   private oauthProvider: SDKOAuthServerProvider;
   private configManager: AgentConfigManager;
 
@@ -48,12 +50,18 @@ export class ExpressServer {
    *
    * @param serverManager - The server manager instance for handling MCP operations
    * @param loadingManager - Optional loading manager for async MCP server initialization
+   * @param asyncOrchestrator - Optional async loading orchestrator for listChanged notifications
    */
-  constructor(serverManager: ServerManager, loadingManager?: McpLoadingManager) {
+  constructor(
+    serverManager: ServerManager,
+    loadingManager?: McpLoadingManager,
+    asyncOrchestrator?: AsyncLoadingOrchestrator,
+  ) {
     this.app = express();
 
     this.serverManager = serverManager;
     this.loadingManager = loadingManager;
+    this.asyncOrchestrator = asyncOrchestrator;
     this.configManager = AgentConfigManager.getInstance();
 
     // Configure trust proxy setting before any middleware
@@ -159,8 +167,14 @@ export class ExpressServer {
       includeOAuthServers: false,
     });
 
-    setupStreamableHttpRoutes(router, this.serverManager, scopeAuthMiddleware, availabilityMiddleware);
-    setupSseRoutes(router, this.serverManager, scopeAuthMiddleware, availabilityMiddleware);
+    setupStreamableHttpRoutes(
+      router,
+      this.serverManager,
+      scopeAuthMiddleware,
+      availabilityMiddleware,
+      this.asyncOrchestrator,
+    );
+    setupSseRoutes(router, this.serverManager, scopeAuthMiddleware, availabilityMiddleware, this.asyncOrchestrator);
     this.app.use(router);
 
     // Log authentication status

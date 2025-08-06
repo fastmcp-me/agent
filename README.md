@@ -36,6 +36,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - **Simplified Configuration**: Simplifies configuration management across different AI assistants.
 - **Standardized Interaction**: Provides a standardized way for AI models to interact with external tools and resources.
 - **Dynamic Configuration**: Supports dynamic configuration reloading without server restart.
+- **Async Loading**: Optional asynchronous server loading with real-time capability updates via listChanged notifications.
 - **Graceful Shutdown**: Handles graceful shutdown and resource cleanup.
 - **Secure**: Includes comprehensive authentication and security features.
 - **Optimized**: Supports advanced filtering, pagination, and request optimization.
