@@ -28,12 +28,6 @@ You can override the path using the `--config` flag.
 {
   "mcpServers": {
     // Server definitions
-  },
-  "loading": {
-    // Async loading settings
-  },
-  "global": {
-    // Global settings
   }
 }
 ```
@@ -75,37 +69,6 @@ This is a dictionary of all the backend MCP servers the agent will manage.
   }
 }
 ```
-
-### `loading` Section (Async Loading)
-
-Customize the asynchronous loading behavior of MCP servers. See the [Fast Startup Guide](./fast-startup) for more details.
-
-- `serverTimeoutMs` (number): How long to wait for each server. Default: `30000`.
-- `maxRetries` (number): How many times to retry failed connections. Default: `3`.
-- `retryDelayMs` (number): Initial delay between retries. Default: `2000`.
-- `maxConcurrentLoads` (number): How many servers to connect to simultaneously. Default: `5`.
-- `continueOnFailure` (boolean): If `false`, the agent will exit if any server fails to load. Default: `true`.
-- `enableBackgroundRetry` (boolean): If `true`, keeps retrying failed servers in the background. Default: `true`.
-- `backgroundRetryIntervalMs` (number): How often to retry failed servers. Default: `60000`.
-
-#### Example `loading`
-
-```json
-{
-  "loading": {
-    "serverTimeoutMs": 45000,
-    "maxRetries": 5,
-    "maxConcurrentLoads": 10
-  }
-}
-```
-
-### `global` Section
-
-Global settings that apply to the entire agent.
-
-- `logLevel` (string): `error`, `warn`, `info`, or `debug`. Default: `info`.
-- `timeout` (number): A global timeout for operations. Default: `30000`.
 
 ---
 
@@ -183,4 +146,4 @@ Environment variables are prefixed with `ONE_MCP_` and are useful for containeri
 
 ## Hot-Reloading
 
-The agent supports hot-reloading of the configuration file. If you modify the JSON file while the agent is running, it will automatically apply the new configuration without a restart. This is enabled by default and can be disabled with `--no-config-watch`.
+The agent supports hot-reloading of the configuration file. If you modify the JSON file while the agent is running, it will automatically apply the new configuration without a restart.
