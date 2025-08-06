@@ -122,13 +122,13 @@ describe('server', () => {
     it('should create clients for each transport', async () => {
       await setupServer();
 
-      expect(mockClientManager.initializeClientsAsync).toHaveBeenCalledWith(mockTransports);
+      expect(mockClientManager.createClients).toHaveBeenCalledWith(mockTransports);
     });
 
     it('should log client creation', async () => {
       await setupServer();
 
-      expect(logger.info).toHaveBeenCalledWith('Initialized storage for 2 MCP servers');
+      expect(logger.info).toHaveBeenCalledWith('Connected to 2 MCP servers synchronously');
     });
 
     it('should create ServerManager instance with correct parameters', async () => {
@@ -151,9 +151,7 @@ describe('server', () => {
     it('should log successful setup completion', async () => {
       await setupServer();
 
-      expect(logger.info).toHaveBeenCalledWith(
-        'Server setup completed - HTTP server ready, MCP servers loading in background',
-      );
+      expect(logger.info).toHaveBeenCalledWith('Synchronous server setup completed - all MCP servers connected');
     });
 
     it('should return the ServerManager instance', async () => {
@@ -176,17 +174,12 @@ describe('server', () => {
       expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: Transport creation failed');
     });
 
-    it('should handle client creation errors gracefully with async loading', async () => {
-      mockClientManager.initializeClientsAsync.mockReturnValue(new Map()); // Return empty map instead of throwing
+    it('should handle client creation errors gracefully with sync loading', async () => {
+      const error = new Error('Client creation failed');
+      mockClientManager.createClients.mockRejectedValue(error);
 
-      // With async loading, server setup should complete even with client errors
-      const result = await setupServer();
-      expect(result.serverManager).toBeDefined();
-      expect(result.loadingManager).toBeDefined();
-      expect(result.loadingPromise).toBeDefined();
-
-      // The actual client connection errors would be handled by the loading manager in background
-      expect(mockClientManager.initializeClientsAsync).toHaveBeenCalled();
+      await expect(setupServer()).rejects.toThrow('Client creation failed');
+      expect(mockClientManager.createClients).toHaveBeenCalled();
     });
 
     it('should handle ServerManager creation errors', async () => {
@@ -196,7 +189,6 @@ describe('server', () => {
       });
 
       await expect(setupServer()).rejects.toThrow('ServerManager creation failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: ServerManager creation failed');
     });
 
     it('should rethrow errors after logging', async () => {

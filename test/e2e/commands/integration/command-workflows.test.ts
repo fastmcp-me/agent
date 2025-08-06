@@ -155,7 +155,9 @@ describe('Command Workflows Integration E2E', () => {
       expect(hasAppCount).toBe(true);
 
       // Step 4: Analyze consolidation opportunities
-      const analyzeResult = await runner.runAppCommand('consolidate', { args: ['claude-desktop', '--analyze'] });
+      const analyzeResult = await runner.runAppCommand('consolidate', {
+        args: ['claude-desktop', '--analyze', '--force'],
+      });
       runner.assertSuccess(analyzeResult);
       // Check for consolidation analysis/summary output
       const hasConsolidationOutput =
@@ -165,7 +167,9 @@ describe('Command Workflows Integration E2E', () => {
       expect(hasConsolidationOutput).toBe(true);
 
       // Step 5: Perform dry-run consolidation (provide a specific app to consolidate)
-      const dryRunResult = await runner.runAppCommand('consolidate', { args: ['claude-desktop', '--dry-run'] });
+      const dryRunResult = await runner.runAppCommand('consolidate', {
+        args: ['claude-desktop', '--dry-run', '--force'],
+      });
       runner.assertSuccess(dryRunResult);
       // Check for dry run output - may show summary instead of explicit dry run message
       const hasDryRunOutput =
@@ -282,7 +286,7 @@ describe('Command Workflows Integration E2E', () => {
 
       // Step 7: Analyze consolidation with new servers
       const consolidateAnalysis = await runner.runAppCommand('consolidate', {
-        args: ['claude-desktop', '--analyze', '--verbose'],
+        args: ['claude-desktop', '--analyze', '--verbose', '--force'],
       });
       runner.assertSuccess(consolidateAnalysis);
 

@@ -92,7 +92,7 @@ describe('AsyncLoadingOrchestrator', () => {
       orchestrator.initialize();
 
       // Should only set up events once
-      expect(mockLoadingManager.on).toHaveBeenCalledTimes(2); // Two event handlers
+      expect(mockLoadingManager.on).toHaveBeenCalledTimes(1); // One event handler (server-loaded)
     });
   });
 
