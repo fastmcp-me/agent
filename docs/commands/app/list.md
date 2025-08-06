@@ -2,12 +2,12 @@
 
 Lists all desktop applications supported by the app consolidation feature.
 
-For a complete list of applications and their status, see the **[App Consolidation Guide](../../guide/app-consolidation.md#supported-applications)**.
+For a complete list of applications and their status, see the **[App Consolidation Guide](../../guide/app-consolidation#supported-applications)**.
 
 ## Synopsis
 
 ```bash
-1mcp app list [options]
+npx -y @1mcp/agent app list [options]
 ```
 
 ## Options
@@ -22,12 +22,12 @@ For a complete list of applications and their status, see the **[App Consolidati
 
 ```bash
 # List all supported applications
-1mcp app list
+npx -y @1mcp/agent app list
 
 # List only apps that can be automatically configured
-1mcp app list --configurable-only
+npx -y @1mcp/agent app list --configurable-only
 ```
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation.md)**
+- **[App Consolidation Guide](../../guide/app-consolidation)**

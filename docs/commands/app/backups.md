@@ -2,12 +2,12 @@
 
 Manages the configuration backups created during the consolidation process.
 
-For a complete overview of the backup and restore system, see the **[App Consolidation Guide](../../guide/app-consolidation.md#backup-and-restore-system)**.
+For a complete overview of the backup and restore system, see the **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**.
 
 ## Synopsis
 
 ```bash
-1mcp app backups [app-name] [options]
+npx -y @1mcp/agent app backups [app-name] [options]
 ```
 
 ## Arguments
@@ -27,18 +27,18 @@ For a complete overview of the backup and restore system, see the **[App Consoli
 
 ```bash
 # List all available backups
-1mcp app backups
+npx -y @1mcp/agent app backups
 
 # List backups for a specific app
-1mcp app backups claude-desktop
+npx -y @1mcp/agent app backups claude-desktop
 
 # Delete all backups older than 30 days
-1mcp app backups --cleanup=30
+npx -y @1mcp/agent app backups --cleanup=30
 
 # Verify the integrity of all backups
-1mcp app backups --verify
+npx -y @1mcp/agent app backups --verify
 ```
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation.md#backup-and-restore-system)**
+- **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**

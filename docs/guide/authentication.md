@@ -30,6 +30,15 @@ When you initiate the authorization flow, you will be prompted to approve or den
 
 ![OAuth Authorize Application](/images/oauth-authorize-application.png)
 
+### Authorization Walkthrough
+
+1.  **Navigate to the Dashboard**: Open your browser and go to `http://localhost:3050/oauth` (or your custom URL).
+2.  **Identify Pending Services**: Look for any services with a status of "Awaiting OAuth".
+3.  **Initiate Authorization**: Click the "Authorize" button next to the service.
+4.  **Grant Consent**: You will be redirected to the service's authorization page. Log in if necessary and grant the requested permissions.
+5.  **Approve in Dashboard**: Back in the 1MCP dashboard, you will see a prompt to approve the connection. Click "Approve".
+6.  **Verify Connection**: The service's status should now change to "Connected", and its tools will be available to clients.
+
 ## Tag-Based Scope Validation
 
 The agent supports tag-based scope validation, which allows you to control access to backend services based on their tags. When a client requests an access token, it can specify a set of tags as scopes. The agent will then only allow the client to access services that have all the requested tags.

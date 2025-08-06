@@ -2,12 +2,12 @@
 
 Checks the status and details of configured MCP servers.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management.md)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
 
 ## Synopsis
 
 ```bash
-1mcp mcp status [name] [options]
+npx -y @1mcp/agent mcp status [name] [options]
 ```
 
 ## Arguments
@@ -28,15 +28,15 @@ This command provides a quick overview of your MCP servers. For `stdio` servers,
 
 ```bash
 # Check the status of all servers
-1mcp mcp status
+npx -y @1mcp/agent mcp status
 
 # Check the status of a specific server
-1mcp mcp status my-server
+npx -y @1mcp/agent mcp status my-server
 
 # Get detailed status information
-1mcp mcp status --verbose
+npx -y @1mcp/agent mcp status --verbose
 ```
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management.md)**
+- **[Server Management Guide](../../guide/server-management)**

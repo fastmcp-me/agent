@@ -2,12 +2,12 @@
 
 Lists all configured MCP servers.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management.md)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
 
 ## Synopsis
 
 ```bash
-1mcp mcp list [options]
+npx -y @1mcp/agent mcp list [options]
 ```
 
 ## Options
@@ -25,18 +25,18 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # List all enabled servers
-1mcp mcp list
+npx -y @1mcp/agent mcp list
 
 # List all servers, including disabled ones
-1mcp mcp list --show-disabled
+npx -y @1mcp/agent mcp list --show-disabled
 
 # List all servers with the "prod" tag
-1mcp mcp list --tags=prod
+npx -y @1mcp/agent mcp list --tags=prod
 
 # Show detailed information for all servers
-1mcp mcp list --verbose
+npx -y @1mcp/agent mcp list --verbose
 ```
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management.md)**
+- **[Server Management Guide](../../guide/server-management)**

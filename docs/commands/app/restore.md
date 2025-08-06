@@ -2,12 +2,12 @@
 
 Restores an application to its pre-consolidation state using a backup file.
 
-For a complete overview of the consolidation and restore workflow, see the **[App Consolidation Guide](../../guide/app-consolidation.md)**.
+For a complete overview of the consolidation and restore workflow, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
 
 ## Synopsis
 
 ```bash
-1mcp app restore [app-name] [options]
+npx -y @1mcp/agent app restore [app-name] [options]
 ```
 
 ## Arguments
@@ -33,15 +33,15 @@ For a complete overview of the consolidation and restore workflow, see the **[Ap
 
 ```bash
 # Restore the latest backup for Claude Desktop
-1mcp app restore claude-desktop
+npx -y @1mcp/agent app restore claude-desktop
 
 # Restore all consolidated applications
-1mcp app restore --all
+npx -y @1mcp/agent app restore --all
 
 # List available backups for Cursor
-1mcp app restore cursor --list
+npx -y @1mcp/agent app restore cursor --list
 ```
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation.md#backup-and-restore-system)**
+- **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**

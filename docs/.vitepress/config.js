@@ -96,7 +96,7 @@ export default withMermaid(
                   { text: 'add', link: '/commands/mcp/add' },
                   { text: 'remove', link: '/commands/mcp/remove' },
                   { text: 'update', link: '/commands/mcp/update' },
-                  { text: 'enable/disable', link: '/commands/mcp/enable' },
+                  { text: 'enable/disable', link: '/commands/mcp/enable-disable' },
                   { text: 'list', link: '/commands/mcp/list' },
                   { text: 'status', link: '/commands/mcp/status' },
                 ],
@@ -188,7 +188,6 @@ export default withMermaid(
       /^http?:\/\/localhost/,
       /^\.\/[A-Z]/, // Relative links to uppercase files
       /^\.\.\/[A-Z]/, // Parent dir links to uppercase files
-      './features/model-routing',
       './../README',
       './../CONTRIBUTING',
     ],

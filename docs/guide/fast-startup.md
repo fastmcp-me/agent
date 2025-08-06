@@ -129,46 +129,11 @@ sequenceDiagram
 - **Batched Notifications**: Multiple changes grouped to prevent spam
 - **Better UX**: No need to manually refresh or reconnect
 
-## Configuration Options
+## Configuration
 
-You can customize how 1MCP handles server connections through your configuration file.
+You can customize the async loading behavior, such as timeouts and retry logic, in the `loading` section of your JSON configuration file.
 
-### Timeout Settings
-
-```json5
-{
-  loading: {
-    // How long to wait for each server (default: 30 seconds)
-    serverTimeoutMs: 30000,
-
-    // How many times to retry failed connections (default: 3)
-    maxRetries: 3,
-
-    // Initial delay between retries (default: 2 seconds)
-    retryDelayMs: 2000,
-  },
-}
-```
-
-### Performance Tuning
-
-```json5
-{
-  loading: {
-    // How many servers to connect simultaneously (default: 5)
-    maxConcurrentLoads: 5,
-
-    // Continue if some servers fail (recommended: true)
-    continueOnFailure: true,
-
-    // Keep retrying failed servers (recommended: true)
-    enableBackgroundRetry: true,
-
-    // How often to retry failed servers (default: 1 minute)
-    backgroundRetryIntervalMs: 60000,
-  },
-}
-```
+For a complete list of options, see the **[Configuration Deep Dive](./configuration#loading-section-async-loading)**.
 
 ## Health Check API
 

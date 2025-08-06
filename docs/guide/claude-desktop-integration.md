@@ -28,13 +28,13 @@ First, start your 1MCP server with HTTP transport:
 
 ```bash
 # Basic HTTP server (development)
-1mcp serve --transport http --port 3001
+npx -y @1mcp/agent serve --transport http --port 3001
 
 # With authentication (production)
-1mcp serve --transport http --port 3001 --enable-auth
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
 
 # Or using SSE (Server-Sent Events)
-1mcp serve --transport sse --port 3001
+npx -y @1mcp/agent serve --transport sse --port 3001
 ```
 
 Your server will run locally on `http://localhost:3001/mcp`, but **Claude Desktop requires a public HTTPS URL**, so you'll need to use a tunneling service or reverse proxy.
@@ -51,7 +51,7 @@ Since 1MCP doesn't have built-in HTTPS support, you have several options:
 
    ```bash
    # Start 1MCP server
-   1mcp serve --transport http --port 3001
+   npx -y @1mcp/agent serve --transport http --port 3001
 
    # In another terminal, expose via ngrok
    ngrok http 3001
@@ -173,19 +173,24 @@ You can now use these tools directly in your conversations with Claude.
 
 Configure your 1MCP server for Claude Desktop integration:
 
-```bash
+````bash
 # Development setup (HTTP, no auth)
-1mcp serve --transport http --port 3001
+npx -y @1mcp/agent serve --transport http --port 3001
 
+```bash
 # Production setup (HTTP with auth, use reverse proxy for HTTPS)
-1mcp serve --transport http --port 3001 --enable-auth
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
+````
 
 # With specific server filtering
-1mcp serve --transport http --port 3001 --tags "context7,sequential,playwright"
+
+npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequential,playwright"
 
 # For use with ngrok or reverse proxy
-1mcp serve --transport http --port 3001 --host 0.0.0.0
-```
+
+npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0
+
+````
 
 ### Authentication Setup
 
@@ -195,7 +200,7 @@ If you want to use OAuth authentication:
 
    ```bash
    1mcp serve --transport http --port 3001 --enable-auth
-   ```
+````
 
 2. **Configure OAuth Client**:
    - Your 1MCP server will provide OAuth endpoints
@@ -218,7 +223,7 @@ If you want to use OAuth authentication:
 1. **Check Server Status**: Ensure your 1MCP server is running
 
    ```bash
-   1mcp mcp status  # Check if servers are running
+   npx -y @1mcp/agent mcp status  # Check if servers are running
    ```
 
 2. **Verify URL**: Ensure the URL is correct and accessible
@@ -238,7 +243,7 @@ If you want to use OAuth authentication:
 1. **Check Server Configuration**: Verify MCP servers are properly configured
 
    ```bash
-   1mcp mcp list  # List configured servers
+   npx -y @1mcp/agent mcp list  # List configured servers
    ```
 
 2. **Restart Both**: Restart both 1MCP and Claude Desktop
@@ -267,7 +272,7 @@ If you want to use OAuth authentication:
 2. **Check Server Logs**:
 
    ```bash
-   1mcp serve --transport http --port 3001 --verbose
+   npx -y @1mcp/agent serve --transport http --port 3001 --verbose
    ```
 
 3. **Health Check**:
@@ -286,7 +291,7 @@ When deploying 1MCP for Claude Desktop integration:
 
    ```bash
    # Start 1MCP on HTTP (reverse proxy handles HTTPS)
-   1mcp serve --transport http --port 3001 --host 0.0.0.0
+   npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0
 
    # Configure your reverse proxy (nginx/caddy/traefik) to handle HTTPS
    ```
@@ -330,7 +335,7 @@ Control which tools are available by filtering servers:
 
 ```bash
 # Only expose specific capabilities
-1mcp serve --transport http --port 3001 --tags "context7,sequential"
+npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequential"
 ```
 
 ## Best Practices
@@ -352,11 +357,11 @@ Here's a complete example of setting up 1MCP for Claude Desktop:
 ```bash
 # 1. Install and configure 1MCP
 npm install -g @1mcp/agent
-1mcp mcp add context7 https://github.com/1mcp-app/context7
-1mcp mcp add sequential https://github.com/1mcp-app/sequential-thinking
+npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
+npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
 
 # 2. Start server
-1mcp serve --transport http --port 3001
+npx -y @1mcp/agent serve --transport http --port 3001
 
 # 3. In another terminal, expose via ngrok
 ngrok http 3001
@@ -372,7 +377,7 @@ ngrok http 3001
 
 ```bash
 # 1. Start 1MCP server (bind to localhost for security)
-1mcp serve --transport http --port 3001 --enable-auth
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
 
 # 2. Configure nginx to proxy HTTPS to HTTP
 # 3. Add connector in Claude Desktop:
@@ -392,11 +397,11 @@ If you encounter issues:
    - [Custom connectors via remote MCP servers](https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers)
    - [Browsing and connecting to tools](https://support.anthropic.com/en/articles/11724452-browsing-and-connecting-to-tools-from-the-directory)
 3. Open an issue on our [GitHub repository](https://github.com/1mcp-app/agent)
-4. Check the [1MCP documentation](../getting-started.md) for server configuration help
+4. Check the [1MCP documentation](./getting-started) for server configuration help
 
 ## Next Steps
 
-- Learn about [authentication configuration](./authentication.md)
-- Explore [server filtering options](./server-filtering.md)
-- Set up [server management](./server-management.md) for your MCP servers
-- Configure [app consolidation](./app-consolidation.md) for seamless management
+- Learn about [authentication configuration](./authentication)
+- Explore [server filtering options](./server-filtering)
+- Set up [server management](./server-management) for your MCP servers
+- Configure [app consolidation](./app-consolidation) for seamless management

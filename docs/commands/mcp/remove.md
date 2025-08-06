@@ -2,12 +2,12 @@
 
 Removes an MCP server from the 1MCP configuration.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management.md)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
 
 ## Synopsis
 
 ```bash
-1mcp mcp remove <name> [options]
+npx -y @1mcp/agent mcp remove <name> [options]
 ```
 
 ## Arguments
@@ -25,12 +25,12 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # Remove a server
-1mcp mcp remove my-server
+npx -y @1mcp/agent mcp remove my-server
 
 # Remove a server without prompting for confirmation
-1mcp mcp remove old-server --yes
+npx -y @1mcp/agent mcp remove old-server --yes
 ```
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management.md)**
+- **[Server Management Guide](../../guide/server-management)**

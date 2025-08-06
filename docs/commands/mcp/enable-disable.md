@@ -2,13 +2,13 @@
 
 Enables or disables an MCP server without removing its configuration.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management.md)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
 
 ## Synopsis
 
 ```bash
-1mcp mcp enable <name>
-1mcp mcp disable <name>
+npx -y @1mcp/agent mcp enable <name>
+npx -y @1mcp/agent mcp disable <name>
 ```
 
 ## Arguments
@@ -25,12 +25,12 @@ Disabling a server is a non-destructive way to temporarily remove it from the po
 
 ```bash
 # Disable a server
-1mcp mcp disable my-server
+npx -y @1mcp/agent mcp disable my-server
 
 # Re-enable the server later
-1mcp mcp enable my-server
+npx -y @1mcp/agent mcp enable my-server
 ```
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management.md)**
+- **[Server Management Guide](../../guide/server-management)**

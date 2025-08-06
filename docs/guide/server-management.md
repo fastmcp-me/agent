@@ -15,7 +15,7 @@ This is the most common transport for local MCP servers. 1MCP starts the server 
 **Configuration Example**:
 
 ```bash
-1mcp server add filesystem --type=stdio --command="mcp-server-filesystem" --args="--root ~/"
+1mcp mcp add filesystem --type=stdio --command="mcp-server-filesystem" --args="--root ~/"
 ```
 
 **Key Features**:
@@ -33,7 +33,7 @@ This transport connects to an MCP server that is already running and exposed via
 **Configuration Example**:
 
 ```bash
-1mcp server add remote-api --type=http --url="https://mcp.example.com/"
+1mcp mcp add remote-api --type=http --url="https://mcp.example.com/"
 ```
 
 **Key Features**:
@@ -66,26 +66,26 @@ A typical workflow for managing servers looks like this:
 1.  **Add a Server**: Add a new server to your 1MCP instance.
     ```bash
     # Add a local git server
-    1mcp server add git-main --type=stdio --command="mcp-server-git" --args="--repository ."
+    1mcp mcp add git-main --type=stdio --command="mcp-server-git" --args="--repository ."
     ```
 2.  **Verify the Configuration**: List your servers and check the status of the new one.
     ```bash
-    1mcp server list --verbose
-    1mcp server status git-main
+    1mcp mcp list --verbose
+    1mcp mcp status git-main
     ```
 3.  **Update as Needed**: Modify the server's configuration. For example, add a tag.
     ```bash
-    1mcp server update git-main --tags=source-control,project-a
+    1mcp mcp update git-main --tags=source-control,project-a
     ```
 4.  **Manage its Lifecycle**: If you need to temporarily disable the server, you can do so without losing its configuration.
     ```bash
-    1mcp server disable git-main
+    1mcp mcp disable git-main
     # ...later...
-    1mcp server enable git-main
+    1mcp mcp enable git-main
     ```
 5.  **Remove When Done**: If you no longer need the server, you can permanently remove it.
     ```bash
-    1mcp server remove git-main
+    1mcp mcp remove git-main
     ```
 
 ## Best Practices

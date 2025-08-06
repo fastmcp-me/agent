@@ -2,54 +2,54 @@
 
 The `app` command group helps you consolidate MCP server configurations from various desktop applications into a unified 1MCP proxy.
 
-For a complete overview of the consolidation workflow, supported applications, and best practices, please see the **[App Consolidation Guide](../../guide/app-consolidation.md)**.
+For a complete overview of the consolidation workflow, supported applications, and best practices, please see the **[App Consolidation Guide](../../guide/app-consolidation)**.
 
 ## Commands
 
-### [consolidate](./consolidate.md)
+### [consolidate](./consolidate)
 
 Consolidates MCP servers from desktop applications into 1MCP.
 
 ```bash
-1mcp app consolidate claude-desktop cursor vscode
+npx -y @1mcp/agent app consolidate claude-desktop cursor vscode
 ```
 
-### [restore](./restore.md)
+### [restore](./restore)
 
 Restores desktop applications to their pre-consolidation state.
 
 ```bash
-1mcp app restore claude-desktop
+npx -y @1mcp/agent app restore claude-desktop
 ```
 
-### [list](./list.md)
+### [list](./list)
 
 Lists supported desktop applications and their configuration status.
 
 ```bash
-1mcp app list
+npx -y @1mcp/agent app list
 ```
 
-### [discover](./discover.md)
+### [discover](./discover)
 
 Discovers installed applications with MCP configurations.
 
 ```bash
-1mcp app discover
+npx -y @1mcp/agent app discover
 ```
 
-### [status](./status.md)
+### [status](./status)
 
 Shows the current consolidation status of your applications.
 
 ```bash
-1mcp app status
+npx -y @1mcp/agent app status
 ```
 
-### [backups](./backups.md)
+### [backups](./backups)
 
 Lists and manages configuration backups.
 
 ```bash
-1mcp app backups --cleanup=30
+npx -y @1mcp/agent app backups --cleanup=30
 ```

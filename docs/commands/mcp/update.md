@@ -2,12 +2,12 @@
 
 Updates the configuration of an existing MCP server.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management.md)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
 
 ## Synopsis
 
 ```bash
-1mcp mcp update <name> [options]
+npx -y @1mcp/agent mcp update <name> [options]
 ```
 
 ## Arguments
@@ -34,15 +34,15 @@ For a complete overview of server management, see the **[Server Management Guide
 
 ```bash
 # Update the tags for a server
-1mcp mcp update my-server --tags="new-tag,another-tag"
+npx -y @1mcp/agent mcp update my-server --tags="new-tag,another-tag"
 
 # Update an environment variable
-1mcp mcp update my-stdio-server --env="NODE_ENV=production"
+npx -y @1mcp/agent mcp update my-stdio-server --env="NODE_ENV=production"
 
 # Change the URL of an HTTP server
-1mcp mcp update my-http-server --url="https://new.api.com/mcp"
+npx -y @1mcp/agent mcp update my-http-server --url="https://new.api.com/mcp"
 ```
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management.md)**
+- **[Server Management Guide](../../guide/server-management)**

@@ -18,23 +18,23 @@ npx @1mcp/agent --config mcp.json
 
 ```bash
 # Pull and run
-docker run -p 3000:3000 -v $(pwd)/mcp.json:/app/mcp.json ghcr.io/1mcp-app/agent:latest
+docker run -p 3050:3050 -v $(pwd)/mcp.json:/app/mcp.json ghcr.io/1mcp-app/agent:latest
 
 # With docker-compose
 cat > docker-compose.yml << 'EOF'
-version: '3.8'
 services:
   1mcp:
     image: ghcr.io/1mcp-app/agent:latest
     ports:
-      - "3000:3000"
+      - "3050:3050"
     volumes:
       - ./mcp.json:/app/mcp.json
     environment:
       - LOG_LEVEL=info
+      - ONE_MCP_CONFIG=/app/mcp.json
 EOF
 
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Build from Source

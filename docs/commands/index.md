@@ -8,7 +8,7 @@
 
 - **`serve`** - Start the 1MCP server (default command)
 - **`app`** - Manage desktop application MCP configurations
-- **`server`** - Manage MCP server configurations
+- **`mcp`** - Manage MCP server configurations
 
 ### Global Options
 
@@ -26,39 +26,39 @@
 Manage desktop application MCP configurations. Consolidate MCP servers from various desktop applications into 1MCP.
 
 ```bash
-1mcp app consolidate claude-desktop    # Consolidate Claude Desktop servers
-1mcp app restore claude-desktop        # Restore original configuration
-1mcp app list                          # List supported applications
+npx -y @1mcp/agent app consolidate claude-desktop    # Consolidate Claude Desktop servers
+npx -y @1mcp/agent app restore claude-desktop        # Restore original configuration
+npx -y @1mcp/agent app list                          # List supported applications
 ```
 
-### [Server Commands](./server/)
+### [MCP Commands](./mcp/)
 
 Manage MCP server configurations within your 1MCP instance.
 
 ```bash
-1mcp server add myserver --type=stdio --command=node --args=server.js
-1mcp server list                       # List configured servers
-1mcp server status                     # Check server status
+npx -y @1mcp/agent mcp add myserver --type=stdio --command=node --args=server.js
+npx -y @1mcp/agent mcp list                       # List configured servers
+npx -y @1mcp/agent mcp status                     # Check server status
 ```
 
-### [Serve Command](./serve/)
+### [Serve Command](./serve)
 
 Start the 1MCP server with various configuration options.
 
 ```bash
-1mcp serve                            # Start with default settings
-1mcp serve --port=3052                # Start on custom port
-1mcp serve --transport=stdio          # Use stdio transport
+npx -y @1mcp/agent serve                            # Start with default settings
+npx -y @1mcp/agent serve --port=3052                # Start on custom port
+npx -y @1mcp/agent serve --transport=stdio          # Use stdio transport
 ```
 
 ## Getting Started
 
 If you're new to 1MCP Agent, start with:
 
-1. **[Installation Guide](../guide/installation.md)** - Install 1MCP Agent
-2. **[Quick Start](../guide/quick-start.md)** - Basic setup and first server
+1. **[Installation Guide](../guide/installation)** - Install 1MCP Agent
+2. **[Quick Start](../guide/quick-start)** - Basic setup and first server
 3. **[App Commands](./app/)** - Consolidate existing MCP configurations
-4. **[Server Commands](./server/)** - Add and manage MCP servers
+4. **[MCP Commands](./mcp/)** - Add and manage MCP servers
 
 ## Examples
 
@@ -66,32 +66,32 @@ If you're new to 1MCP Agent, start with:
 
 ```bash
 # Start 1MCP server
-1mcp serve
+npx -y @1mcp/agent serve
 
 # Add a new MCP server
-1mcp server add filesystem --type=stdio --command=mcp-server-filesystem
+npx -y @1mcp/agent mcp add filesystem --type=stdio --command=mcp-server-filesystem
 
 # Consolidate Claude Desktop configuration
-1mcp app consolidate claude-desktop
+npx -y @1mcp/agent app consolidate claude-desktop
 
 # Check status
-1mcp server status
+npx -y @1mcp/agent mcp status
 ```
 
 ### Advanced Usage
 
 ```bash
 # Start with custom configuration
-1mcp serve --config=/custom/path/config.json --port=3052
+npx -y @1mcp/agent serve --config=/custom/path/config.json --port=3052
 
 # Add HTTP-based MCP server
-1mcp server add remote-api --type=http --url=https://api.example.com/mcp
+npx -y @1mcp/agent mcp add remote-api --type=http --url=https://api.example.com/mcp
 
 # Bulk consolidate multiple applications
-1mcp app consolidate claude-desktop cursor vscode --yes
+npx -y @1mcp/agent app consolidate claude-desktop cursor vscode --yes
 
 # Filter servers by tags
-1mcp server list --tags=prod,api --verbose
+npx -y @1mcp/agent mcp list --tags=prod,api --verbose
 ```
 
 ## Environment Variables
@@ -106,4 +106,4 @@ export ONE_MCP_CONFIG_PATH=/custom/config.json
 
 ## Configuration Files
 
-1MCP Agent uses JSON configuration files to store server definitions and settings. See the [Configuration Guide](../guide/configuration.md) for detailed information about configuration file formats and options.
+1MCP Agent uses JSON configuration files to store server definitions and settings. See the [Configuration Guide](../guide/configuration) for detailed information about configuration file formats and options.

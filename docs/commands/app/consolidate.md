@@ -4,12 +4,12 @@ Consolidates MCP servers from desktop applications into 1MCP.
 
 This command extracts MCP server configurations from an application's config file, imports them into your 1MCP configuration, and replaces the app's config with a single connection to your 1MCP server.
 
-For a complete overview of the consolidation workflow, supported applications, and best practices, see the **[App Consolidation Guide](../../guide/app-consolidation.md)**.
+For a complete overview of the consolidation workflow, supported applications, and best practices, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
 
 ## Synopsis
 
 ```bash
-1mcp app consolidate <app-name...> [options]
+npx -y @1mcp/agent app consolidate <app-name...> [options]
 ```
 
 ## Arguments
@@ -17,7 +17,7 @@ For a complete overview of the consolidation workflow, supported applications, a
 - **`<app-name...>`**
   - One or more desktop applications to consolidate.
   - **Required**: Yes
-  - To see a list of supported applications, use `1mcp app list` or refer to the [App Consolidation Guide](../../guide/app-consolidation.md#supported-applications).
+  - To see a list of supported applications, use `npx -y @1mcp/agent app list` or refer to the [App Consolidation Guide](../../guide/app-consolidation#supported-applications).
 
 ## Options
 
@@ -46,30 +46,30 @@ For a complete overview of the consolidation workflow, supported applications, a
 
 ```bash
 # Consolidate Claude Desktop
-1mcp app consolidate claude-desktop
+npx -y @1mcp/agent app consolidate claude-desktop
 
 # Consolidate multiple apps at once
-1mcp app consolidate claude-desktop cursor vscode
+npx -y @1mcp/agent app consolidate claude-desktop cursor vscode
 
 # Preview the changes for an app without applying them
-1mcp app consolidate cursor --dry-run
+npx -y @1mcp/agent app consolidate cursor --dry-run
 ```
 
 ### Advanced Usage
 
 ```bash
 # Use a custom 1MCP server URL
-1mcp app consolidate claude-desktop --url=http://localhost:3052/mcp
+npx -y @1mcp/agent app consolidate claude-desktop --url=http://localhost:3052/mcp
 
 # Skip confirmation prompts for scripting
-1mcp app consolidate vscode --yes
+npx -y @1mcp/agent app consolidate vscode --yes
 
 # Get manual setup instructions for an app
-1mcp app consolidate cherry-studio --manual-only
+npx -y @1mcp/agent app consolidate cherry-studio --manual-only
 ```
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation.md)**
-- **[app restore](./restore.md)** - Restore an application to its original state.
-- **[app status](./status.md)** - Check the consolidation status of applications.
+- **[App Consolidation Guide](../../guide/app-consolidation)**
+- **[app restore](./restore)** - Restore an application to its original state.
+- **[app status](./status)** - Check the consolidation status of applications.

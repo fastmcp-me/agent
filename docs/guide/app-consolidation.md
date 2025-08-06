@@ -31,21 +31,21 @@ The process is designed to be safe and reversible.
 
 1.  **Discover**: Find which supported applications are installed and have MCP configurations.
     ```bash
-    1mcp app discover
+    npx -y @1mcp/agent app discover
     ```
 2.  **Consolidate**: Preview and then execute the consolidation. This command extracts servers from an app's config, adds them to 1MCP, and points the app's config to your 1MCP server.
 
     ```bash
     # Preview the changes first
-    1mcp app consolidate claude-desktop --dry-run
+    npx -y @1mcp/agent app consolidate claude-desktop --dry-run
 
     # Run the consolidation
-    1mcp app consolidate claude-desktop
+    npx -y @1mcp/agent app consolidate claude-desktop
     ```
 
 3.  **Check Status**: Verify that the application is now marked as "Consolidated".
     ```bash
-    1mcp app status claude-desktop
+    npx -y @1mcp/agent app status claude-desktop
     ```
 
 ## Supported Applications
@@ -82,12 +82,12 @@ Safety is a core principle of the consolidation feature. 1MCP automatically crea
 
 ### Managing Backups
 
-You can manage all backups using the `1mcp app backups` command.
+You can manage all backups using the `npx -y @1mcp/agent app backups` command.
 
-- **List all backups**: `1mcp app backups`
-- **List backups for a specific app**: `1mcp app backups claude-desktop`
-- **Verify backup integrity**: `1mcp app backups --verify`
-- **Clean up old backups**: `1mcp app backups --cleanup=30` (deletes backups older than 30 days)
+- **List all backups**: `npx -y @1mcp/agent app backups`
+- **List backups for a specific app**: `npx -y @1mcp/agent app backups claude-desktop`
+- **Verify backup integrity**: `npx -y @1mcp/agent app backups --verify`
+- **Clean up old backups**: `npx -y @1mcp/agent app backups --cleanup=30` (deletes backups older than 30 days)
 
 ### Restoring from a Backup
 
@@ -95,15 +95,15 @@ If you need to undo a consolidation, you can easily restore the original configu
 
 - **Restore the latest backup for an app**:
   ```bash
-  1mcp app restore claude-desktop
+  npx -y @1mcp/agent app restore claude-desktop
   ```
 - **Restore all consolidated applications**:
   ```bash
-  1mcp app restore --all
+  npx -y @1mcp/agent app restore --all
   ```
 - **Restore from a specific backup file**:
   ```bash
-  1mcp app restore --backup /path/to/your/config.backup.1640995200000.meta
+  npx -y @1mcp/agent app restore --backup /path/to/your/config.backup.1640995200000.meta
   ```
 
 ## Best Practices
@@ -111,7 +111,7 @@ If you need to undo a consolidation, you can easily restore the original configu
 ### Before Consolidation
 
 1.  Ensure your 1MCP server is running and accessible.
-2.  Use `1mcp app discover` to see what applications can be consolidated.
+2.  Use `npx -y @1mcp/agent app discover` to see what applications can be consolidated.
 3.  Always use the `--dry-run` flag first to preview changes before applying them.
 4.  Close the target desktop applications before running the `consolidate` command.
 
@@ -131,7 +131,7 @@ If you need to undo a consolidation, you can easily restore the original configu
 ### Config file not found
 
 - **Cause**: The application might not be installed, or it has never been run, so its config file hasn't been created yet.
-- **Solution**: Ensure the application is installed and run it at least once. Use `1mcp app discover --show-paths` to see where 1MCP is looking for the config file.
+- **Solution**: Ensure the application is installed and run it at least once. Use `npx -y @1mcp/agent app discover --show-paths` to see where 1MCP is looking for the config file.
 
 ### Permission denied
 
@@ -141,4 +141,4 @@ If you need to undo a consolidation, you can easily restore the original configu
 ### 1MCP server not running
 
 - **Cause**: The `consolidate` command needs to connect to a running 1MCP server to validate the URL.
-- **Solution**: Start your 1MCP server using `1mcp serve`. You can verify its status with `curl http://localhost:3051/health` (adjust port if needed).
+- **Solution**: Start your 1MCP server using `npx -y @1mcp/agent serve`. You can verify its status with `curl http://localhost:3051/health` (adjust port if needed).
