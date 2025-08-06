@@ -1,4 +1,9 @@
-import { APP_PRESETS, getConfigurableApps, getManualOnlyApps } from '../../utils/appPresets.js';
+import {
+  APP_PRESETS,
+  getConfigurableApps,
+  getManualOnlyApps,
+  showPlatformWarningIfNeeded,
+} from '../../utils/appPresets.js';
 
 /**
  * List command - Display supported desktop applications.
@@ -16,6 +21,9 @@ interface ListOptions {
  * Main list command handler
  */
 export async function listCommand(options: ListOptions): Promise<void> {
+  // Show platform warning if needed
+  showPlatformWarningIfNeeded();
+
   console.log('📱 Supported Desktop Applications for MCP Consolidation\n');
 
   if (options['configurable-only']) {

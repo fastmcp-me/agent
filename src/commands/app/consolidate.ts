@@ -9,7 +9,13 @@ import {
   generateAppConfig,
   checkConsolidationStatus,
 } from '../../utils/appDiscovery.js';
-import { isAppSupported, isAppConfigurable, generateManualInstructions, getAppPreset } from '../../utils/appPresets.js';
+import {
+  isAppSupported,
+  isAppConfigurable,
+  generateManualInstructions,
+  getAppPreset,
+  showPlatformWarningIfNeeded,
+} from '../../utils/appPresets.js';
 import { validateOperation, generateOperationPreview } from '../../utils/validationHelpers.js';
 import { createBackup, withFileLock } from '../../utils/backupManager.js';
 import { getAppBackupDir } from '../../constants.js';
@@ -57,6 +63,9 @@ export async function consolidateCommand(options: ConsolidateOptions): Promise<v
     console.log('Use "npx @1mcp/agent app list" to see supported applications.');
     process.exit(1);
   }
+
+  // Show platform warning if needed
+  showPlatformWarningIfNeeded();
 
   console.log('🔍 Starting MCP server consolidation...\n');
 

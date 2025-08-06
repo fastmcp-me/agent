@@ -1,5 +1,5 @@
 import { discoverInstalledApps } from '../../utils/appDiscovery.js';
-import { getAppPreset } from '../../utils/appPresets.js';
+import { getAppPreset, showPlatformWarningIfNeeded } from '../../utils/appPresets.js';
 
 /**
  * Discover command - Find installed desktop applications with MCP configurations.
@@ -17,6 +17,9 @@ interface DiscoverOptions {
  * Main discover command handler
  */
 export async function discoverCommand(options: DiscoverOptions): Promise<void> {
+  // Show platform warning if needed
+  showPlatformWarningIfNeeded();
+
   console.log('🔍 Discovering installed desktop applications with MCP configurations...\n');
 
   try {

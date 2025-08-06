@@ -26,7 +26,21 @@ export interface AppLocation {
 
 /**
  * Supported desktop applications with their configuration presets
- * TODO: Verify Windows and Linux paths
+ *
+ * ⚠️  PLATFORM SUPPORT STATUS:
+ * - macOS (darwin): ✅ Fully tested and verified
+ * - Windows (win32): ⚠️  Paths researched but untested - see commented sections
+ * - Linux: ⚠️  Paths researched but untested - see commented sections
+ *
+ * 🤝 CONTRIBUTION NEEDED:
+ * If you're using Windows or Linux, please help verify these paths by:
+ * 1. Uncommenting the relevant sections for your platform
+ * 2. Testing the functionality
+ * 3. Reporting results or submitting fixes
+ *
+ * 📝 STANDARD LOCATIONS RESEARCH:
+ * The commented paths below are based on official documentation and
+ * common conventions, but have not been tested in real environments.
  */
 export const APP_PRESETS: Record<string, AppPreset> = {
   'claude-desktop': {
@@ -41,12 +55,14 @@ export const APP_PRESETS: Record<string, AppPreset> = {
         level: 'user',
         priority: 10,
       },
+      // UNTESTED - Based on Claude Desktop documentation and Windows conventions
       // {
       //   platform: 'win32',
       //   path: '%APPDATA%\\Claude\\claude_desktop_config.json',
       //   level: 'user',
       //   priority: 10,
       // },
+      // UNTESTED - Based on XDG Base Directory specification and Linux conventions
       // {
       //   platform: 'linux',
       //   path: '~/.config/claude/claude_desktop_config.json',
@@ -348,6 +364,58 @@ export function getAppConfigPaths(appName: string): string[] {
   relevantLocations.sort((a, b) => b.priority - a.priority);
 
   return relevantLocations.map((location) => resolvePath(location.path));
+}
+
+/**
+ * Check if the current platform has verified support for an app
+ */
+export function isPlatformTested(appName: string): boolean {
+  const preset = getAppPreset(appName);
+  if (!preset) return false;
+
+  const platform = process.platform as 'darwin' | 'win32' | 'linux';
+
+  // Only macOS is currently tested
+  if (platform !== 'darwin') return false;
+
+  return preset.locations.some((loc) => loc.platform === 'darwin' || loc.platform === 'all');
+}
+
+/**
+ * Get platform support message for CLI users
+ */
+export function getPlatformSupportMessage(_appName: string): string {
+  const platform = process.platform as 'darwin' | 'win32' | 'linux';
+
+  if (platform === 'darwin') {
+    return '✅ Fully supported and tested on macOS';
+  }
+
+  const platformName = platform === 'win32' ? 'Windows' : 'Linux';
+  return `⚠️  ${platformName} support is experimental - paths researched but untested.
+     If you encounter issues, please contribute by:
+     1. Testing the functionality
+     2. Reporting results at https://github.com/1mcp-app/agent/issues
+     3. Submitting corrections if needed`;
+}
+
+/**
+ * Display platform support warning for CLI commands if needed
+ */
+export function showPlatformWarningIfNeeded(): void {
+  const platform = process.platform as 'darwin' | 'win32' | 'linux';
+
+  if (platform !== 'darwin') {
+    const platformName = platform === 'win32' ? 'Windows' : 'Linux';
+
+    console.log('⚠️  PLATFORM SUPPORT WARNING');
+    console.log(`${platformName} support is experimental - paths researched but untested.`);
+    console.log('If you encounter issues, please contribute by:');
+    console.log('  1. Testing the functionality');
+    console.log('  2. Reporting results at https://github.com/1mcp-app/agent/issues');
+    console.log('  3. Submitting corrections if needed');
+    console.log('');
+  }
 }
 
 /**
