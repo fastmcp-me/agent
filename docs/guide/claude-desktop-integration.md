@@ -51,10 +51,10 @@ npm install -g @1mcp/agent
 If you have existing MCP servers, add them to 1MCP first:
 
 ```bash
-# Add some popular MCP servers
-npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
-npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
-npx -y @1mcp/agent mcp add playwright https://github.com/1mcp-app/playwright
+# Add some popular MCP servers using " -- " pattern (auto-detects type as stdio)
+npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
+npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
+npx -y @1mcp/agent mcp add playwright -- npx -y @playwright/mcp
 
 # Or add servers from other apps if you have them configured
 npx -y @1mcp/agent app discover  # See what's available to consolidate
