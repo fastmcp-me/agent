@@ -551,9 +551,9 @@ npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequentia
 npm install -g @1mcp/agent
 
 # 2. Add some useful MCP servers
-npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
-npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
-npx -y @1mcp/agent mcp add playwright https://github.com/1mcp-app/playwright
+npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
+npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
+npx -y @1mcp/agent mcp add playwright -- npx -y @playwright/mcp
 
 # 3. Preview what consolidation will do
 npx -y @1mcp/agent app consolidate claude-desktop --dry-run
@@ -587,8 +587,8 @@ For development setups where you need remote access:
 ```bash
 # 1. Install and configure 1MCP
 npm install -g @1mcp/agent
-npx -y @1mcp/agent mcp add context7 https://github.com/1mcp-app/context7
-npx -y @1mcp/agent mcp add sequential https://github.com/1mcp-app/sequential-thinking
+npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
+npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
 
 # 2. Start server
 npx -y @1mcp/agent serve --transport http --port 3001
