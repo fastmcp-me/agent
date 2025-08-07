@@ -138,12 +138,16 @@ function detectConsolidationPattern(config: any): {
     if (serverNames.length === 1 && (serverNames[0] === '1mcp' || serverNames[0].includes('1mcp'))) {
       const server = servers[serverNames[0]];
       const url = server.url;
+      const command = server.command;
 
-      // Verify it looks like a 1mcp URL
-      if (url && (url.includes('/mcp') || url.includes('localhost') || url.includes('1mcp'))) {
+      // Verify it looks like a 1mcp URL or command
+      const hasValidUrl = url && (url.includes('/mcp') || url.includes('localhost') || url.includes('1mcp'));
+      const hasValidCommand = command && command.includes('@1mcp/agent');
+
+      if (hasValidUrl || hasValidCommand) {
         return {
           isConsolidated: true,
-          consolidatedUrl: url,
+          consolidatedUrl: url || 'detected',
           originalServers: 1,
         };
       }
