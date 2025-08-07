@@ -6,7 +6,7 @@ import { ClientCapabilities, ServerCapabilities } from '@modelcontextprotocol/sd
 
 // Server configuration
 export const PORT = 3050;
-export const HOST = 'localhost';
+export const HOST = '127.0.0.1';
 
 // API endpoints
 export const SSE_ENDPOINT = '/sse';
