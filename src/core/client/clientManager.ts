@@ -148,12 +148,22 @@ export class ClientManager {
    * @param name The name of the client for logging
    * @returns The connected client (may be a new instance after retries)
    */
-  private async connectWithRetry(client: Client, transport: Transport, name: string): Promise<Client> {
+  private async connectWithRetry(
+    client: Client,
+    transport: Transport,
+    name: string,
+    abortSignal?: AbortSignal,
+  ): Promise<Client> {
     let retryDelay = CONNECTION_RETRY.INITIAL_DELAY_MS;
     let currentClient = client;
 
     for (let i = 0; i < CONNECTION_RETRY.MAX_ATTEMPTS; i++) {
       try {
+        // Check if operation was aborted before each attempt
+        if (abortSignal?.aborted) {
+          throw new Error(`Connection aborted: ${abortSignal.reason || 'Request cancelled'}`);
+        }
+
         await currentClient.connect(transport);
 
         const sv = await currentClient.getServerVersion();
@@ -179,7 +189,26 @@ export class ClientManager {
 
           if (i < CONNECTION_RETRY.MAX_ATTEMPTS - 1) {
             logger.info(`Retrying in ${retryDelay}ms...`);
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+
+            // Implement cancellable delay
+            await new Promise<void>((resolve, reject) => {
+              const timeoutId = setTimeout(resolve, retryDelay);
+
+              if (abortSignal) {
+                const abortHandler = () => {
+                  clearTimeout(timeoutId);
+                  reject(new Error(`Connection retry aborted: ${abortSignal.reason || 'Request cancelled'}`));
+                };
+
+                if (abortSignal.aborted) {
+                  clearTimeout(timeoutId);
+                  reject(new Error(`Connection retry aborted: ${abortSignal.reason || 'Request cancelled'}`));
+                } else {
+                  abortSignal.addEventListener('abort', abortHandler, { once: true });
+                }
+              }
+            });
+
             retryDelay *= 2; // Exponential backoff
 
             // Create a new client for retry to avoid "already started" errors
@@ -221,9 +250,14 @@ export class ClientManager {
    * Creates a single client for async loading (used by McpLoadingManager)
    * @param name The name of the client
    * @param transport The transport to connect to
+   * @param abortSignal Optional AbortSignal to cancel the operation
    * @returns Promise that resolves when client is connected
    */
-  public async createSingleClient(name: string, transport: AuthProviderTransport): Promise<void> {
+  public async createSingleClient(
+    name: string,
+    transport: AuthProviderTransport,
+    abortSignal?: AbortSignal,
+  ): Promise<void> {
     // Prevent concurrent creation of the same client
     const existingPromise = this.connectionSemaphore.get(name);
     if (existingPromise) {
@@ -231,8 +265,13 @@ export class ClientManager {
       return;
     }
 
+    // Check if operation was aborted before starting
+    if (abortSignal?.aborted) {
+      throw new Error(`Operation aborted: ${abortSignal.reason || 'Request cancelled'}`);
+    }
+
     // Create connection promise
-    const connectionPromise = this.createSingleClientInternal(name, transport);
+    const connectionPromise = this.createSingleClientInternal(name, transport, abortSignal);
     this.connectionSemaphore.set(name, connectionPromise);
 
     try {
@@ -245,17 +284,26 @@ export class ClientManager {
   /**
    * Internal method to create and connect a single client
    */
-  private async createSingleClientInternal(name: string, transport: AuthProviderTransport): Promise<void> {
+  private async createSingleClientInternal(
+    name: string,
+    transport: AuthProviderTransport,
+    abortSignal?: AbortSignal,
+  ): Promise<void> {
     logger.info(`Creating client for ${name}`);
 
     // Store transport reference
     this.transports[name] = transport;
 
     try {
+      // Check if operation was aborted
+      if (abortSignal?.aborted) {
+        throw new Error(`Operation aborted: ${abortSignal.reason || 'Request cancelled'}`);
+      }
+
       const client = this.createClient();
 
       // Connect with retry logic
-      const connectedClient = await this.connectWithRetry(client, transport, name);
+      const connectedClient = await this.connectWithRetry(client, transport, name, abortSignal);
 
       this.outboundConns.set(name, {
         name,

@@ -124,18 +124,43 @@ export function createMcpAvailabilityMiddleware(
         logger.debug(`Checking availability for all ${relevantServers.length} servers`);
       }
 
-      // Categorize servers by state
+      // Categorize servers by state with detailed error information
       const availableServers: string[] = [];
       const unavailableServers: string[] = [];
       const loadingServers: string[] = [];
       const oauthRequiredServers: string[] = [];
 
+      // Collect detailed server information for error responses
+      const serverDetails: Record<
+        string,
+        {
+          state: string;
+          error?: string;
+          duration?: number;
+          retryCount?: number;
+          authUrl?: string;
+        }
+      > = {};
+
       for (const serverName of relevantServers) {
         const serverInfo = stateTracker.getServerState(serverName);
         if (!serverInfo) {
           unavailableServers.push(serverName);
+          serverDetails[serverName] = {
+            state: 'unknown',
+            error: 'Server not found in loading state tracker',
+          };
           continue;
         }
+
+        // Store detailed information for this server
+        serverDetails[serverName] = {
+          state: serverInfo.state,
+          error: serverInfo.error?.message,
+          duration: serverInfo.duration,
+          retryCount: serverInfo.retryCount,
+          authUrl: serverInfo.authorizationUrl,
+        };
 
         switch (serverInfo.state) {
           case LoadingState.Ready:
@@ -201,18 +226,40 @@ export function createMcpAvailabilityMiddleware(
       }
 
       if (!hasPartialAvailability) {
-        // No servers available - return error
+        // No servers available - return error with detailed information
         logger.warn('No MCP servers available for request');
+
+        // Create detailed error message including specific server failures
+        const failureDetails = unavailableServers
+          .map((name) => {
+            const detail = serverDetails[name];
+            if (detail.error) {
+              return `${name}: ${detail.error} (retries: ${detail.retryCount || 0})`;
+            }
+            return `${name}: ${detail.state}`;
+          })
+          .join(', ');
+
+        const detailedMessage =
+          unavailableServers.length > 0
+            ? `No MCP servers are currently available. Failed servers: ${failureDetails}`
+            : 'No MCP servers are currently available';
+
         res.status(503).json({
           error: 'service_unavailable',
-          message: 'No MCP servers are currently available',
+          message: detailedMessage,
           details: {
             total: relevantServers.length,
             available: availableServers.length,
             loading: loadingServers.length,
             failed: unavailableServers.length,
             oauthRequired: oauthRequiredServers.length,
+            availableList: availableServers,
+            loadingList: loadingServers,
+            failedList: unavailableServers,
+            oauthRequiredList: oauthRequiredServers,
           },
+          serverDetails,
           loading: {
             isComplete: stateTracker.isLoadingComplete(),
             summary: loadingManager.getSummary(),
@@ -240,15 +287,44 @@ export function createMcpAvailabilityMiddleware(
         next();
         return;
       } else {
-        // Partial availability not allowed - return error
+        // Partial availability not allowed - return error with detailed information
         logger.warn('Partial MCP availability not allowed - blocking request');
 
         const primaryReason = loadingServers.length > 0 ? 'loading' : 'unavailable';
-        const message = primaryReason === 'loading' ? opts.loadingMessage : opts.unavailableMessage;
+        let detailedMessage = primaryReason === 'loading' ? opts.loadingMessage : opts.unavailableMessage;
+
+        // Add specific error details for unavailable servers
+        if (unavailableServers.length > 0) {
+          const failureDetails = unavailableServers
+            .map((name) => {
+              const detail = serverDetails[name];
+              if (detail.error) {
+                return `${name}: ${detail.error} (retries: ${detail.retryCount || 0})`;
+              }
+              return `${name}: ${detail.state}`;
+            })
+            .join(', ');
+          detailedMessage += `. Failed servers: ${failureDetails}`;
+        }
+
+        // Add loading server details
+        if (loadingServers.length > 0) {
+          const loadingDetails = loadingServers
+            .map((name) => {
+              const detail = serverDetails[name];
+              const retryInfo = detail.retryCount && detail.retryCount > 0 ? ` (retry ${detail.retryCount})` : '';
+              return `${name}: ${detail.state}${retryInfo}`;
+            })
+            .join(', ');
+          detailedMessage +=
+            primaryReason === 'loading'
+              ? `. Loading servers: ${loadingDetails}`
+              : ` Currently loading: ${loadingDetails}`;
+        }
 
         res.status(primaryReason === 'loading' ? 202 : 503).json({
           error: primaryReason === 'loading' ? 'servers_loading' : 'servers_unavailable',
-          message,
+          message: detailedMessage,
           details: {
             total: relevantServers.length,
             available: availableServers.length,
@@ -260,6 +336,7 @@ export function createMcpAvailabilityMiddleware(
             failedList: unavailableServers,
             oauthRequiredList: oauthRequiredServers,
           },
+          serverDetails,
           loading: {
             isComplete: stateTracker.isLoadingComplete(),
             summary: loadingManager.getSummary(),

@@ -94,6 +94,7 @@ export class McpLoadingManager extends EventEmitter {
   private loadingSemaphore: Map<string, Promise<ServerLoadResult>> = new Map();
   private backgroundRetryTimer?: ReturnType<typeof setTimeout>;
   private isShuttingDown: boolean = false;
+  private abortControllers: Map<string, AbortController> = new Map();
 
   constructor(clientManager: ClientManager, config: Partial<McpLoadingConfig> = {}) {
     super();
@@ -262,18 +263,34 @@ export class McpLoadingManager extends EventEmitter {
   }
 
   /**
-   * Create client with timeout wrapper
+   * Create client with timeout and cancellation support
    */
   private async createClientWithTimeout(name: string, transport: AuthProviderTransport): Promise<void> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`Timeout loading ${name} after ${this.config.serverTimeoutMs}ms`));
-      }, this.config.serverTimeoutMs);
-    });
+    // Create abort controller for this specific server loading operation
+    const abortController = new AbortController();
+    this.abortControllers.set(name, abortController);
 
-    const loadPromise = this.clientManager.createSingleClient(name, transport);
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        const timeoutId = setTimeout(() => {
+          abortController.abort();
+          reject(new Error(`Timeout loading ${name} after ${this.config.serverTimeoutMs}ms`));
+        }, this.config.serverTimeoutMs);
 
-    await Promise.race([loadPromise, timeoutPromise]);
+        // Clear timeout if operation is aborted
+        abortController.signal.addEventListener('abort', () => {
+          clearTimeout(timeoutId);
+          reject(new Error(`Loading ${name} was cancelled`));
+        });
+      });
+
+      const loadPromise = this.clientManager.createSingleClient(name, transport, abortController.signal);
+
+      await Promise.race([loadPromise, timeoutPromise]);
+    } finally {
+      // Clean up abort controller
+      this.abortControllers.delete(name);
+    }
   }
 
   /**
@@ -360,6 +377,47 @@ export class McpLoadingManager extends EventEmitter {
   }
 
   /**
+   * Cancel loading of a specific server
+   */
+  public cancelServerLoading(serverName: string): void {
+    const abortController = this.abortControllers.get(serverName);
+    if (abortController) {
+      logger.info(`Cancelling loading of server: ${serverName}`);
+      abortController.abort();
+      this.stateTracker.updateServerState(serverName, LoadingState.Cancelled);
+    } else {
+      logger.warn(`No active loading operation found for server: ${serverName}`);
+    }
+  }
+
+  /**
+   * Cancel loading of multiple servers
+   */
+  public cancelServersLoading(serverNames: string[]): void {
+    for (const serverName of serverNames) {
+      this.cancelServerLoading(serverName);
+    }
+  }
+
+  /**
+   * Cancel all currently loading servers
+   */
+  public cancelAllLoading(): void {
+    const loadingServers = Array.from(this.abortControllers.keys());
+    if (loadingServers.length > 0) {
+      logger.info(`Cancelling loading of ${loadingServers.length} servers`);
+      this.cancelServersLoading(loadingServers);
+    }
+  }
+
+  /**
+   * Get list of servers that are currently being loaded and can be cancelled
+   */
+  public getCancellableServers(): string[] {
+    return Array.from(this.abortControllers.keys());
+  }
+
+  /**
    * Shutdown the loading manager
    */
   public shutdown(): void {
@@ -370,7 +428,10 @@ export class McpLoadingManager extends EventEmitter {
       this.backgroundRetryTimer = undefined;
     }
 
-    // Cancel any pending servers
+    // Cancel any active loading operations
+    this.cancelAllLoading();
+
+    // Update state for any remaining pending/loading servers
     const pendingServers = this.stateTracker.getServersByState(LoadingState.Pending);
     const loadingServers = this.stateTracker.getServersByState(LoadingState.Loading);
 
