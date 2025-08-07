@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2025-08-07
+
+### 🚀 Features
+- Add async loading option to dev command by @xizhibei
+- Enhance consolidation detection logic in tests by @xizhibei
+- Enhance add and update commands with " -- " pattern support by @xizhibei
+- Add build step to GitHub Actions workflow by @xizhibei
+- Add support for 'claude-desktop' in app configuration and update app preset format by @xizhibei
+- Add platform-specific contributions section and enhance app preset warnings by @xizhibei
+- Implement asynchronous server loading with real-time notifications by @xizhibei
+- Add Claude Desktop integration guide and update navigation by @xizhibei
+- Add Fast Startup guide and update navigation by @xizhibei
+- Implement dynamic generation of supported apps list for CLI help by @xizhibei
+- Enhance end-to-end testing for MCP commands and error handling by @xizhibei
+- Add middleware tests for MCP server tag filtering by @xizhibei
+- Implement asynchronous MCP server loading and management by @xizhibei
+- Enhance backup management with app-specific directories and tests by @xizhibei
+- Implement MCP server configuration import and conversion utility by @xizhibei
+- Add JSON5 support for VS Code settings and implement tests by @xizhibei
+- Rename 'server' command to 'mcp' and add Commands section to README by @xizhibei
+- Add command reference and server management documentation by @xizhibei
+- Enhance command-line interface with server options and default command handling by @xizhibei
+- Implement server management commands and configuration utilities by @xizhibei
+- Implement command management and backup functionalities by @xizhibei
+
+### 🐛 Bug Fixes
+- Update HOST constant to use 127.0.0.1 instead of localhost by @xizhibei
+- Update error scenarios and command workflows in E2E tests by @xizhibei
+- Improve default command handling in CLI by @xizhibei
+- Update app preset paths for MCP settings by @xizhibei
+- Update health-info-level argument parsing for consistency by @xizhibei
+
+### 💼 Other
+- Merge pull request #85 from 1mcp-app/dependabot/npm_and_yarn/eslint-plugin-prettier-5.5.3 by @xizhibei in [#85](https://github.com/1mcp-app/agent/pull/85)
+- Merge pull request #84 from 1mcp-app/dependabot/npm_and_yarn/eslint/js-9.32.0 by @xizhibei in [#84](https://github.com/1mcp-app/agent/pull/84)
+- Merge pull request #82 from 1mcp-app/dependabot/npm_and_yarn/eslint-config-prettier-10.1.8 by @xizhibei in [#82](https://github.com/1mcp-app/agent/pull/82)
+- Merge pull request #81 from 1mcp-app/dependabot/npm_and_yarn/npm_and_yarn-459f987eb5 by @xizhibei in [#81](https://github.com/1mcp-app/agent/pull/81)
+- Merge pull request #83 from 1mcp-app/dependabot/npm_and_yarn/jiti-2.5.1 by @xizhibei in [#83](https://github.com/1mcp-app/agent/pull/83)
+- Merge pull request #87 from 1mcp-app/feat/command by @xizhibei in [#87](https://github.com/1mcp-app/agent/pull/87)
+
+### 🚜 Refactor
+- Remove deprecated loading and global sections from configuration guide by @xizhibei
+- Update server and async loading tests for improved accuracy by @xizhibei
+- Update command references and improve navigation by @xizhibei
+- Enhance E2E test reliability and error handling by @xizhibei
+- Update application preset configurations and comment out platform-specific paths by @xizhibei
+
+### 📚 Documentation
+- Update command references to include 'npx -y @1mcp/agent' for consistency by @xizhibei
+- Dynamically set version in VitePress configuration by @xizhibei
+- Update architecture documentation to reflect transport protocol changes by @xizhibei
+
+### 🧪 Testing
+- Update host expectation to use 127.0.0.1 instead of localhost by @xizhibei
+- Add unit tests for McpConfigManager functionality by @xizhibei
+
+
 ## [0.16.0] - 2025-07-30
 
 ### 🚀 Features
@@ -450,6 +507,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.17.0]: https://github.com/1mcp-app/agent/compare/v0.16.0..v0.17.0
 [0.16.0]: https://github.com/1mcp-app/agent/compare/v0.15.0..v0.16.0
 [0.15.0]: https://github.com/1mcp-app/agent/compare/v0.14.0..v0.15.0
 [0.14.0]: https://github.com/1mcp-app/agent/compare/v0.13.1..v0.14.0
