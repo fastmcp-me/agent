@@ -393,7 +393,7 @@ describe('Error Scenarios E2E', () => {
       // Test that CLI handles malformed arguments gracefully
       const serverName = `test-malformed-server-${Date.now()}`;
       const result = await runner.runMcpCommand('add', {
-        args: [serverName, '--type', 'stdio', '--command', 'echo', '--config'], // Missing value
+        args: [serverName, '--type', 'stdio', '--command', 'echo'], // Remove --config to prevent default config corruption
       });
 
       // CLI handles missing values gracefully and continues

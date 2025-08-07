@@ -48,8 +48,17 @@ export class CliTestRunner {
     const args = ['mcp', action];
 
     // Add config path if not already specified in args
+    // Also check for --config without value to prevent corrupting default config
     if (!options.args?.includes('--config') && !options.args?.includes('-c')) {
       args.push('--config', this.environment.getConfigPath());
+    } else if (options.args?.includes('--config')) {
+      // If --config is present, ensure it has a value to prevent default config corruption
+      const configIndex = options.args.indexOf('--config');
+      if (configIndex === options.args.length - 1 || options.args[configIndex + 1]?.startsWith('--')) {
+        // --config is the last argument or followed by another flag, so it has no value
+        // Insert our test config path after --config
+        options.args.splice(configIndex + 1, 0, this.environment.getConfigPath());
+      }
     }
 
     if (options.args) {
