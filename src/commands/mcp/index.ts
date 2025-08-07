@@ -32,10 +32,10 @@ export function setupMcpCommands(yargs: Argv): Argv {
                 alias: 'c',
               })
               .option('type', {
-                describe: 'Transport type for the server',
+                describe: 'Transport type for the server (auto-detected when using " -- " pattern)',
                 type: 'string',
                 choices: ['stdio', 'http', 'sse'],
-                demandOption: true,
+                demandOption: false,
               })
               .option('command', {
                 describe: 'Command to execute (required for stdio)',
@@ -81,8 +81,13 @@ export function setupMcpCommands(yargs: Argv): Argv {
                 string: true,
               })
               .example([
-                ['$0 mcp add myserver --type=stdio --command=node --args=server.js', 'Add stdio server'],
+                ['$0 mcp add myserver --type=stdio --command=node --args=server.js', 'Add stdio server (explicit)'],
                 ['$0 mcp add webserver --type=http --url=http://localhost:3000/mcp', 'Add HTTP server'],
+                [
+                  '$0 mcp add airtable --env AIRTABLE_API_KEY=key -- npx -y airtable-mcp-server',
+                  'Add server using " -- " pattern',
+                ],
+                ['$0 mcp add myserver -- cmd /c npx -y @some/package', 'Add server with Windows command'],
                 ['$0 mcp add tagged --type=stdio --command=echo --tags=dev,test', 'Add server with tags'],
                 [
                   '$0 mcp add custom --type=stdio --command=python --env=PATH=/custom/path --disabled',
@@ -92,7 +97,18 @@ export function setupMcpCommands(yargs: Argv): Argv {
           },
           handler: async (argv) => {
             const { addCommand } = await import('./add.js');
-            await addCommand(argv);
+            const { parseDoubleHyphenArgs, hasDoubleHyphen, mergeDoubleHyphenArgs } = await import(
+              './utils/doubleHyphenParser.js'
+            );
+
+            // Check if " -- " pattern is used
+            if (hasDoubleHyphen(process.argv)) {
+              const doubleHyphenResult = parseDoubleHyphenArgs(process.argv);
+              const mergedArgv = mergeDoubleHyphenArgs(argv, doubleHyphenResult);
+              await addCommand(mergedArgv);
+            } else {
+              await addCommand(argv);
+            }
           },
         })
         .command({
@@ -142,7 +158,7 @@ export function setupMcpCommands(yargs: Argv): Argv {
                 alias: 'c',
               })
               .option('type', {
-                describe: 'Transport type for the server',
+                describe: 'Transport type for the server (auto-detected when using " -- " pattern)',
                 type: 'string',
                 choices: ['stdio', 'http', 'sse'],
               })
@@ -187,12 +203,24 @@ export function setupMcpCommands(yargs: Argv): Argv {
               .example([
                 ['$0 mcp update myserver --tags=prod,api', 'Update server tags'],
                 ['$0 mcp update myserver --env=NODE_ENV=production', 'Update environment'],
+                ['$0 mcp update myserver -- npx -y updated-package', 'Update using " -- " pattern'],
                 ['$0 mcp update myserver --timeout=10000', 'Update timeout'],
               ]);
           },
           handler: async (argv) => {
             const { updateCommand } = await import('./update.js');
-            await updateCommand(argv);
+            const { parseDoubleHyphenArgs, hasDoubleHyphen, mergeDoubleHyphenArgs } = await import(
+              './utils/doubleHyphenParser.js'
+            );
+
+            // Check if " -- " pattern is used
+            if (hasDoubleHyphen(process.argv)) {
+              const doubleHyphenResult = parseDoubleHyphenArgs(process.argv);
+              const mergedArgv = mergeDoubleHyphenArgs(argv, doubleHyphenResult);
+              await updateCommand(mergedArgv);
+            } else {
+              await updateCommand(argv);
+            }
           },
         })
         .command({

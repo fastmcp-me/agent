@@ -409,5 +409,98 @@ describe('MCP Remove & Update Commands E2E', () => {
       const finalList = await runner.runMcpCommand('list', { timeout: 2000 });
       expect(finalList.stdout).not.toContain('workflow-server');
     });
+
+    describe('Update with Double Hyphen Pattern', () => {
+      it('should update server using " -- " pattern', async () => {
+        // Add a server first
+        await runner.runMcpCommand('add', {
+          args: ['update-test-server', '--type', 'stdio', '--command', 'echo', '--args', 'original'],
+        });
+
+        // Update using " -- " pattern
+        const updateResult = await runner.runMcpCommand('update', {
+          args: ['update-test-server', '--', 'npx', '-y', 'updated-package'],
+        });
+
+        expect(updateResult.exitCode).toBe(0);
+        runner.assertOutputContains(updateResult, 'Successfully updated server');
+        runner.assertOutputContains(updateResult, 'command: echo → npx');
+
+        // Verify the update
+        const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+        runner.assertOutputContains(listResult, 'update-test-server');
+        runner.assertOutputContains(listResult, 'npx');
+        runner.assertOutputContains(listResult, '-y updated-package');
+      });
+
+      it('should update server with " -- " pattern while preserving other settings', async () => {
+        // Add a server with environment variables and tags
+        await runner.runMcpCommand('add', {
+          args: [
+            'env-update-server',
+            '--type',
+            'stdio',
+            '--command',
+            'echo',
+            '--env',
+            'ORIGINAL=value',
+            '--tags',
+            'test,original',
+          ],
+        });
+
+        // Update only the command using " -- " pattern
+        const updateResult = await runner.runMcpCommand('update', {
+          args: ['env-update-server', '--', 'node', 'updated-server.js'],
+        });
+
+        expect(updateResult.exitCode).toBe(0);
+        runner.assertOutputContains(updateResult, 'Successfully updated server');
+
+        // Verify the update preserved environment and tags
+        const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+        runner.assertOutputContains(listResult, 'env-update-server');
+        runner.assertOutputContains(listResult, 'node');
+        runner.assertOutputContains(listResult, 'updated-server.js');
+        runner.assertOutputContains(listResult, 'test, original');
+      });
+
+      it('should prioritize explicit flags over " -- " pattern in updates', async () => {
+        // Add a server first
+        await runner.runMcpCommand('add', {
+          args: ['priority-server', '--type', 'stdio', '--command', 'echo'],
+        });
+
+        // Update with both explicit flag and " -- " pattern
+        const updateResult = await runner.runMcpCommand('update', {
+          args: ['priority-server', '--command', 'explicit-cmd', '--', 'ignored-cmd'],
+        });
+
+        expect(updateResult.exitCode).toBe(0);
+        runner.assertOutputContains(updateResult, 'Successfully updated server');
+        runner.assertOutputContains(updateResult, 'command: echo → explicit-cmd');
+
+        // Verify explicit flag won
+        const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+        runner.assertOutputContains(listResult, 'priority-server');
+        runner.assertOutputContains(listResult, 'explicit-cmd');
+      });
+
+      it('should fail when " -- " is used without a command in update', async () => {
+        // Add a server first
+        await runner.runMcpCommand('add', {
+          args: ['fail-update-server', '--type', 'stdio', '--command', 'echo'],
+        });
+
+        // Try to update with empty " -- " pattern
+        const updateResult = await runner.runMcpCommand('update', {
+          args: ['fail-update-server', '--'],
+          expectError: true,
+        });
+
+        expect(updateResult.exitCode).toBe(1);
+        runner.assertOutputContains(updateResult, 'No command specified after " -- "', true); // Check stderr
+      });
+    });
   });
 });

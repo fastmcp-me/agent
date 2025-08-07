@@ -21,7 +21,7 @@ import {
 export interface AddCommandArgs {
   name: string;
   config?: string;
-  type: string; // Will be validated as 'stdio' | 'http' | 'sse'
+  type?: string; // Will be validated as 'stdio' | 'http' | 'sse' (optional for " -- " pattern)
   command?: string;
   args?: string[];
   url?: string;
@@ -44,6 +44,12 @@ export async function addCommand(argv: AddCommandArgs): Promise<void> {
 
     // Validate inputs
     validateServerName(name);
+
+    // Type is required either explicitly or inferred from " -- " pattern
+    if (!type) {
+      throw new Error('Server type must be specified with --type or inferred from " -- " pattern');
+    }
+
     validateServerArgs(type, argv);
     validateEnvVars(argv.env);
     validateHeaders(argv.headers);

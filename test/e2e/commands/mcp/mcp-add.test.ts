@@ -293,4 +293,100 @@ describe('MCP Add Command E2E', () => {
       runner.assertOutputContains(result, '--tags');
     });
   });
+
+  describe('Double Hyphen Pattern', () => {
+    it('should add server using " -- " pattern with npx', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: ['double-hyphen-server', '--env', 'TEST_KEY=value', '--', 'npx', '-y', 'test-package'],
+      });
+
+      expect(result.exitCode).toBe(0);
+      runner.assertOutputContains(result, 'Successfully added server');
+      runner.assertOutputContains(result, 'Type: stdio');
+      runner.assertOutputContains(result, 'Command: npx');
+
+      const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+      runner.assertOutputContains(listResult, 'double-hyphen-server');
+      runner.assertOutputContains(listResult, 'npx');
+      runner.assertOutputContains(listResult, '-y test-package');
+    });
+
+    it('should add server using " -- " pattern with Windows cmd', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: ['windows-server', '--', 'cmd', '/c', 'npx', '-y', '@some/package'],
+      });
+
+      expect(result.exitCode).toBe(0);
+      runner.assertOutputContains(result, 'Successfully added server');
+      runner.assertOutputContains(result, 'Type: stdio');
+      runner.assertOutputContains(result, 'Command: cmd');
+
+      const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+      runner.assertOutputContains(listResult, 'windows-server');
+      runner.assertOutputContains(listResult, '/c npx -y @some/package');
+    });
+
+    it('should add server with both explicit flags and " -- " pattern (explicit wins)', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: ['mixed-server', '--type', 'stdio', '--command', 'explicit-command', '--', 'ignored-command'],
+      });
+
+      expect(result.exitCode).toBe(0);
+      runner.assertOutputContains(result, 'Successfully added server');
+      runner.assertOutputContains(result, 'Command: explicit-command');
+
+      const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+      runner.assertOutputContains(listResult, 'mixed-server');
+      runner.assertOutputContains(listResult, 'explicit-command');
+    });
+
+    it('should handle " -- " pattern with environment variables', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: [
+          'env-double-hyphen-server',
+          '--env',
+          'API_KEY=test123',
+          '--env',
+          'NODE_ENV=development',
+          '--tags',
+          'test,development',
+          '--',
+          'node',
+          'server.js',
+        ],
+      });
+
+      expect(result.exitCode).toBe(0);
+      runner.assertOutputContains(result, 'Successfully added server');
+      runner.assertOutputContains(result, 'Command: node');
+
+      const listResult = await runner.runMcpCommand('list', { args: ['--verbose'] });
+      runner.assertOutputContains(listResult, 'env-double-hyphen-server');
+      runner.assertOutputContains(listResult, 'test, development');
+    });
+
+    it('should fail when " -- " is used without a command', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: ['no-command-server', '--'],
+        expectError: true,
+      });
+
+      expect(result.exitCode).toBe(1);
+      runner.assertOutputContains(result, 'No command specified after " -- "', true); // Check stderr
+    });
+
+    it('should fail when neither --type nor " -- " pattern is provided', async () => {
+      const result = await runner.runMcpCommand('add', {
+        args: ['no-type-server'],
+        expectError: true,
+      });
+
+      expect(result.exitCode).toBe(1);
+      runner.assertOutputContains(
+        result,
+        'Server type must be specified with --type or inferred from " -- " pattern',
+        true,
+      ); // Check stderr
+    });
+  });
 });

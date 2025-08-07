@@ -7,7 +7,11 @@ For a complete overview of server management, see the **[Server Management Guide
 ## Synopsis
 
 ```bash
+# Standard syntax
 npx -y @1mcp/agent mcp update <name> [options]
+
+# Quick syntax with " -- " pattern (updates command and args)
+npx -y @1mcp/agent mcp update <name> [options] -- <command> [args...]
 ```
 
 ## Arguments
@@ -32,6 +36,8 @@ npx -y @1mcp/agent mcp update <name> [options]
 
 ## Examples
 
+### Standard Syntax
+
 ```bash
 # Update the tags for a server
 npx -y @1mcp/agent mcp update my-server --tags="new-tag,another-tag"
@@ -41,6 +47,19 @@ npx -y @1mcp/agent mcp update my-stdio-server --env="NODE_ENV=production"
 
 # Change the URL of an HTTP server
 npx -y @1mcp/agent mcp update my-http-server --url="https://new.api.com/mcp"
+```
+
+### Quick " -- " Pattern Syntax
+
+```bash
+# Update server command using " -- " pattern
+npx -y @1mcp/agent mcp update my-server -- npx -y updated-package
+
+# Update command while preserving environment variables and tags
+npx -y @1mcp/agent mcp update airtable -- npx -y @airtable/mcp-server-v2
+
+# Update with additional options
+npx -y @1mcp/agent mcp update my-server --timeout=10000 -- node updated-server.js
 ```
 
 ## See Also
