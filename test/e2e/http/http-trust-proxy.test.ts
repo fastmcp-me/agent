@@ -106,7 +106,7 @@ describe('HTTP Trust Proxy Configuration Integration', () => {
       expect(configManager.getTrustProxy()).toBe('loopback');
 
       const config = configManager.getConfig();
-      expect(config.host).toBe('localhost');
+      expect(config.host).toBe('127.0.0.1');
       expect(config.port).toBe(3050);
       expect(config.trustProxy).toBe('loopback');
     });
