@@ -1,107 +1,54 @@
 # Trust Proxy Configuration
 
-When running 1MCP behind a reverse proxy (nginx, Apache, Cloudflare, etc.), you need to configure trust proxy settings to ensure proper client IP detection for logging, rate limiting, and security features.
+When running 1MCP behind a reverse proxy (like nginx, Apache, or a cloud load balancer), you need to configure its trust proxy settings. This ensures that the agent correctly identifies the client's IP address for logging, rate limiting, and other security features.
+
+For details on how to set the trust proxy configuration via command-line flags, environment variables, or the JSON config file, please see the **[Configuration Deep Dive](../guide/configuration#network-options)**.
 
 ## Trust Proxy Options
 
-| Value         | Description                                                              | Example                     |
-| ------------- | ------------------------------------------------------------------------ | --------------------------- |
-| `false`       | Disable trust proxy (default Express.js behavior)                        | `--trust-proxy=false`       |
-| `true`        | Trust all proxies (use leftmost IP from X-Forwarded-For)                 | `--trust-proxy=true`        |
-| `loopback`    | Trust loopback addresses (127.0.0.1, ::1) - **Default**                  | `--trust-proxy=loopback`    |
-| `linklocal`   | Trust link-local addresses (169.254.0.0/16, fe80::/10)                   | `--trust-proxy=linklocal`   |
-| `uniquelocal` | Trust unique local addresses (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) | `--trust-proxy=uniquelocal` |
-| IP Address    | Trust specific IP address                                                | `--trust-proxy=192.168.1.1` |
-| CIDR Range    | Trust IP range in CIDR notation                                          | `--trust-proxy=10.0.0.0/8`  |
+The trust proxy setting determines which incoming proxy servers are trusted.
 
-## Common Use Cases
-
-### Local Development (Default)
-
-```bash
-# Default - trusts loopback addresses (safe for local development)
-npx -y @1mcp/agent
-
-# Equivalent explicit setting
-npx -y @1mcp/agent --trust-proxy=loopback
-```
-
-### Behind nginx/Apache
-
-```bash
-# Trust your reverse proxy server
-npx -y @1mcp/agent --trust-proxy=192.168.1.100
-
-# Or trust your entire internal network
-npx -y @1mcp/agent --trust-proxy=192.168.0.0/16
-```
-
-### Behind Cloudflare/CDN
-
-```bash
-# Trust all proxies (common for CDN setups)
-npx -y @1mcp/agent --trust-proxy=true
-```
-
-### Docker with Host Network
-
-```bash
-# Trust unique local addresses for container networking
-docker run --network host \
-  -e ONE_MCP_TRUST_PROXY=uniquelocal \
-  ghcr.io/1mcp-app/agent
-```
-
-### Environment Variables
-
-You can also use environment variables instead of CLI flags:
-
-```bash
-# Set via environment variable
-export ONE_MCP_TRUST_PROXY=192.168.1.0/24
-npx -y @1mcp/agent
-
-# Docker with environment variable
-docker run -p 3050:3050 \
-  -e ONE_MCP_TRUST_PROXY=true \
-  ghcr.io/1mcp-app/agent
-```
+| Value         | Description                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------- |
+| `false`       | Disables trust proxy. The connecting IP is always considered the client IP.              |
+| `true`        | Trusts all proxies. The client IP is the leftmost entry in the `X-Forwarded-For` header. |
+| `loopback`    | Trusts loopback addresses (e.g., `127.0.0.1`, `::1`). **This is the default.**           |
+| `linklocal`   | Trusts link-local addresses (e.g., `169.254.0.0/16`).                                    |
+| `uniquelocal` | Trusts private network addresses (e.g., `10.0.0.0/8`, `192.168.0.0/16`).                 |
+| IP Address    | Trusts a specific IP address (e.g., `192.168.1.1`).                                      |
+| CIDR Range    | Trusts a specific IP range in CIDR notation (e.g., `10.0.0.0/8`).                        |
 
 ## Security Considerations
 
-- **Default**: `loopback` is safe for local development
-- **Production**: Use specific IP addresses or CIDR ranges when possible
-- **CDN**: Only use `true` when behind trusted CDN services
-- **Headers**: Trust proxy settings affect `X-Forwarded-For` header processing
+- **Default**: The default setting `loopback` is safe for local development.
+- **Production**: For production, it is highly recommended to use specific IP addresses or CIDR ranges for your known proxies.
+- **CDNs**: Only use `true` if you are behind a trusted CDN service like Cloudflare that properly sets the `X-Forwarded-For` header.
+- **Headers**: The trust proxy setting directly affects how the `X-Forwarded-For` header is processed.
 
-**⚠️ Important**: Incorrect trust proxy settings can lead to IP spoofing vulnerabilities. Only trust proxies you control.
+**⚠️ Important**: Incorrectly configuring this setting can create an IP spoofing vulnerability. Only trust proxies that you control.
 
 ## How Trust Proxy Works
 
-When trust proxy is enabled, Express.js will:
+When trust proxy is enabled, the underlying Express.js server will:
 
-1. **Parse `X-Forwarded-For` headers** to extract the original client IP
-2. **Update `req.ip`** to reflect the actual client IP (not the proxy IP)
-3. **Populate `req.ips`** array with all IPs in the forwarding chain
-4. **Enable secure cookies** when `X-Forwarded-Proto: https` is present
+1.  **Parse `X-Forwarded-For` headers** to find the original client IP.
+2.  **Update `req.ip`** to reflect the actual client IP, not the proxy's IP.
+3.  **Populate the `req.ips`** array with the full list of IPs in the forwarding chain.
+4.  **Enable secure cookies** if the `X-Forwarded-Proto: https` header is present.
 
-### Example Headers
+### Example Header Processing
 
-Without trust proxy:
+**Without Trust Proxy**:
 
-```http
-X-Forwarded-For: 203.0.113.1, 192.168.1.100
-req.ip = "192.168.1.100"  // Proxy IP
-req.ips = []
-```
+- `X-Forwarded-For: 203.0.113.1, 192.168.1.100`
+- `req.ip` will be `192.168.1.100` (the proxy's IP)
+- `req.ips` will be `[]`
 
-With trust proxy enabled:
+**With Trust Proxy Enabled**:
 
-```http
-X-Forwarded-For: 203.0.113.1, 192.168.1.100
-req.ip = "203.0.113.1"    // Original client IP
-req.ips = ["203.0.113.1", "192.168.1.100"]
-```
+- `X-Forwarded-For: 203.0.113.1, 192.168.1.100`
+- `req.ip` will be `203.0.113.1` (the original client's IP)
+- `req.ips` will be `["203.0.113.1", "192.168.1.100"]`
 
 ## Reverse Proxy Configuration Examples
 
@@ -122,11 +69,7 @@ server {
 }
 ```
 
-Then configure 1MCP:
-
-```bash
-npx -y @1mcp/agent --trust-proxy=127.0.0.1
-```
+With this nginx config, you would set 1MCP's trust proxy to `127.0.0.1`.
 
 ### Apache
 
@@ -137,36 +80,16 @@ npx -y @1mcp/agent --trust-proxy=127.0.0.1
     ProxyPass / http://localhost:3050/
     ProxyPassReverse / http://localhost:3050/
     ProxyPreserveHost On
-
-    # Set forwarded headers
     ProxyAddHeaders On
 </VirtualHost>
 ```
 
-Then configure 1MCP:
-
-```bash
-npx -y @1mcp/agent --trust-proxy=127.0.0.1
-```
+With this Apache config, you would also set 1MCP's trust proxy to `127.0.0.1`.
 
 ## Troubleshooting
 
-### Check Current Configuration
+- **Wrong client IP in logs**: Your trust proxy setting is likely incorrect. Ensure it matches your proxy's IP address.
+- **IP spoofing warnings**: Your trust proxy setting may be too permissive (e.g., using `true` on an open network).
+- **Rate limiting not working correctly**: This is often a symptom of the client IP not being detected correctly due to a trust proxy misconfiguration.
 
-The server logs will show the trust proxy setting on startup:
-
-```
-Server is running on port 3050 with HTTP/SSE transport
-```
-
-### Test Client IP Detection
-
-You can test if trust proxy is working correctly by checking the logs for incoming requests. The client IP should reflect the actual client, not the proxy.
-
-### Common Issues
-
-1. **Wrong client IP in logs**: Trust proxy not configured or incorrect proxy IP
-2. **IP spoofing warnings**: Trust proxy is too permissive (using `true` when you should use specific IPs)
-3. **Rate limiting not working**: Client IPs not detected correctly due to trust proxy misconfiguration
-
-For more detailed troubleshooting, enable debug logging and check the request headers being processed.
+For more detailed troubleshooting, enable debug logging and inspect the headers of incoming requests.

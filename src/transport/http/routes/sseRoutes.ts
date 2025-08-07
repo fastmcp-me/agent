@@ -5,11 +5,23 @@ import logger from '../../../logger/logger.js';
 import { SSE_ENDPOINT, MESSAGES_ENDPOINT } from '../../../constants.js';
 import { ServerManager } from '../../../core/server/serverManager.js';
 import { ServerStatus } from '../../../core/types/index.js';
+import { AsyncLoadingOrchestrator } from '../../../core/capabilities/asyncLoadingOrchestrator.js';
 import tagsExtractor from '../middlewares/tagsExtractor.js';
 import { getValidatedTags } from '../middlewares/scopeAuthMiddleware.js';
 
-export function setupSseRoutes(router: Router, serverManager: ServerManager, authMiddleware: any): void {
+export function setupSseRoutes(
+  router: Router,
+  serverManager: ServerManager,
+  authMiddleware: any,
+  availabilityMiddleware?: any,
+  asyncOrchestrator?: AsyncLoadingOrchestrator,
+): void {
   const middlewares = [tagsExtractor, authMiddleware];
+
+  // Add availability middleware if provided
+  if (availabilityMiddleware) {
+    middlewares.push(availabilityMiddleware);
+  }
 
   router.get(SSE_ENDPOINT, ...middlewares, async (req: Request, res: Response) => {
     try {
@@ -23,6 +35,15 @@ export function setupSseRoutes(router: Router, serverManager: ServerManager, aut
         tags,
         enablePagination: req.query.pagination === 'true',
       });
+
+      // Initialize notifications for async loading if enabled
+      if (asyncOrchestrator) {
+        const inboundConnection = serverManager.getServer(transport.sessionId);
+        if (inboundConnection) {
+          asyncOrchestrator.initializeNotifications(inboundConnection);
+          logger.debug(`Async loading notifications initialized for SSE session ${transport.sessionId}`);
+        }
+      }
 
       transport.onclose = () => {
         serverManager.disconnectTransport(transport.sessionId);

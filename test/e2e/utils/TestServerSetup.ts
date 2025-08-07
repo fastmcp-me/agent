@@ -15,8 +15,12 @@ export class TestServerSetup {
     McpConfigManager.getInstance(configPath);
 
     // Set up and start the server
-    this.serverManager = await setupServer();
+    const setupResult = await setupServer();
+    this.serverManager = setupResult.serverManager;
     this.configPath = configPath;
+
+    // Wait for MCP servers to load in background
+    await setupResult.loadingPromise;
 
     // Give the server a moment to fully initialize
     await new Promise((resolve) => setTimeout(resolve, 1000));

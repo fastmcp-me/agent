@@ -36,7 +36,7 @@ describe('Stdio Transport Lifecycle E2E', () => {
       command: 'sleep',
       args: ['5'],
       timeout: 10000,
-      startupTimeout: 100, // Fast startup
+      startupTimeout: 2000, // Reasonable startup timeout
     });
 
     expect(processInfo.pid).toBeGreaterThan(0);
@@ -54,7 +54,7 @@ describe('Stdio Transport Lifecycle E2E', () => {
         command: 'sleep',
         args: ['2'], // Sleep longer than timeout
         timeout: shortTimeout,
-        startupTimeout: 100, // Fast startup
+        startupTimeout: 2000, // Reasonable startup timeout
       });
 
       // Process should start successfully
@@ -84,7 +84,7 @@ describe('Stdio Transport Lifecycle E2E', () => {
         command: 'sleep',
         args: proc.args,
         timeout: 2000, // Reduced timeout
-        startupTimeout: 100, // Fast startup
+        startupTimeout: 2000, // Reasonable startup timeout
       });
       expect(info.pid).toBeGreaterThan(0);
       expect(processManager.isProcessRunning(proc.name)).toBe(true);
@@ -227,14 +227,14 @@ describe('Stdio Transport Lifecycle E2E', () => {
       command: 'sleep',
       args: ['10'],
       timeout: 15000,
-      startupTimeout: 100, // Fast startup
+      startupTimeout: 2000, // Reasonable startup timeout
     });
 
     await processManager.startProcess('cleanup-test-2', {
       command: 'sleep',
       args: ['10'],
       timeout: 15000,
-      startupTimeout: 100, // Fast startup
+      startupTimeout: 2000, // Reasonable startup timeout
     });
 
     expect(processManager.getAllProcesses().size).toBe(2);

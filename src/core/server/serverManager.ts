@@ -226,6 +226,10 @@ export class ServerManager {
     return this.inboundConns.get(sessionId);
   }
 
+  public getInboundConnections(): Map<string, InboundConnection> {
+    return this.inboundConns;
+  }
+
   public updateClientsAndTransports(newClients: OutboundConnections, newTransports: Record<string, Transport>): void {
     this.outboundConns = newClients;
     this.transports = newTransports;

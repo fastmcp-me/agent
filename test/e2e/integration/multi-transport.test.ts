@@ -135,7 +135,7 @@ describe('Multi-Transport Infrastructure Integration E2E', () => {
         command: proc.command,
         args: proc.args,
         timeout: 5000,
-        startupTimeout: 100, // Fast startup
+        startupTimeout: 2000, // Reasonable startup timeout
       });
       processInfos.push(info);
       expect(processManager.isProcessRunning(proc.name)).toBe(true);

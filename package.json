@@ -54,7 +54,7 @@
     ]
   },
   "scripts": {
-    "dev": "LOG_LEVEL=debug tsc-watch --project tsconfig.build.json --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --enable-auth\"",
+    "dev": "LOG_LEVEL=debug tsc-watch --project tsconfig.build.json --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --enable-auth --enable-async-loading\"",
     "build": "tsc --project tsconfig.build.json && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "clean": "rm -rf build",
     "prepare": "husky || true",
@@ -72,6 +72,12 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:watch": "vitest --config vitest.e2e.config.ts",
     "test:e2e:coverage": "vitest run --config vitest.e2e.config.ts --coverage",
+    "test:e2e:commands": "vitest run --config vitest.e2e.config.ts test/e2e/commands/",
+    "test:e2e:commands:watch": "vitest --config vitest.e2e.config.ts test/e2e/commands/",
+    "test:e2e:mcp": "vitest run --config vitest.e2e.config.ts test/e2e/commands/mcp/",
+    "test:e2e:app": "vitest run --config vitest.e2e.config.ts test/e2e/commands/app/",
+    "test:e2e:integration": "vitest run --config vitest.e2e.config.ts test/e2e/commands/integration/",
+    "test:e2e:errors": "vitest run --config vitest.e2e.config.ts test/e2e/commands/error-scenarios.test.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
@@ -82,6 +88,7 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.1",
+    "json5": "^2.2.3",
     "source-map-support": "^0.5.21",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",

@@ -78,6 +78,14 @@ describe('AgentConfigManager', () => {
         health: {
           detailLevel: 'minimal',
         },
+        asyncLoading: {
+          enabled: false,
+          initialLoadTimeoutMs: 30000,
+          waitForMinimumServers: 0,
+          batchNotifications: true,
+          batchDelayMs: 1000,
+          notifyOnServerReady: true,
+        },
       });
     });
 

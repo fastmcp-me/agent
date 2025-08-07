@@ -11,6 +11,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - [Overview](#overview)
 - [Features](#features)
 - [Quick Start](#quick-start)
+- [Commands](#commands)
 - [Prerequisites](#prerequisites)
 - [Usage](#usage)
 - [Docker](#docker)
@@ -35,6 +36,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - **Simplified Configuration**: Simplifies configuration management across different AI assistants.
 - **Standardized Interaction**: Provides a standardized way for AI models to interact with external tools and resources.
 - **Dynamic Configuration**: Supports dynamic configuration reloading without server restart.
+- **Async Loading**: Optional asynchronous server loading with real-time capability updates via listChanged notifications.
 - **Graceful Shutdown**: Handles graceful shutdown and resource cleanup.
 - **Secure**: Includes comprehensive authentication and security features.
 - **Optimized**: Supports advanced filtering, pagination, and request optimization.
@@ -64,6 +66,37 @@ npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop
 ```
 
 3. Enjoy it!
+
+## Commands
+
+1MCP provides several commands to manage your MCP server configuration:
+
+### Core Commands
+
+- **`npx -y @1mcp/agent [serve]`** - Start the 1MCP server (default command)
+  - `--transport` - Choose transport type (stdio, http, sse)
+  - `--config` - Use specific config file
+  - `--port` - Change HTTP port
+
+### MCP Management
+
+- **`npx -y @1mcp/agent mcp add <name>`** - Add a new MCP server to configuration
+- **`npx -y @1mcp/agent mcp remove <name>`** - Remove an MCP server
+- **`npx -y @1mcp/agent mcp list`** - List all configured MCP servers
+- **`npx -y @1mcp/agent mcp status [name]`** - Show server status and details
+- **`npx -y @1mcp/agent mcp enable/disable <name>`** - Enable or disable servers
+- **`npx -y @1mcp/agent mcp update <name>`** - Update server configuration
+
+### App Integration
+
+- **`npx -y @1mcp/agent app consolidate`** - Consolidate configurations from other MCP apps
+- **`npx -y @1mcp/agent app discover`** - Discover MCP servers from installed applications
+- **`npx -y @1mcp/agent app list`** - List discovered applications
+- **`npx -y @1mcp/agent app status`** - Show consolidation status
+
+For detailed command usage, run: `1mcp <command> --help`
+
+Full documentation: [Commands Reference](https://docs.1mcp.app/commands/)
 
 ## Prerequisites
 
@@ -113,8 +146,10 @@ Available options:
 | `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                |            |
 | `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                   |     15     |
 | `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                         |    100     |
-| `--health-info-level`        | `ONE_MCP_HEALTH_INFO_LEVEL`        | Health endpoint information detail level ("full", "basic", "minimal")         | "minimal"  |
-| `--help`, `-h`               |                                    | Show help                                                                     |            |
+
+| `--enable-async-loading` | `ONE_MCP_ENABLE_ASYNC_LOADING` | Enable asynchronous MCP server loading(boolean) | false |
+| `--health-info-level` | `ONE_MCP_HEALTH_INFO_LEVEL` | Health endpoint information detail level ("full", "basic", "minimal") | "minimal" |
+| `--help`, `-h` | | Show help | |
 
 ## Docker
 

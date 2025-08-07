@@ -16,6 +16,7 @@ We love your input! We want to make contributing to 1MCP as easy and transparent
 - [Issue Guidelines](#issue-guidelines)
 - [Coding Standards](#coding-standards)
 - [Testing Guidelines](#testing-guidelines)
+- [Platform-Specific Contributions](#platform-specific-contributions)
 - [Documentation Guidelines](#documentation-guidelines)
 - [Community Guidelines](#community-guidelines)
 
@@ -408,6 +409,163 @@ pnpm test:e2e:coverage
 # Debug with MCP Inspector
 pnpm inspector
 ```
+
+## Platform-Specific Contributions
+
+### Current Platform Support Status
+
+**1MCP currently has different levels of support across platforms:**
+
+- **🟢 macOS (darwin):** Fully tested and verified - primary development platform
+- **🟡 Windows (win32):** Paths researched but untested - **community help needed**
+- **🟡 Linux:** Paths researched but untested - **community help needed**
+
+### How You Can Help
+
+**We urgently need contributors on Windows and Linux to help verify and improve platform support!**
+
+#### For Windows Users
+
+1. **Test App Integration Paths**
+   - Uncomment Windows sections in `src/utils/appPresets.ts`
+   - Test with apps like Claude Desktop, VS Code, Cursor
+   - Verify configuration file locations are correct
+
+2. **Common Windows Paths to Verify:**
+   ```
+   Claude Desktop: %APPDATA%\Claude\claude_desktop_config.json
+   VS Code: %APPDATA%\Code\User\settings.json
+   Cursor: %APPDATA%\Cursor\User\settings.json
+   ```
+
+#### For Linux Users
+
+1. **Test App Integration Paths**
+   - Uncomment Linux sections in `src/utils/appPresets.ts`
+   - Test with apps that follow XDG Base Directory specification
+   - Verify paths match your distribution's conventions
+
+2. **Common Linux Paths to Verify:**
+   ```
+   Claude Desktop: ~/.config/claude/claude_desktop_config.json
+   VS Code: ~/.config/Code/User/settings.json
+   Cursor: ~/.cursor/mcp.json
+   ```
+
+#### Testing Process
+
+1. **Fork and Setup**
+
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/agent.git
+   cd agent
+   pnpm install
+   ```
+
+2. **Enable Platform Paths**
+   - Edit `src/utils/appPresets.ts`
+   - Uncomment your platform's path configurations
+   - Build: `pnpm build`
+
+3. **Test App Discovery**
+
+   ```bash
+   # Test app discovery
+   npx @1mcp/agent app discover
+
+   # Test app listing
+   npx @1mcp/agent app list
+
+   # Test consolidation (if you have the apps installed)
+   npx @1mcp/agent app consolidate claude-desktop
+   ```
+
+4. **Report Results**
+   - Create an issue with your findings
+   - Include your OS version, app versions, and test results
+   - Submit a PR with working path corrections
+
+#### Contribution Priority
+
+**High Priority Apps (please test first):**
+
+- Claude Desktop
+- VS Code
+- Cursor
+
+**Medium Priority Apps:**
+
+- Cline (VS Code extension)
+- Continue (VS Code extension)
+- Roo Code
+
+#### Issue Template for Platform Testing
+
+When reporting platform-specific issues, please use:
+
+```markdown
+## Platform Testing Report
+
+**Platform:** Windows 11 / Ubuntu 22.04 / etc.
+**App:** Claude Desktop / VS Code / etc.
+**1MCP Version:** [version number]
+
+### Test Results
+
+- [ ] App discovery works
+- [ ] Configuration path is correct
+- [ ] App consolidation works
+- [ ] MCP servers integrate properly
+
+### Issues Found
+
+[Describe any problems encountered]
+
+### Suggested Fixes
+
+[Propose corrections if you found working paths]
+
+### Additional Notes
+
+[Any other relevant information]
+```
+
+### Platform-Specific Development
+
+#### Path Resolution Testing
+
+Add tests for your platform in the test suite:
+
+```typescript
+describe('Platform-specific paths', () => {
+  it('should resolve Windows paths correctly', () => {
+    // Test Windows path resolution
+  });
+
+  it('should resolve Linux paths correctly', () => {
+    // Test Linux path resolution
+  });
+});
+```
+
+#### Environment-Specific Configuration
+
+Consider platform differences:
+
+- File system case sensitivity
+- Path separators
+- Environment variable conventions
+- Default application installation locations
+
+### Recognition
+
+**Platform contributors will be specifically recognized in:**
+
+- Release notes
+- Platform support documentation
+- Contributor acknowledgments
+
+Your help makes 1MCP work for everyone! 🌍
 
 ```typescript
 import { vi } from 'vitest';

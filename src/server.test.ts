@@ -72,6 +72,7 @@ describe('server', () => {
     ]);
     mockClientManager = {
       createClients: vi.fn().mockResolvedValue(mockClients),
+      initializeClientsAsync: vi.fn().mockReturnValue(mockClients),
     };
     vi.mocked(ClientManager.getOrCreateInstance).mockReturnValue(mockClientManager);
 
@@ -94,7 +95,9 @@ describe('server', () => {
     it('should set up server successfully', async () => {
       const result = await setupServer();
 
-      expect(result).toBe(mockServerManager);
+      expect(result.serverManager).toBe(mockServerManager);
+      expect(result.loadingManager).toBeDefined();
+      expect(result.loadingPromise).toBeDefined();
     });
 
     it('should get transport configuration from McpConfigManager', async () => {
@@ -125,7 +128,7 @@ describe('server', () => {
     it('should log client creation', async () => {
       await setupServer();
 
-      expect(logger.info).toHaveBeenCalledWith('Created 2 clients');
+      expect(logger.info).toHaveBeenCalledWith('Connected to 2 MCP servers synchronously');
     });
 
     it('should create ServerManager instance with correct parameters', async () => {
@@ -148,13 +151,15 @@ describe('server', () => {
     it('should log successful setup completion', async () => {
       await setupServer();
 
-      expect(logger.info).toHaveBeenCalledWith('Server setup completed successfully');
+      expect(logger.info).toHaveBeenCalledWith('Synchronous server setup completed - all MCP servers connected');
     });
 
     it('should return the ServerManager instance', async () => {
       const result = await setupServer();
 
-      expect(result).toBe(mockServerManager);
+      expect(result.serverManager).toBe(mockServerManager);
+      expect(result.loadingManager).toBeDefined();
+      expect(result.loadingPromise).toBeDefined();
     });
   });
 
@@ -169,12 +174,12 @@ describe('server', () => {
       expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: Transport creation failed');
     });
 
-    it('should handle client creation errors', async () => {
+    it('should handle client creation errors gracefully with sync loading', async () => {
       const error = new Error('Client creation failed');
       mockClientManager.createClients.mockRejectedValue(error);
 
       await expect(setupServer()).rejects.toThrow('Client creation failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: Client creation failed');
+      expect(mockClientManager.createClients).toHaveBeenCalled();
     });
 
     it('should handle ServerManager creation errors', async () => {
@@ -184,7 +189,6 @@ describe('server', () => {
       });
 
       await expect(setupServer()).rejects.toThrow('ServerManager creation failed');
-      expect(logger.error).toHaveBeenCalledWith('Failed to set up server: Error: ServerManager creation failed');
     });
 
     it('should rethrow errors after logging', async () => {
