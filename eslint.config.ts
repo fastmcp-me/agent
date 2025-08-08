@@ -43,4 +43,15 @@ export default [
       ],
     },
   },
+  // Disable typed linting for VitePress site config files to avoid tsconfig project inclusion issues
+  {
+    files: ['docs/.vitepress/**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+  },
 ];
