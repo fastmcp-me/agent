@@ -30,212 +30,62 @@ For advanced scenarios, you can connect to a remote 1MCP server using Claude Des
 - **Server Management**: Centralized management of all your MCP tools
 - **Hot Reloading**: Add/remove servers without restarting Claude Desktop
 
-## Method 1: Local Configuration Consolidation (Recommended)
+## Quick paths
 
-This is the simplest way to integrate 1MCP with Claude Desktop. It automatically configures Claude Desktop to use 1MCP as a local proxy via stdio transport.
+### Choose your approach
 
-### Prerequisites
+- **Local (Recommended)**: No networking; 1MCP runs via stdio and auto-wires Claude Desktop
+- **Remote (Advanced)**: Expose 1MCP over HTTPS and add a custom connector
 
-- **Claude Desktop**: Download and install from [claude.ai](https://claude.ai/desktop)
-- **1MCP Agent**: Install the 1MCP agent locally
-- **Existing MCP Servers**: Optionally have other MCP servers configured
-
-### Step 1: Install 1MCP Agent
+### Local setup (Recommended)
 
 ```bash
-npm install -g @1mcp/agent
-```
-
-### Step 2: Configure Your MCP Servers (Optional)
-
-If you have existing MCP servers, add them to 1MCP first:
-
-```bash
-# Add some popular MCP servers using " -- " pattern (auto-detects type as stdio)
+# Optionally add some servers first
 npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
 npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
-npx -y @1mcp/agent mcp add playwright -- npx -y @playwright/mcp
 
-# Or add servers from other apps if you have them configured
-npx -y @1mcp/agent app discover  # See what's available to consolidate
-```
-
-### Step 3: Consolidate Claude Desktop Configuration
-
-Use the consolidation command to automatically configure Claude Desktop:
-
-```bash
-# Consolidate Claude Desktop configuration
+# Consolidate Claude Desktop to use 1MCP via stdio
+npx -y @1mcp/agent app consolidate claude-desktop --dry-run  # Preview
 npx -y @1mcp/agent app consolidate claude-desktop
-
-# Or with additional options
-npx -y @1mcp/agent app consolidate claude-desktop --dry-run  # Preview changes first
-npx -y @1mcp/agent app consolidate claude-desktop --force    # Skip connectivity checks
 ```
 
-This command will:
-
-1. **Discover** your existing Claude Desktop configuration
-2. **Import** any existing MCP servers from Claude Desktop into 1MCP
-3. **Replace** the Claude Desktop configuration to use 1MCP via stdio transport
-4. **Create** a backup of your original configuration
-
-### Step 4: Restart Claude Desktop
-
-After consolidation, restart Claude Desktop to load the new configuration. Your tools should now be available through 1MCP.
-
-### Step 5: Verify Integration
-
-1. **Check Available Tools**: In Claude Desktop, your consolidated MCP tools should appear
-2. **Test Functionality**: Try using one of your tools to confirm it's working
-3. **View Logs** (if needed):
-
-   ```bash
-   # Check 1MCP server status
-   npx -y @1mcp/agent mcp status
-
-   # View server logs for debugging
-   npx -y @1mcp/agent serve --transport stdio --verbose
-   ```
-
-### Generated Configuration
-
-The consolidation process creates a configuration like this in Claude Desktop:
-
-```json
-{
-  "mcpServers": {
-    "1mcp": {
-      "command": "npx",
-      "args": ["-y", "@1mcp/agent", "serve", "--transport", "stdio"]
-    }
-  }
-}
-```
-
-### Backup and Restore
-
-Your original configuration is automatically backed up:
+Then restart Claude Desktop. Backups are created automatically; restore anytime:
 
 ```bash
-# List available backups
 npx -y @1mcp/agent app backups claude-desktop
-
-# Restore original configuration if needed
 npx -y @1mcp/agent app restore claude-desktop
 ```
 
-## Method 2: Remote Custom Connectors (Advanced)
+## Remote custom connector (Advanced)
 
-For advanced use cases where you need remote access to a centralized 1MCP server.
-
-### Prerequisites
-
-- **Claude Desktop**: Download and install from [claude.ai](https://claude.ai/desktop)
-- **Paid Plan**: Custom connectors require Claude Pro, Max, Team, or Enterprise plan
-- **1MCP Server**: A running 1MCP server instance accessible via HTTP/HTTPS
-
-### Step-by-Step Remote Integration Guide
-
-### Step 1: Start Your 1MCP Server
-
-First, start your 1MCP server with HTTP transport:
+1. Start server
 
 ```bash
-# Basic HTTP server (development)
-npx -y @1mcp/agent serve --transport http --port 3001
-
-# With authentication (production)
-npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
-
-# Or using SSE (Server-Sent Events)
-npx -y @1mcp/agent serve --transport sse --port 3001
+npx -y @1mcp/agent serve --transport http --port 3001 --external-url https://your-domain.com # dev
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth --external-url https://your-domain.com  # prod
 ```
 
-Your server will run locally on `http://localhost:3001/mcp`, but **Claude Desktop requires a public HTTPS URL**, so you'll need to use a tunneling service or reverse proxy.
+Served paths: `/mcp` (Streamable HTTP), `/sse` + `/messages` (SSE), `/oauth` (OAuth), `/health` (health).
 
-### Step 1.1: Expose Your Server (Required for Claude Desktop)
+2. Expose server over HTTPS
 
-Since 1MCP doesn't have built-in HTTPS support, you have several options:
+- ngrok: `ngrok http 3001` → use `https://<id>.ngrok-free.app/mcp`
+- Reverse proxy:
+  - nginx: proxy `location /` → `http://localhost:3001` (HTTP/1.1, buffering off)
+  - Caddy: `reverse_proxy localhost:3001`
+  - Traefik: router for host → service `1mcp` on port 3001
 
-#### Option A: Using ngrok (for testing/demo)
+3. Add connector in Claude Desktop
 
-1. **Install ngrok**: [Download from ngrok.com](https://ngrok.com)
+- Name: any (e.g., "1mcp")
+- URL: your public `https://.../mcp`
+- Optional: OAuth Client ID/Secret
 
-2. **Expose your local server**:
-
-   ```bash
-   # Start 1MCP server
-   npx -y @1mcp/agent serve --transport http --port 3001
-
-   # In another terminal, expose via ngrok
-   ngrok http 3001
-   ```
-
-3. **Use the HTTPS URL**: ngrok will provide an HTTPS URL like:
-   ```
-   https://abc123.ngrok-free.app/mcp
-   ```
-
-#### Option B: Using a Load Balancer/Reverse Proxy (for production)
-
-**With Nginx**:
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name your-domain.com;
-
-    ssl_certificate /path/to/cert.pem;
-    ssl_certificate_key /path/to/key.pem;
-
-    location /mcp {
-        proxy_pass http://localhost:3001/mcp;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-**With Caddy**:
-
-```
-your-domain.com {
-    reverse_proxy /mcp/* localhost:3001
-}
-```
-
-**With Traefik** (docker-compose.yml):
-
-```yaml
-services:
-  traefik:
-    image: traefik:v2.10
-    command:
-      - "--providers.docker=true"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.myresolver.acme.email=your-email@domain.com"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./data:/data
-
-  1mcp:
-    image: docker pull ghcr.io/1mcp-app/agent:latest
-    command: serve --transport http --port 3001
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.1mcp.rule=Host(`your-domain.com`)
-      - "traefik.http.routers.1mcp.entrypoints=websecure"
-      - "traefik.http.routers.1mcp.tls.certresolver=myresolver"
-```
+> Note: OAuth 2.1 validates the issuer URL. Always set `--external-url` to your public origin (for example, `https://your-domain.com` or `https://abc123.ngrok-free.app`).
+>
+> - Use HTTPS
+> - Do not include a path (no `/mcp`)
+> - Match exactly what Claude Desktop uses
 
 ### Step 2: Add Custom Connector in Claude Desktop
 
@@ -282,48 +132,28 @@ Once connected, your 1MCP tools will appear in Claude Desktop's interface:
 
 You can now use these tools directly in your conversations with Claude.
 
-## Server Configuration
+> 💡 Tip: If any service shows "Awaiting OAuth", open your server's OAuth dashboard at `https://your-domain.com/oauth` and click Authorize for that service. Then retry in Claude Desktop.
 
-### 1MCP Server Settings
-
-Configure your 1MCP server for Claude Desktop integration:
-
-````bash
-# Development setup (HTTP, no auth)
-npx -y @1mcp/agent serve --transport http --port 3001
+## Server quick config
 
 ```bash
-# Production setup (HTTP with auth, use reverse proxy for HTTPS)
-npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
-````
+# Start
+npx -y @1mcp/agent serve --transport http --port 3001 --external-url https://your-domain.com
 
-# With specific server filtering
+# Enable auth (recommended for production)
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth --external-url https://your-domain.com
 
-npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequential,playwright"
+# Filter exposed servers by tags
+npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequential" --external-url https://your-domain.com
 
-# For use with ngrok or reverse proxy
+# Bind to all interfaces (behind reverse proxy)
+npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0 --external-url https://your-domain.com
+```
 
-npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0
+### Authentication
 
-````
-
-### Authentication Setup
-
-If you want to use OAuth authentication:
-
-1. **Enable Authentication**:
-
-   ```bash
-   1mcp serve --transport http --port 3001 --enable-auth
-````
-
-2. **Configure OAuth Client**:
-   - Your 1MCP server will provide OAuth endpoints
-   - Use the Client ID and Secret in Claude Desktop's connector settings
-   - The auth flow will be handled automatically by Claude Desktop
-
-3. **Server-to-Server Authentication**:
-   For advanced setups, you can configure API keys or other auth methods in your 1MCP server configuration.
+- Enable: `npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth`
+- Configure Client ID/Secret in Claude Desktop if needed; OAuth flow is automatic
 
 ## Troubleshooting
 
@@ -351,7 +181,7 @@ If you want to use OAuth authentication:
    npx -y @1mcp/agent mcp status
 
    # Test stdio transport
-   echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}}}' | npx -y @1mcp/agent serve --transport stdio
+   echo '{"jsonrpc": "2.0","id": 1,"method": "initialize","params": {"protocolVersion": "2025-06-18","capabilities": {},"clientInfo": {"name": "ExampleClient","title": "Example Client Display Name","version": "1.0.0"}}}' | npx -y @1mcp/agent serve --transport stdio
    ```
 
 #### "Consolidation Failed" Error
@@ -412,7 +242,8 @@ If you want to use OAuth authentication:
 2. **Verify URL**: Ensure the URL is correct and accessible
 
    ```bash
-   curl https://your-domain.com/mcp/health  # Test basic connectivity
+   # Health endpoints are served at /health (not under /mcp)
+   curl https://your-domain.com/health  # Test basic connectivity
    ```
 
 3. **Check Firewall**: Ensure the port is open and accessible
@@ -437,9 +268,10 @@ If you want to use OAuth authentication:
 
 **Solutions**:
 
-1. **Check OAuth Configuration**: Ensure OAuth is properly configured in 1MCP
-2. **Verify Credentials**: Double-check Client ID and Secret in Claude Desktop
-3. **Clear Cache**: Try removing and re-adding the connector
+1. **Check OAuth Configuration**: Ensure OAuth is enabled in 1MCP
+2. **Issuer match**: Set `--external-url` to your public HTTPS origin (no path) and ensure it matches Claude’s connector URL origin exactly
+3. **Verify Credentials**: Double-check Client ID and Secret in Claude Desktop
+4. **Clear Cache**: Try removing and re-adding the connector
 
 ### Debugging Steps
 
@@ -449,13 +281,13 @@ If you want to use OAuth authentication:
    # Test your exposed HTTPS endpoint
    curl -X POST https://your-domain.com/mcp \
         -H "Content-Type: application/json" \
-        -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{"roots":{"listChanged":true}}}}'
+        -d '{"jsonrpc": "2.0","id": 1,"method": "initialize","params": {"protocolVersion": "2025-06-18","capabilities": {},"clientInfo": {"name": "ExampleClient","title": "Example Client Display Name","version": "1.0.0"}}}'
    ```
 
 2. **Check Server Logs**:
 
    ```bash
-   npx -y @1mcp/agent serve --transport http --port 3001 --verbose
+   LOG_LEVEL=debug npx -y @1mcp/agent serve --transport http --port 3001
    ```
 
 3. **Health Check**:
@@ -468,28 +300,9 @@ If you want to use OAuth authentication:
 
 ### Production Deployment
 
-When deploying 1MCP for Claude Desktop integration:
-
-1. **Use HTTPS**: Always use HTTPS in production via reverse proxy
-
-   ```bash
-   # Start 1MCP on HTTP (reverse proxy handles HTTPS)
-   npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0
-
-   # Configure your reverse proxy (nginx/caddy/traefik) to handle HTTPS
-   ```
-
-2. **Enable Authentication**: Use OAuth for secure access
-
-   ```bash
-   1mcp serve --transport http --port 3001 --enable-auth
-   ```
-
-3. **Network Security**:
-   - Use proper firewall rules
-   - Consider VPN or private networks for sensitive environments
-   - Implement rate limiting and DDoS protection at the reverse proxy level
-   - Bind 1MCP to localhost if using a reverse proxy on the same server
+1. HTTPS via reverse proxy (nginx/Caddy/Traefik)
+2. Enable OAuth in production: `--enable-auth`
+3. Harden network: firewall, VPN/private networks, rate limiting at proxy, bind to localhost when proxied
 
 ### Trust and Permissions
 
@@ -523,28 +336,23 @@ npx -y @1mcp/agent serve --transport http --port 3001 --tags "context7,sequentia
 
 ## Best Practices
 
-### For Local Configuration Consolidation
+### Local
 
-1. **Start with Discovery**: Use `app discover` to see what's available before consolidating
-2. **Preview Changes**: Always use `--dry-run` first to preview what will happen
-3. **Backup First**: The consolidation automatically creates backups, but verify they exist
-4. **Test After Restart**: Always restart Claude Desktop and test a tool after consolidation
-5. **Keep 1MCP Updated**: Regularly update 1MCP agent: `npm update -g @1mcp/agent`
-6. **Monitor Server Health**: Use `mcp status` to check server health periodically
+- Discover first → `app discover`
+- Preview → `--dry-run`
+- Backups are automatic
+- Restart Claude Desktop after consolidation
+- Keep agent updated; monitor with `mcp status`
 
-### For Remote Custom Connectors
+### Remote
 
-1. **Start Simple**: Begin with HTTP and no authentication, then add security features
-2. **Use HTTPS**: Always use HTTPS/SSL in production environments
-3. **Monitor Health**: Implement health checks and monitoring for your 1MCP server
-4. **Regular Updates**: Keep your 1MCP server and MCP servers up to date
-5. **Security Review**: Regularly review connected tools and their permissions
-6. **Backup Configuration**: Keep backups of your 1MCP server configuration
-7. **Test Connections**: Verify connectivity before adding connectors to Claude Desktop
+- Start simple (no auth), then add OAuth + HTTPS for prod
+- Health checks + monitoring
+- Review permissions regularly; keep servers updated
 
-## Complete Setup Examples
+## Examples
 
-### Example 1: Local Configuration (Recommended for Most Users)
+### Local (recommended)
 
 ```bash
 # 1. Install 1MCP agent
@@ -580,7 +388,7 @@ Your Claude Desktop will now use the following configuration automatically:
 }
 ```
 
-### Example 2: Remote Development with ngrok
+### Remote + ngrok
 
 For development setups where you need remote access:
 
@@ -590,11 +398,11 @@ npm install -g @1mcp/agent
 npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
 npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
 
-# 2. Start server
-npx -y @1mcp/agent serve --transport http --port 3001
-
-# 3. In another terminal, expose via ngrok
+# 2. Expose via ngrok
 ngrok http 3001
+
+# 3. Start server, use the URL from ngrok
+npx -y @1mcp/agent serve --transport http --port 3001 --external-url https://abc123.ngrok-free.app
 
 # 4. Add connector in Claude Desktop:
 #    - Name: "My 1MCP Server"
@@ -603,11 +411,11 @@ ngrok http 3001
 # 5. Verify tools are available in Claude Desktop
 ```
 
-### Example 3: Production with Nginx
+### Production + Nginx
 
 ```bash
 # 1. Start 1MCP server (bind to localhost for security)
-npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth
+npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth --external-url https://your-domain.com
 
 # 2. Configure nginx to proxy HTTPS to HTTP
 # 3. Add connector in Claude Desktop:
