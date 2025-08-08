@@ -4,6 +4,7 @@ import { McpLoadingManager } from '../../../core/loading/mcpLoadingManager.js';
 import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 import { getValidatedTags } from './scopeAuthMiddleware.js';
 import { McpConfigManager } from '../../../config/mcpConfigManager.js';
+import { sanitizeOAuthServerList } from '../../../logger/secureLogger.js';
 
 /**
  * Extended request interface to include MCP loading information
@@ -257,7 +258,7 @@ export function createMcpAvailabilityMiddleware(
             availableList: availableServers,
             loadingList: loadingServers,
             failedList: unavailableServers,
-            oauthRequiredList: oauthRequiredServers,
+            oauthRequiredList: sanitizeOAuthServerList(oauthRequiredServers),
           },
           serverDetails,
           loading: {
@@ -334,7 +335,7 @@ export function createMcpAvailabilityMiddleware(
             availableList: availableServers,
             loadingList: loadingServers,
             failedList: unavailableServers,
-            oauthRequiredList: oauthRequiredServers,
+            oauthRequiredList: sanitizeOAuthServerList(oauthRequiredServers),
           },
           serverDetails,
           loading: {

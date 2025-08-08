@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import logger from '../../logger/logger.js';
+import { secureLogger } from '../../logger/secureLogger.js';
 
 /**
  * Enum representing possible MCP server loading states
@@ -161,7 +162,9 @@ export class LoadingStateTracker extends EventEmitter {
 
     this.servers.set(name, info);
 
-    logger.debug(`Server ${name} state changed to ${state}${updates.progress ? ` (${updates.progress.phase})` : ''}`);
+    secureLogger.debug(
+      `Server ${name} state changed to ${state}${updates.progress ? ` (${updates.progress.phase})` : ''}`,
+    );
 
     // Emit specific events
     this.emit('server-state-changed', name, info);

@@ -85,7 +85,7 @@ export async function consolidateCommand(options: ConsolidateOptions): Promise<v
   if (!options.force) {
     const connectivityCheck = await validateServer1mcpUrl(serverUrl);
     if (!connectivityCheck.valid) {
-      console.error(`❌ Cannot connect to 1mcp server: ${connectivityCheck.error}`);
+      console.error(`❌ Cannot connect to 1mcp server: Server connectivity issue`);
       console.log('Make sure the 1mcp server is running or use --force to skip validation.');
       process.exit(1);
     }
