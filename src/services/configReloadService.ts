@@ -100,6 +100,9 @@ export class ConfigReloadService {
       // Update current transports
       this.currentTransports = newTransports;
 
+      // Trigger listChanged notifications after successful config reload
+      await this.sendListChangedNotifications();
+
       logger.info('Configuration reload completed successfully');
     } catch (error) {
       logger.error(`Failed to reload configuration: ${error}`);
@@ -125,6 +128,83 @@ export class ConfigReloadService {
   public removeServerInfo(sessionId: string): void {
     this.serverInstances.delete(sessionId);
     logger.debug(`Removed server info for session ${sessionId} from config reload service`);
+  }
+
+  /**
+   * Send listChanged notifications to clients after config reload
+   */
+  private async sendListChangedNotifications(): Promise<void> {
+    try {
+      const serverManager = ServerManager.current;
+      const inboundConnections = serverManager.getInboundConnections();
+
+      // For each connected client, get their AsyncLoadingOrchestrator and refresh capabilities
+      for (const [sessionId, inboundConnection] of inboundConnections) {
+        try {
+          // Try to get the AsyncLoadingOrchestrator from the server context
+          // Note: This requires the orchestrator to be accessible
+          // We'll use a more direct approach to trigger listChanged notifications
+          await this.triggerCapabilityNotifications(inboundConnection);
+        } catch (error) {
+          logger.error(`Failed to send listChanged notification for session ${sessionId}: ${error}`);
+        }
+      }
+
+      logger.info(`Sent listChanged notifications to ${inboundConnections.size} connected clients after config reload`);
+    } catch (error) {
+      logger.error(`Failed to send listChanged notifications: ${error}`);
+    }
+  }
+
+  /**
+   * Trigger capability notifications for a specific inbound connection
+   */
+  private async triggerCapabilityNotifications(inboundConnection: InboundConnection): Promise<void> {
+    try {
+      // Get the current outbound connections (MCP servers)
+      const serverManager = ServerManager.current;
+      const outboundConnections = serverManager.getClients();
+
+      // Create a temporary capability aggregator to detect changes
+      const { CapabilityAggregator } = await import('../core/capabilities/capabilityAggregator.js');
+      const capabilityAggregator = new CapabilityAggregator(outboundConnections);
+
+      // Get the current capabilities
+      const changes = await capabilityAggregator.updateCapabilities();
+
+      // If there are capabilities to notify about, create notification manager and send
+      if (
+        changes.hasChanges ||
+        changes.current.tools.length > 0 ||
+        changes.current.resources.length > 0 ||
+        changes.current.prompts.length > 0
+      ) {
+        const { NotificationManager } = await import('../core/notifications/notificationManager.js');
+        const notificationManager = new NotificationManager(inboundConnection);
+
+        // Force send notifications for all capability types that exist
+        const forcedChanges = {
+          toolsChanged: changes.current.tools.length > 0,
+          resourcesChanged: changes.current.resources.length > 0,
+          promptsChanged: changes.current.prompts.length > 0,
+          hasChanges:
+            changes.current.tools.length > 0 ||
+            changes.current.resources.length > 0 ||
+            changes.current.prompts.length > 0,
+          addedServers: changes.addedServers,
+          removedServers: changes.removedServers,
+          current: changes.current,
+          previous: changes.previous,
+        };
+
+        notificationManager.handleCapabilityChanges(forcedChanges);
+        logger.debug(
+          `Triggered listChanged notifications for capabilities: tools=${forcedChanges.toolsChanged}, resources=${forcedChanges.resourcesChanged}, prompts=${forcedChanges.promptsChanged}`,
+        );
+      }
+    } catch (error) {
+      logger.error(`Error triggering capability notifications: ${error}`);
+    }
   }
 
   /**
