@@ -153,13 +153,13 @@ export const RATE_LIMIT_CONFIG = {
 export const MCP_SERVER_CAPABILITIES: ServerCapabilities = {
   completions: {},
   resources: {
-    listChanged: false,
+    listChanged: true,
   },
   tools: {
-    listChanged: false,
+    listChanged: true,
   },
   prompts: {
-    listChanged: false,
+    listChanged: true,
   },
   logging: {},
 };
