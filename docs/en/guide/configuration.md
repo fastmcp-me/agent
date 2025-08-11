@@ -108,6 +108,10 @@ Flags override settings from the JSON configuration file.
 
 - `--trust-proxy <config>`: Trust proxy configuration. See [Trust Proxy Guide](../reference/trust-proxy). Default: `loopback`.
 
+### Pagination Options
+
+- `--pagination, -p`: Enable pagination for MCP protocol responses. Default: `false`. See [Pagination Guide](./pagination) for details.
+
 ### Health Check Options
 
 - `--health-info-level <level>`: `full`, `basic`, `minimal`. Default: `minimal`.
@@ -135,6 +139,7 @@ Environment variables are prefixed with `ONE_MCP_` and are useful for containeri
 - `ONE_MCP_SCOPE_VALIDATION`
 - `ONE_MCP_ENHANCED_SECURITY`
 - `ONE_MCP_TRUST_PROXY`
+- `ONE_MCP_PAGINATION`
 - `ONE_MCP_HEALTH_INFO_LEVEL`
 - `ONE_E_MCP_ENABLE_ASYNC_LOADING`
 - `ONE_MCP_SESSION_TTL`

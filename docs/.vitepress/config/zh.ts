@@ -91,6 +91,7 @@ function sidebar(): DefaultTheme.Sidebar {
         items: [
           { text: '功能概览', link: '/zh/guide/features' },
           { text: '快速启动', link: '/zh/guide/fast-startup' },
+          { text: '分页支持', link: '/zh/guide/pagination' },
           { text: '服务器筛选', link: '/zh/guide/server-filtering' },
           { text: '代理支持', link: '/zh/guide/proxy-support' },
           { text: '服务器管理', link: '/zh/guide/server-management' },
