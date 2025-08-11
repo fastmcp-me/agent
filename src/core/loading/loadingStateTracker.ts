@@ -162,8 +162,9 @@ export class LoadingStateTracker extends EventEmitter {
 
     this.servers.set(name, info);
 
+    const stateDescription = state === LoadingState.AwaitingOAuth ? 'requiring authorization' : state;
     secureLogger.debug(
-      `Server ${name} state changed to ${state}${updates.progress ? ` (${updates.progress.phase})` : ''}`,
+      `Server ${name} state changed to ${stateDescription}${updates.progress ? ` (${updates.progress.phase})` : ''}`,
     );
 
     // Emit specific events

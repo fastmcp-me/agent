@@ -130,5 +130,17 @@ describe('secureLogger', () => {
       expect(() => secureLogger.warn('test message', { secret: 'should-be-redacted' })).not.toThrow();
       expect(() => secureLogger.error('test message')).not.toThrow();
     });
+
+    it('should handle OAuth-related messages without exposing sensitive data', () => {
+      expect(() => secureLogger.debug('OAuth client configured with scopes: openid profile email')).not.toThrow();
+      expect(() => secureLogger.info('AwaitingOAuth state', { status: 'awaiting_oauth' })).not.toThrow();
+      expect(() => secureLogger.warn('OAuth required', { oauthRequired: ['server1', 'server2'] })).not.toThrow();
+    });
+
+    it('should sanitize sensitive patterns in messages', () => {
+      expect(() => secureLogger.debug('Message with scope: openid profile')).not.toThrow();
+      expect(() => secureLogger.debug('Message with redirect_uris: [https://example.com]')).not.toThrow();
+      expect(() => secureLogger.debug('Message with scopes: [openid, profile]')).not.toThrow();
+    });
   });
 });

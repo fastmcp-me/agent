@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../../../logger/logger.js';
+import { secureLogger } from '../../../logger/secureLogger.js';
 import { McpLoadingManager } from '../../../core/loading/mcpLoadingManager.js';
 import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 import { getValidatedTags } from './scopeAuthMiddleware.js';
@@ -207,10 +208,11 @@ export function createMcpAvailabilityMiddleware(
         requestedTags && requestedTags.length > 0
           ? ` (filtered by tags: ${requestedTags.join(', ')}, ${allServers.length} total)`
           : '';
-      logger.debug(
+      const oauthCount = oauthRequiredServers.length;
+      secureLogger.debug(
         `MCP Availability: ${availableServers.length}/${relevantServers.length} ready, ` +
           `${loadingServers.length} loading, ${unavailableServers.length} failed, ` +
-          `${oauthRequiredServers.length} OAuth required${tagInfo}`,
+          `${oauthCount} OAuth required${tagInfo}`,
       );
 
       // Decide whether to proceed based on availability

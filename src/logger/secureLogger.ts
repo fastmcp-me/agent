@@ -1,159 +1,119 @@
 import logger from './logger.js';
 
 /**
- * Patterns that indicate sensitive data that should be redacted
+ * Consolidated patterns for sensitive data detection
  */
 const SENSITIVE_PATTERNS = [
-  // OAuth related
-  /client_secret/gi,
-  /client_id/gi,
-  /access_token/gi,
-  /refresh_token/gi,
-  /authorization_code/gi,
-  /bearer\s+[a-zA-Z0-9\-._~+/]+=*/gi,
+  // OAuth tokens and credentials (consolidates 6 patterns)
+  /(?:access_token|refresh_token|authorization_code|client_secret|client_id|bearer\s+[\w\-.~+/]+=*)/gi,
 
-  // URLs that might contain tokens
-  /https?:\/\/[^?\s]*\?[^&\s]*[tT]oken=[^&\s]*/gi,
-  /https?:\/\/[^?\s]*\?[^&\s]*[cC]ode=[^&\s]*/gi,
+  // URLs with sensitive parameters (consolidates 4 patterns)
+  /https?:\/\/[^\s]*[?&](?:[tT]oken|[cC]ode)=[^\s&]*/gi,
 
-  // Common secret patterns
-  /api[_-]?key/gi,
-  /secret/gi,
-  /password/gi,
-  /passwd/gi,
-  /auth[_-]?token/gi,
+  // Query parameters with sensitive data (consolidates 2 patterns)
+  /[?&](?:[tT]oken|[cC]ode)=[^\s&]*/gi,
+
+  // OAuth configuration patterns (consolidates 4 patterns)
+  /(?:scopes?|redirect_uris?|with\s+scope):\s*(?:\[[^\]]*\]|[^\s,}]+(?:\s+[^\s]+)*)/gi,
+
+  // Generic secret patterns (consolidates 5 patterns)
+  /(?:api[_-]?key|secret|password|passwd|auth[_-]?token)/gi,
 ];
 
 /**
- * Keys that should be completely redacted
+ * Base patterns for sensitive key detection (case-insensitive)
  */
-const SENSITIVE_KEYS = [
-  'client_secret',
-  'clientSecret',
-  'access_token',
-  'accessToken',
-  'refresh_token',
-  'refreshToken',
-  'authorization_code',
-  'authorizationCode',
-  'token',
-  'secret',
-  'password',
-  'passwd',
-  'apiKey',
-  'api_key',
-  'authToken',
-  'auth_token',
-  'bearer',
-];
+const SENSITIVE_KEY_PATTERNS = ['secret', 'token', 'password', 'passwd', 'key'];
 
 /**
- * Sanitize a string by redacting sensitive information
+ * Check if a key contains sensitive patterns
  */
-function sanitizeString(value: string): string {
-  let sanitized = value;
-
-  // Apply pattern-based redaction
-  for (const pattern of SENSITIVE_PATTERNS) {
-    sanitized = sanitized.replace(pattern, '[REDACTED]');
-  }
-
-  return sanitized;
+function isSensitiveKey(key: string): boolean {
+  const lowerKey = key.toLowerCase();
+  return SENSITIVE_KEY_PATTERNS.some((pattern) => lowerKey.includes(pattern));
 }
 
 /**
- * Recursively sanitize an object by redacting sensitive keys and values
+ * Unified sanitization function for all data types
  */
-function sanitizeObject(obj: any, depth = 0): any {
+function sanitize(value: any, depth = 0): any {
   // Prevent infinite recursion
   if (depth > 10) {
     return '[MAX_DEPTH]';
   }
 
-  if (obj === null || obj === undefined) {
-    return obj;
+  // Handle primitives and null/undefined
+  if (value === null || value === undefined) {
+    return value;
   }
 
-  if (typeof obj === 'string') {
-    return sanitizeString(obj);
+  if (typeof value === 'string') {
+    // Apply pattern-based redaction to strings
+    let sanitized = value;
+    for (const pattern of SENSITIVE_PATTERNS) {
+      sanitized = sanitized.replace(pattern, '[REDACTED]');
+    }
+    return sanitized;
   }
 
-  if (typeof obj === 'number' || typeof obj === 'boolean') {
-    return obj;
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value;
   }
 
-  if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeObject(item, depth + 1));
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitize(item, depth + 1));
   }
 
-  if (typeof obj === 'object') {
+  if (typeof value === 'object') {
     const sanitized: any = {};
 
-    for (const [key, value] of Object.entries(obj)) {
-      // Check if key should be completely redacted
-      if (SENSITIVE_KEYS.some((sensitive) => key.toLowerCase().includes(sensitive.toLowerCase()))) {
+    for (const [key, val] of Object.entries(value)) {
+      if (isSensitiveKey(key)) {
         sanitized[key] = '[REDACTED]';
       } else {
-        sanitized[key] = sanitizeObject(value, depth + 1);
+        sanitized[key] = sanitize(val, depth + 1);
       }
     }
 
     return sanitized;
   }
 
-  return obj;
+  return value;
 }
 
 /**
- * Sanitize data before logging - handles both strings and objects
+ * Sanitize data before logging - handles all data types
  */
 export function sanitizeForLogging(data: any): any {
   try {
-    return sanitizeObject(data);
+    return sanitize(data);
   } catch (_error) {
     return '[SANITIZATION_ERROR]';
   }
 }
 
 /**
+ * Create a secure logger method for a specific log level
+ */
+function createLoggerMethod(level: keyof typeof logger) {
+  return (message: string, data?: any) => {
+    const sanitizedMessage = typeof message === 'string' ? sanitize(message) : message;
+    if (data !== undefined) {
+      logger[level](sanitizedMessage, sanitizeForLogging(data));
+    } else {
+      logger[level](sanitizedMessage);
+    }
+  };
+}
+
+/**
  * Safe logger that automatically sanitizes sensitive data
  */
 export const secureLogger = {
-  debug: (message: string, data?: any) => {
-    const sanitizedMessage = sanitizeString(message);
-    if (data) {
-      logger.debug(sanitizedMessage, sanitizeForLogging(data));
-    } else {
-      logger.debug(sanitizedMessage);
-    }
-  },
-
-  info: (message: string, data?: any) => {
-    const sanitizedMessage = sanitizeString(message);
-    if (data) {
-      logger.info(sanitizedMessage, sanitizeForLogging(data));
-    } else {
-      logger.info(sanitizedMessage);
-    }
-  },
-
-  warn: (message: string, data?: any) => {
-    const sanitizedMessage = sanitizeString(message);
-    if (data) {
-      logger.warn(sanitizedMessage, sanitizeForLogging(data));
-    } else {
-      logger.warn(sanitizedMessage);
-    }
-  },
-
-  error: (message: string, data?: any) => {
-    const sanitizedMessage = sanitizeString(message);
-    if (data) {
-      logger.error(sanitizedMessage, sanitizeForLogging(data));
-    } else {
-      logger.error(sanitizedMessage);
-    }
-  },
+  debug: createLoggerMethod('debug'),
+  info: createLoggerMethod('info'),
+  warn: createLoggerMethod('warn'),
+  error: createLoggerMethod('error'),
 };
 
 /**
@@ -171,7 +131,7 @@ export function sanitizeOAuthServerList(servers: string[]): string[] {
  * Utility function to create safe error messages that don't expose sensitive data
  */
 export function createSafeErrorMessage(error: string): string {
-  return sanitizeString(error)
+  return sanitize(error)
     .replace(/HTTP \d+.*$/gi, 'HTTP [STATUS_CODE]') // Remove potentially sensitive HTTP response details
     .replace(/server.*responding/gi, 'server connectivity issue'); // Generic server error
 }

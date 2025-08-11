@@ -60,7 +60,7 @@ export class SDKOAuthClientProvider implements OAuthClientProvider {
     };
 
     logger.debug(
-      `OAuth client configured with scopes: ${this._clientMetadata.scope || 'none'} and redirect URL configured: ${!!this._clientMetadata.redirect_uris?.[0]}`,
+      `OAuth client configured for ${this.serverName} with redirect URL configured: ${!!this._clientMetadata.redirect_uris?.[0]}`,
     );
 
     // Load existing client info and tokens if available
