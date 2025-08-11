@@ -15,7 +15,7 @@
 **配置示例**：
 
 ```bash
-1mcp mcp add filesystem --type=stdio --command="mcp-server-filesystem" --args="--root ~/"
+npx -y @1mcp/agent mcp add filesystem --type=stdio --command="mcp-server-filesystem" --args="--root ~/"
 ```
 
 **主要功能**：
@@ -33,7 +33,7 @@
 **配置示例**：
 
 ```bash
-1mcp mcp add remote-api --type=http --url="https://mcp.example.com/"
+npx -y @1mcp/agent mcp add remote-api --type=http --url="https://mcp.example.com/"
 ```
 
 **主要功能**：
@@ -66,26 +66,26 @@
 1.  **添加服务器**：向您的 1MCP 实例添加新服务器。
     ```bash
     # 添加本地 git 服务器
-    1mcp mcp add git-main --type=stdio --command="mcp-server-git" --args="--repository ."
+    npx -y @1mcp/agent mcp add git-main --type=stdio --command="mcp-server-git" --args="--repository ."
     ```
 2.  **验证配置**：列出您的服务器并检查新服务器的状态。
     ```bash
-    1mcp mcp list --verbose
-    1mcp mcp status git-main
+    npx -y @1mcp/agent mcp list --verbose
+    npx -y @1mcp/agent mcp status git-main
     ```
 3.  **根据需要更新**：修改服务器的配置。例如，添加一个标签。
     ```bash
-    1mcp mcp update git-main --tags=source-control,project-a
+    npx -y @1mcp/agent mcp update git-main --tags=source-control,project-a
     ```
 4.  **管理其生命周期**：如果您需要暂时禁用服务器，可以在不丢失其配置的情况下执行此操作。
     ```bash
-    1mcp mcp disable git-main
+    npx -y @1mcp/agent mcp disable git-main
     # ...稍后...
-    1mcp mcp enable git-main
+    npx -y @1mcp/agent mcp enable git-main
     ```
 5.  **完成后删除**：如果您不再需要该服务器，可以永久删除它。
     ```bash
-    1mcp mcp remove git-main
+    npx -y @1mcp/agent mcp remove git-main
     ```
 
 ## 最佳实践

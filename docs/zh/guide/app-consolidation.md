@@ -124,7 +124,7 @@ VS Code -------↗
 ### 整合后
 
 1.  验证所有预期的 MCP 服务器在整合的应用程序中都可用。
-2.  定期使用 `1mcp app backups --cleanup <days>` 删除旧的、不需要的备份。
+2.  定期使用 `npx -y @1mcp/agent app backups --cleanup <days>` 删除旧的、不需要的备份。
 
 ## 故障排除
 

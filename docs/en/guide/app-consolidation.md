@@ -124,7 +124,7 @@ If you need to undo a consolidation, you can easily restore the original configu
 ### After Consolidation
 
 1.  Verify that all expected MCP servers are available in the consolidated applications.
-2.  Regularly use `1mcp app backups --cleanup <days>` to remove old, unneeded backups.
+2.  Regularly use `npx -y @1mcp/agent app backups --cleanup <days>` to remove old, unneeded backups.
 
 ## Troubleshooting
 
