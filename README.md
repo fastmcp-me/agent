@@ -4,7 +4,7 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 
 [![NPM Version](https://img.shields.io/npm/v/@1mcp/agent)](https://www.npmjs.com/package/@1mcp/agent)
 [![NPM License](https://img.shields.io/npm/l/@1mcp/agent)](https://www.npmjs.com/package/@1mcp/agent)
-[![smithery badge](https://smithery.ai/badge/@1mcp-app/agent)](https://smithery.ai/server/@1mcp-app/agent)
+[![1MCP](https://img.shields.io/badge/1MCP-Docs-blue)](https://docs.1mcp.app)
 
 ## Table of Contents
 
@@ -44,28 +44,64 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 
 ## Quick Start
 
-To enable Cursor to use existing MCP servers already configured in Claude Desktop, follow these steps:
+Get up and running with 1MCP in just a few steps:
 
-1. Run the 1MCP server with the Claude Desktop config file:
+### 1. Add MCP Servers
+
+Add the MCP servers you want to use. Here are some popular examples:
 
 ```bash
-npx -y @1mcp/agent --config ~/Library/Application\ Support/Claude/claude_desktop_config.json
+# Add Context7 for documentation and code examples
+npx -y @1mcp/agent mcp add context7 -- npx -y @upstash/context7-mcp
+
+# Add Sequential Thinking for complex analysis
+npx -y @1mcp/agent mcp add sequential -- npx -y @modelcontextprotocol/server-sequential-thinking
+
+# Add Filesystem for file operations
+npx -y @1mcp/agent mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/Documents
 ```
 
-2. Add the 1MCP server to your Cursor config file (`~/.cursor/mcp.json`):
+### 2. Start the 1MCP Server
+
+```bash
+npx -y @1mcp/agent
+```
+
+The server will start on `http://127.0.0.1:3050` and show you which MCP servers are active.
+
+### 3. Connect Your AI Assistant
+
+**For Cursor**, add to `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "1mcp": {
-      "type": "http",
-      "url": "http://localhost:3050/sse"
+      "url": "http://127.0.0.1:3050/mcp?app=cursor"
     }
   }
 }
 ```
 
-3. Enjoy it!
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=1mcp&config=JTdCJTIydXJsJTIyJTNBJTIyaHR0cCUzQSUyRiUyRjEyNy4wLjAuMSUzQTMwNTAlMkZtY3AlM0ZhcHAlM0RjdXJzb3IlMjIlN0Q%3D)
+
+**For Claude Code**, run:
+
+```bash
+claude mcp add -t http 1mcp "http://127.0.0.1:3050/mcp?app=claude-code"
+```
+
+### 4. Verify Everything Works
+
+Check server status and connected MCP servers:
+
+```bash
+npx -y @1mcp/agent mcp status
+```
+
+Visit the health endpoint to see system status: `http://127.0.0.1:3050/health`
+
+That's it! All your MCP servers are now available through one unified endpoint. 🎉
 
 ## Commands
 
