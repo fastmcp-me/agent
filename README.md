@@ -71,7 +71,7 @@ The server will start on `http://127.0.0.1:3050` and show you which MCP servers 
 
 ### 3. Connect Your AI Assistant
 
-**For Cursor**, add to `~/.cursor/mcp.json`:
+**For Cursor**, add to `~/.cursor/mcp.json` or `<project-root>/.cursor/mcp.json`:
 
 ```json
 {
@@ -83,7 +83,21 @@ The server will start on `http://127.0.0.1:3050` and show you which MCP servers 
 }
 ```
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=1mcp&config=JTdCJTIydXJsJTIyJTNBJTIyaHR0cCUzQSUyRiUyRjEyNy4wLjAuMSUzQTMwNTAlMkZtY3AlM0ZhcHAlM0RjdXJzb3IlMjIlN0Q%3D)
+[![Install MCP Server to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=1mcp&config=eyJ1cmwiOiJodHRwOi8vMTI3LjAuMC4xOjMwNTAvbWNwP2FwcD1jdXJzb3IifQ%3D%3D)
+
+**For VSCode**, add to `settings.json` or `<project-root>/.vscode/mcp.json`:
+
+```json
+{
+  "servers": {
+    "1mcp": {
+      "url": "http://127.0.0.1:3050/mcp?app=vscode"
+    }
+  }
+}
+```
+
+[Install MCP Server to VSCode](vscode:mcp/install?%7B%22name%22%3A%221mcp%22%2C%22url%22%3A%22http%3A%2F%2F127.0.0.1%3A3050%2Fmcp%3Fapp%3Dvscode%22%7D)
 
 **For Claude Code**, run:
 
