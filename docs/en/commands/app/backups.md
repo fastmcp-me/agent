@@ -2,7 +2,7 @@
 
 Manages the configuration backups created during the consolidation process.
 
-For a complete overview of the backup and restore system, see the **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**.
+For a complete overview of the backup and restore system, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation#backup-and-restore-system)**.
 
 ## Synopsis
 
@@ -41,4 +41,4 @@ npx -y @1mcp/agent app backups --verify
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation#backup-and-restore-system)**

@@ -10,6 +10,6 @@
 
 可以通过 `--trust-proxy` 命令行标志或 `ONE_MCP_TRUST_PROXY` 环境变量来配置信任代理设置。
 
-有关可用选项以及如何在 JSON 文件、CLI 或环境中配置它们的详细信息，请参阅 **[配置深入探讨](./configuration#network-options)**。
+有关可用选项以及如何在 JSON 文件、CLI 或环境中配置它们的详细信息，请参阅 **[配置深入探讨](/guide/essentials/configuration#network-options)**。
 
-有关具体示例和安全注意事项，请参阅 **[信任代理参考](../reference/trust-proxy)**。
+有关具体示例和安全注意事项，请参阅 **[信任代理参考](/reference/trust-proxy)**。

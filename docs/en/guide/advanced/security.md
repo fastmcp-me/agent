@@ -87,8 +87,8 @@ npx -y @1mcp/agent --config mcp.json --enable-auth
 
 ### Security Setup Path
 
-1. **[15 minutes]** OAuth 2.1 authentication → [Authentication Guide](/guide/authentication)
-2. **[10 minutes]** Tag-based access control → [Configuration Guide](/guide/configuration)
+1. **[15 minutes]** OAuth 2.1 authentication → [Authentication Guide](/guide/advanced/authentication)
+2. **[10 minutes]** Tag-based access control → [Configuration Guide](/guide/essentials/configuration)
 3. **[5 minutes]** Rate limiting setup → Built-in protection
 
 ### Security Best Practices
@@ -106,9 +106,9 @@ npx -y @1mcp/agent --config mcp.json --enable-auth
 
 ### Next Steps
 
-- **Core Features** → [Core Features](/guide/features/core)
-- **Performance** → [Performance Features](/guide/features/performance)
-- **Production Setup** → [Enterprise Features](/guide/features/enterprise)
+- **Core Features** → [Core Features](/guide/essentials/core-features)
+- **Performance** → [Performance Features](/guide/advanced/performance)
+- **Production Setup** → [Enterprise Features](/guide/advanced/enterprise)
 
 ---
 

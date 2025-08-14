@@ -2,7 +2,7 @@
 
 检查已配置的 MCP 服务器的状态和详细信息。
 
-有关服务器管理的完整概述，请参阅 **[服务器管理指南](../../guide/server-management)**。
+有关服务器管理的完整概述，请参阅 **[服务器管理指南](../../guide/essentials/server-management)**。
 
 ## 摘要
 
@@ -39,4 +39,4 @@ LOG_LEVEL=debug npx -y @1mcp/agent mcp status
 
 ## 另请参阅
 
-- **[服务器管理指南](../../guide/server-management)**
+- **[服务器管理指南](../../guide/essentials/server-management)**

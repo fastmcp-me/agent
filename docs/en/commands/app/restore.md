@@ -2,7 +2,7 @@
 
 Restores an application to its pre-consolidation state using a backup file.
 
-For a complete overview of the consolidation and restore workflow, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
+For a complete overview of the consolidation and restore workflow, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation)**.
 
 ## Synopsis
 
@@ -44,4 +44,4 @@ npx -y @1mcp/agent app restore cursor --list
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation#backup-and-restore-system)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation#backup-and-restore-system)**

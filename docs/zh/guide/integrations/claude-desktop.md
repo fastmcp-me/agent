@@ -439,7 +439,7 @@ npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth --external-u
      - [通过远程 MCP 服务器构建自定义连接器](https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers)
      - [浏览并从目录连接到工具](https://support.anthropic.com/en/articles/11724452-browsing-and-connecting-to-tools-from-the-directory)
 4. 在我们的 [GitHub 仓库](https://github.com/1mcp-app/agent) 提交 Issue
-5. 查阅 [1MCP 文档](./getting-started) 了解服务器配置
+5. 查阅 [1MCP 文档](/guide/getting-started) 了解服务器配置
 
 ## 我应该使用哪种方法？
 
@@ -461,7 +461,7 @@ npx -y @1mcp/agent serve --transport http --port 3001 --enable-auth --external-u
 
 ## 后续步骤
 
-- 了解[身份验证配置](./authentication)
-- 探索[服务器筛选选项](./server-filtering)
-- 为你的 MCP 服务器设置[服务器管理](./server-management)
+- 了解[身份验证配置](/guide/advanced/authentication)
+- 探索[服务器筛选选项](/guide/advanced/server-filtering)
+- 为你的 MCP 服务器设置[服务器管理](/guide/essentials/server-management)
 - 配置[应用整合](./app-consolidation)以便无缝管理其他应用

@@ -287,9 +287,9 @@ healthcheck:
 
 ### 下一步
 
-- **核心功能** → [核心功能](/guide/features/core)
-- **安全设置** → [安全功能](/guide/features/security)
-- **开发** → [开发者功能](/guide/features/developer)
+- **核心功能** → [核心功能](/guide/essentials/core-features)
+- **安全设置** → [安全功能](/guide/advanced/security)
+- **开发** → [开发者功能](/guide/integrations/developer-tools)
 
 ---
 

@@ -145,15 +145,15 @@ npx -y @1mcp/agent --config staging.json --port 3052
 
 ### Next Steps
 
-- **Core Setup** → [Core Features](/guide/features/core)
-- **Security Integration** → [Security Features](/guide/features/security)
-- **Production Deployment** → [Enterprise Features](/guide/features/enterprise)
+- **Core Setup** → [Core Features](/guide/essentials/core-features)
+- **Security Integration** → [Security Features](/guide/advanced/security)
+- **Production Deployment** → [Enterprise Features](/guide/advanced/enterprise)
 
 ### Integration Guides
 
-- **Authentication Setup** → [Authentication Guide](/guide/authentication)
-- **Configuration Reference** → [Configuration Guide](/guide/configuration)
-- **API Documentation** → [API Reference](/reference/api)
+- **Authentication Setup** → [Authentication Guide](/guide/advanced/authentication)
+- **Configuration Reference** → [Configuration Guide](/guide/essentials/configuration)
+- **API Documentation** → [API Reference](/reference/health-check)
 
 ---
 

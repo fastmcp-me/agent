@@ -38,8 +38,8 @@
 
 ## 下一步
 
-- [启用认证](/zh/guide/authentication) 用于生产环境
-- [添加更多服务器](/zh/guide/configuration) 以扩展功能
+- [启用认证](/zh/guide/advanced/authentication) 用于生产环境
+- [添加更多服务器](/zh/guide/essentials/configuration) 以扩展功能
 
 ## 常见问题
 

@@ -70,7 +70,7 @@ vim ~/.config/1mcp/mcp.json
 - Server status available through structured logs.
 - Connection information via MCP protocol responses.
 - A health endpoint is available to check system status.
-- Monitor through application logs and see [Enterprise Features](/guide/features/enterprise) for advanced health monitoring.
+- Monitor through application logs and see [Enterprise Features](/guide/advanced/enterprise) for advanced health monitoring.
 
 **⏱️ Setup Time**: Automatic
 **🎯 Perfect For**: Production monitoring, troubleshooting, system reliability
@@ -83,14 +83,14 @@ vim ~/.config/1mcp/mcp.json
 ### Quick Setup Path
 
 1. **[5 minutes]** Basic MCP aggregation → [Getting Started](/guide/getting-started#🌟-level-1-basic-proxy-5-minutes)
-2. **Configuration** → [Configuration Guide](/guide/configuration)
+2. **Configuration** → [Configuration Guide](/guide/essentials/configuration)
 3. **Troubleshooting** → Check logs and status information
 
 ### Next Steps
 
-- **Add Security** → [Security Features](/guide/features/security)
-- **Scale Performance** → [Performance Features](/guide/features/performance)
-- **Production Ready** → [Enterprise Features](/guide/features/enterprise)
+- **Add Security** → [Security Features](/guide/advanced/security)
+- **Scale Performance** → [Performance Features](/guide/advanced/performance)
+- **Production Ready** → [Enterprise Features](/guide/advanced/enterprise)
 
 ---
 

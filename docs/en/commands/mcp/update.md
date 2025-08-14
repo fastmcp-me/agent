@@ -2,7 +2,7 @@
 
 Updates the configuration of an existing MCP server.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Synopsis
 
@@ -64,4 +64,4 @@ npx -y @1mcp/agent mcp update my-server --timeout=10000 -- node updated-server.j
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
+- **[Server Management Guide](../../guide/essentials/server-management)**

@@ -51,4 +51,4 @@ npx -y @1mcp/agent --config mcp.json --enable-auth --enable-scope-validation
 
 ## 配置
 
-有关与身份验证相关的配置选项的完整列表，请参阅[配置文档](/guide/configuration)。
+有关与身份验证相关的配置选项的完整列表，请参阅[配置文档](/guide/essentials/configuration)。

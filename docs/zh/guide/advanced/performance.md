@@ -54,7 +54,7 @@
 - **基于游标**：使用 `nextCursor` 令牌获取后续页面。
 - **提升可扩展性**：对于具有 5 个或更多 MCP 服务器的环境至关重要。
 
-> 有关如何启用和使用此功能的完整指南，请参见 **[分页支持指南](../pagination.md)**。
+> 有关如何启用和使用此功能的完整指南，请参见 **[分页支持指南](/reference/pagination.md)**。
 
 ---
 
@@ -106,9 +106,9 @@ GET /oauth
 
 ### 下一步
 
-- **高级监控** → [企业功能](/guide/features/enterprise)
-- **安全** → [安全功能](/guide/features/security)
-- **开发** → [开发者功能](/guide/features/developer)
+- **高级监控** → [企业功能](/guide/advanced/enterprise)
+- **安全** → [安全功能](/guide/advanced/security)
+- **开发** → [开发者功能](/guide/integrations/developer-tools)
 
 ---
 

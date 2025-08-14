@@ -87,8 +87,8 @@ npx -y @1mcp/agent --config mcp.json --enable-auth
 
 ### 安全设置路径
 
-1. **[15 分钟]** OAuth 2.1 身份验证 → [身份验证指南](/guide/authentication)
-2. **[10 分钟]** 基于标签的访问控制 → [配置指南](/guide/configuration)
+1. **[15 分钟]** OAuth 2.1 身份验证 → [身份验证指南](/guide/advanced/authentication)
+2. **[10 分钟]** 基于标签的访问控制 → [配置指南](/guide/essentials/configuration)
 3. **[5 分钟]** 速率限制设置 → 内置保护
 
 ### 安全最佳实践
@@ -106,9 +106,9 @@ npx -y @1mcp/agent --config mcp.json --enable-auth
 
 ### 下一步
 
-- **核心功能** → [核心功能](/guide/features/core)
-- **性能** → [性能功能](/guide/features/performance)
-- **生产设置** → [企业功能](/guide/features/enterprise)
+- **核心功能** → [核心功能](/guide/essentials/core-features)
+- **性能** → [性能功能](/guide/advanced/performance)
+- **生产设置** → [企业功能](/guide/advanced/enterprise)
 
 ---
 

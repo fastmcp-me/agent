@@ -2,7 +2,7 @@
 
 列出应用程序整合功能支持的所有桌面应用程序。
 
-有关应用程序及其状态的完整列表，请参阅 **[应用程序整合指南](../../guide/app-consolidation#supported-applications)**。
+有关应用程序及其状态的完整列表，请参阅 **[应用程序整合指南](../../guide/integrations/app-consolidation#supported-applications)**。
 
 ## 摘要
 
@@ -30,4 +30,4 @@ npx -y @1mcp/agent app list --configurable-only
 
 ## 另请参阅
 
-- **[应用程序整合指南](../../guide/app-consolidation)**
+- **[应用程序整合指南](../../guide/integrations/app-consolidation)**

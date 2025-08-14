@@ -4,7 +4,7 @@
 
 此命令会扫描您的系统以查找支持的应用程序，并报告哪些应用程序具有可检测的 MCP 服务器配置。
 
-有关整合工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/app-consolidation)**。
+有关整合工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/integrations/app-consolidation)**。
 
 ## 摘要
 
@@ -32,4 +32,4 @@ npx -y @1mcp/agent app discover --show-empty
 
 ## 另请参阅
 
-- **[应用程序整合指南](../../guide/app-consolidation#the-consolidation-workflow)**
+- **[应用程序整合指南](../../guide/integrations/app-consolidation#the-consolidation-workflow)**

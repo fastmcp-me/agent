@@ -2,7 +2,7 @@
 
 Lists all configured MCP servers.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Synopsis
 
@@ -39,4 +39,4 @@ LOG_LEVEL=debug npx -y @1mcp/agent mcp list
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
+- **[Server Management Guide](../../guide/essentials/server-management)**

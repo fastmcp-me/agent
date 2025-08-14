@@ -80,4 +80,4 @@ npx @1mcp/agent --version
 ## Next Steps
 
 - [Quick Start Guide](/guide/quick-start) - Get running in 5 minutes
-- [Configuration](/guide/configuration) - Detailed setup options
+- [Configuration](/guide/essentials/configuration) - Detailed setup options

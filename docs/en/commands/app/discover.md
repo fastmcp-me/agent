@@ -4,7 +4,7 @@ Discovers installed desktop applications that have MCP configurations.
 
 This command scans your system for supported applications and reports which ones have detectable MCP server configurations.
 
-For a complete overview of the consolidation workflow, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
+For a complete overview of the consolidation workflow, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation)**.
 
 ## Synopsis
 
@@ -32,4 +32,4 @@ npx -y @1mcp/agent app discover --show-empty
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation#the-consolidation-workflow)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation#the-consolidation-workflow)**

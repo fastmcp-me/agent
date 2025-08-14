@@ -4,7 +4,7 @@
 
 这些命令允许您添加、删除、更新和管理 1MCP 将代理的 MCP 服务器的生命周期。
 
-有关服务器管理的详细指南，包括传输类型和最佳实践，请参阅 **[服务器管理指南](../../guide/server-management)**。
+有关服务器管理的详细指南，包括传输类型和最佳实践，请参阅 **[服务器管理指南](../../guide/essentials/server-management)**。
 
 ## 命令
 
@@ -58,5 +58,5 @@ npx -y @1mcp/agent mcp status my-server
 
 ## 另请参阅
 
-- **[服务器管理指南](../../guide/server-management)**
-- **[应用程序整合指南](../../guide/app-consolidation)**
+- **[服务器管理指南](../../guide/essentials/server-management)**
+- **[应用程序整合指南](../../guide/integrations/app-consolidation)**

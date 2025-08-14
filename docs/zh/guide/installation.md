@@ -80,4 +80,4 @@ npx @1mcp/agent --version
 ## 下一步
 
 - [快速入门指南](/zh/guide/quick-start) - 5 分钟内运行
-- [配置](/zh/guide/configuration) - 详细的设置选项
+- [配置](/zh/guide/essentials/configuration) - 详细的设置选项

@@ -51,4 +51,4 @@ npx -y @1mcp/agent --config mcp.json --enable-auth --enable-scope-validation
 
 ## Configuration
 
-For a complete list of authentication-related configuration options, see the [Configuration documentation](/guide/configuration).
+For a complete list of authentication-related configuration options, see the [Configuration documentation](/guide/essentials/configuration).

@@ -4,7 +4,7 @@ Consolidates MCP servers from desktop applications into 1MCP.
 
 This command extracts MCP server configurations from an application's config file, imports them into your 1MCP configuration, and replaces the app's config with a single connection to your 1MCP server.
 
-For a complete overview of the consolidation workflow, supported applications, and best practices, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
+For a complete overview of the consolidation workflow, supported applications, and best practices, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation)**.
 
 ## Synopsis
 
@@ -17,7 +17,7 @@ npx -y @1mcp/agent app consolidate <app-name...> [options]
 - **`<app-name...>`**
   - One or more desktop applications to consolidate.
   - **Required**: Yes
-  - To see a list of supported applications, use `npx -y @1mcp/agent app list` or refer to the [App Consolidation Guide](../../guide/app-consolidation#supported-applications).
+  - To see a list of supported applications, use `npx -y @1mcp/agent app list` or refer to the [App Consolidation Guide](../../guide/integrations/app-consolidation#supported-applications).
 
 ## Options
 
@@ -70,6 +70,6 @@ npx -y @1mcp/agent app consolidate cherry-studio --manual-only
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation)**
 - **[app restore](./restore)** - Restore an application to its original state.
 - **[app status](./status)** - Check the consolidation status of applications.

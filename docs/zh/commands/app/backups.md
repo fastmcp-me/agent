@@ -2,7 +2,7 @@
 
 管理在整合过程中创建的配置备份。
 
-有关备份和恢复系统的完整概述，请参阅 **[应用整合指南](../../guide/app-consolidation#backup-and-restore-system)**。
+有关备份和恢复系统的完整概述，请参阅 **[应用整合指南](../../guide/integrations/app-consolidation#backup-and-restore-system)**。
 
 ## 摘要
 
@@ -41,4 +41,4 @@ npx -y @1mcp/agent app backups --verify
 
 ## 另请参阅
 
-- **[应用整合指南](../../guide/app-consolidation#backup-and-restore-system)**
+- **[应用整合指南](../../guide/integrations/app-consolidation#backup-and-restore-system)**

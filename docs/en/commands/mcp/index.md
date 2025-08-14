@@ -4,7 +4,7 @@ Manage MCP server configurations within your 1MCP instance.
 
 These commands allow you to add, remove, update, and manage the lifecycle of the MCP servers that 1MCP will proxy.
 
-For a detailed guide on server management, including transport types and best practices, please see the **[Server Management Guide](../../guide/server-management)**.
+For a detailed guide on server management, including transport types and best practices, please see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Commands
 
@@ -58,5 +58,5 @@ npx -y @1mcp/agent mcp status my-server
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
-- **[App Consolidation Guide](../../guide/app-consolidation)**
+- **[Server Management Guide](../../guide/essentials/server-management)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation)**

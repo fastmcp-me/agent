@@ -287,9 +287,9 @@ healthcheck:
 
 ### Next Steps
 
-- **Core Features** → [Core Features](/guide/features/core)
-- **Security Setup** → [Security Features](/guide/features/security)
-- **Development** → [Developer Features](/guide/features/developer)
+- **Core Features** → [Core Features](/guide/essentials/core-features)
+- **Security Setup** → [Security Features](/guide/advanced/security)
+- **Development** → [Developer Features](/guide/integrations/developer-tools)
 
 ---
 

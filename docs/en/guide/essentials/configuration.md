@@ -103,7 +103,7 @@ Flags override settings from the JSON configuration file.
 
 ### Network Options
 
-- `--trust-proxy <config>`: Trust proxy configuration. See [Trust Proxy Guide](../reference/trust-proxy). Default: `loopback`.
+- `--trust-proxy <config>`: Trust proxy configuration. See [Trust Proxy Guide](/reference/trust-proxy). Default: `loopback`.
 
 ### Filtering Options
 

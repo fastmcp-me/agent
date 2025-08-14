@@ -440,7 +440,7 @@ If you encounter issues:
      - [Custom connectors via remote MCP servers](https://support.anthropic.com/en/articles/11503834-building-custom-connectors-via-remote-mcp-servers)
      - [Browsing and connecting to tools](https://support.anthropic.com/en/articles/11724452-browsing-and-connecting-to-tools-from-the-directory)
 4. Open an issue on our [GitHub repository](https://github.com/1mcp-app/agent)
-5. Check the [1MCP documentation](./getting-started) for server configuration help
+5. Check the [1MCP documentation](/guide/getting-started) for server configuration help
 
 ## Which Approach Should I Use?
 
@@ -462,7 +462,7 @@ If you encounter issues:
 
 ## Next Steps
 
-- Learn about [authentication configuration](./authentication)
-- Explore [server filtering options](./server-filtering)
-- Set up [server management](./server-management) for your MCP servers
+- Learn about [authentication configuration](/guide/advanced/authentication)
+- Explore [server filtering options](/guide/advanced/server-filtering)
+- Set up [server management](/guide/essentials/server-management) for your MCP servers
 - Configure [app consolidation](./app-consolidation) for seamless management of other apps

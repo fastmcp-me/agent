@@ -50,33 +50,36 @@ function sidebar(): DefaultTheme.Sidebar {
         ],
       },
       {
-        text: 'Core Concepts',
+        text: 'Essential Concepts',
         items: [
-          { text: 'Architecture', link: '/reference/architecture' },
-          { text: 'Configuration', link: '/guide/configuration' },
-          { text: 'Authentication', link: '/guide/authentication' },
+          { text: 'Core Features', link: '/guide/essentials/core-features' },
+          { text: 'Configuration', link: '/guide/essentials/configuration' },
+          { text: 'Server Management', link: '/guide/essentials/server-management' },
         ],
       },
       {
-        text: 'Integration',
-        items: [{ text: 'Claude Desktop Integration', link: '/guide/claude-desktop-integration' }],
+        text: 'Integrations',
+        items: [
+          { text: 'Claude Desktop Integration', link: '/guide/integrations/claude-desktop' },
+          { text: 'App Consolidation', link: '/guide/integrations/app-consolidation' },
+          { text: 'Developer Tools', link: '/guide/integrations/developer-tools' },
+        ],
       },
       {
-        text: 'Features',
+        text: 'Advanced Features',
         items: [
-          { text: 'Feature Overview', link: '/guide/features' },
-          { text: 'Core Features', link: '/guide/features/core' },
-          { text: 'Security & Access Control', link: '/guide/features/security' },
-          { text: 'Performance & Reliability', link: '/guide/features/performance' },
-          { text: 'Enterprise & Operations', link: '/guide/features/enterprise' },
-          { text: 'Developer & Integration', link: '/guide/features/developer' },
-          { text: 'Fast Startup', link: '/guide/fast-startup' },
-          { text: 'Pagination Support', link: '/guide/pagination' },
-          { text: 'Server Filtering', link: '/guide/server-filtering' },
-          { text: 'Proxy Support', link: '/guide/proxy-support' },
-          { text: 'Server Management', link: '/guide/server-management' },
-          { text: 'App Consolidation', link: '/guide/app-consolidation' },
+          { text: 'Authentication', link: '/guide/advanced/authentication' },
+          { text: 'Security', link: '/guide/advanced/security' },
+          { text: 'Performance', link: '/guide/advanced/performance' },
+          { text: 'Enterprise', link: '/guide/advanced/enterprise' },
+          { text: 'Fast Startup', link: '/guide/advanced/fast-startup' },
+          { text: 'Reverse Proxy', link: '/guide/advanced/reverse-proxy' },
+          { text: 'Server Filtering', link: '/guide/advanced/server-filtering' },
         ],
+      },
+      {
+        text: 'Feature Overview',
+        items: [{ text: 'All Features', link: '/guide/features' }],
       },
     ],
     '/commands/': [
@@ -131,7 +134,10 @@ function sidebar(): DefaultTheme.Sidebar {
       },
       {
         text: 'API Reference',
-        items: [{ text: 'Health Check API', link: '/reference/health-check' }],
+        items: [
+          { text: 'Health Check API', link: '/reference/health-check' },
+          { text: 'Pagination', link: '/reference/pagination' },
+        ],
       },
       {
         text: 'Configuration',

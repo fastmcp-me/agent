@@ -54,7 +54,7 @@ Server Recovers → Immediate reconnection
 - **Cursor-Based**: Uses a `nextCursor` token to fetch subsequent pages.
 - **Improves Scalability**: Essential for environments with 5 or more MCP servers.
 
-> For a complete guide on how to enable and use this feature, see the **[Pagination Support Guide](../pagination.md)**.
+> For a complete guide on how to enable and use this feature, see the **[Pagination Support Guide](/reference/pagination.md)**.
 
 ---
 
@@ -106,9 +106,9 @@ GET /oauth
 
 ### Next Steps
 
-- **Advanced Monitoring** → [Enterprise Features](/guide/features/enterprise)
-- **Security** → [Security Features](/guide/features/security)
-- **Development** → [Developer Features](/guide/features/developer)
+- **Advanced Monitoring** → [Enterprise Features](/guide/advanced/enterprise)
+- **Security** → [Security Features](/guide/advanced/security)
+- **Development** → [Developer Features](/guide/integrations/developer-tools)
 
 ---
 

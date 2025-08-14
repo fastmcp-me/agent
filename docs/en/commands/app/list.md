@@ -2,7 +2,7 @@
 
 Lists all desktop applications supported by the app consolidation feature.
 
-For a complete list of applications and their status, see the **[App Consolidation Guide](../../guide/app-consolidation#supported-applications)**.
+For a complete list of applications and their status, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation#supported-applications)**.
 
 ## Synopsis
 
@@ -30,4 +30,4 @@ npx -y @1mcp/agent app list --configurable-only
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation)**

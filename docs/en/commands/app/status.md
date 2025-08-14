@@ -4,7 +4,7 @@ Shows the current consolidation status of your desktop applications.
 
 This command checks whether an application is configured to connect directly to its own MCP servers or to a central 1MCP instance.
 
-For a complete overview of the consolidation workflow, see the **[App Consolidation Guide](../../guide/app-consolidation)**.
+For a complete overview of the consolidation workflow, see the **[App Consolidation Guide](../../guide/integrations/app-consolidation)**.
 
 ## Synopsis
 
@@ -37,4 +37,4 @@ LOG_LEVEL=debug npx -y @1mcp/agent app status
 
 ## See Also
 
-- **[App Consolidation Guide](../../guide/app-consolidation#the-consolidation-workflow)**
+- **[App Consolidation Guide](../../guide/integrations/app-consolidation#the-consolidation-workflow)**

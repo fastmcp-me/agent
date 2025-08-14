@@ -2,7 +2,7 @@
 
 Adds a new MCP server to the 1MCP configuration.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Synopsis
 
@@ -74,4 +74,4 @@ npx -y @1mcp/agent mcp add context7 --env API_TOKEN=secret --tags=ai,tools -- np
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
+- **[Server Management Guide](../../guide/essentials/server-management)**

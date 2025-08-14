@@ -307,7 +307,7 @@ Look for log messages like:
 
 ## Related Documentation
 
-- [Configuration Guide](/guide/configuration) - Full configuration options
+- [Configuration Guide](/guide/essentials/configuration) - Full configuration options
 - [Feature Overview](/guide/features) - All 1MCP features
-- [Server Management](/guide/server-management) - Managing MCP servers
+- [Server Management](/guide/essentials/server-management) - Managing MCP servers
 - [Health Check API](/reference/health-check) - Monitoring server status

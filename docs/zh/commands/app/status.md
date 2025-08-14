@@ -4,7 +4,7 @@
 
 此命令检查应用程序是配置为直接连接到其自己的 MCP 服务器，还是连接到中央 1MCP 实例。
 
-有关整合工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/app-consolidation)**。
+有关整合工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/integrations/app-consolidation)**。
 
 ## 摘要
 
@@ -37,4 +37,4 @@ LOG_LEVEL=debug npx -y @1mcp/agent app status
 
 ## 另请参阅
 
-- **[应用程序整合指南](../../guide/app-consolidation#the-consolidation-workflow)**
+- **[应用程序整合指南](../../guide/integrations/app-consolidation#the-consolidation-workflow)**

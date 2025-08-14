@@ -2,7 +2,7 @@
 
 When running 1MCP behind a reverse proxy (like nginx, Apache, or a cloud load balancer), you need to configure its trust proxy settings. This ensures that the agent correctly identifies the client's IP address for logging, rate limiting, and other security features.
 
-For details on how to set the trust proxy configuration via command-line flags, environment variables, or the JSON config file, please see the **[Configuration Deep Dive](../guide/configuration#network-options)**.
+For details on how to set the trust proxy configuration via command-line flags, environment variables, or the JSON config file, please see the **[Configuration Deep Dive](../guide/essentials/configuration#network-options)**.
 
 ## Trust Proxy Options
 

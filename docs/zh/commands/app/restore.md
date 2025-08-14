@@ -2,7 +2,7 @@
 
 使用备份文件将应用程序恢复到整合前的状态。
 
-有关整合和恢复工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/app-consolidation)**。
+有关整合和恢复工作流程的完整概述，请参阅 **[应用程序整合指南](../../guide/integrations/app-consolidation)**。
 
 ## 摘要
 
@@ -44,4 +44,4 @@ npx -y @1mcp/agent app restore cursor --list
 
 ## 另请参阅
 
-- **[应用程序整合指南](../../guide/app-consolidation#backup-and-restore-system)**
+- **[应用程序整合指南](../../guide/integrations/app-consolidation#backup-and-restore-system)**

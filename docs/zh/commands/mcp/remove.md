@@ -2,7 +2,7 @@
 
 从 1MCP 配置中删除 MCP 服务器。
 
-有关服务器管理的完整概述，请参阅 **[服务器管理指南](../../guide/server-management)**。
+有关服务器管理的完整概述，请参阅 **[服务器管理指南](../../guide/essentials/server-management)**。
 
 ## 摘要
 
@@ -33,4 +33,4 @@ npx -y @1mcp/agent mcp remove old-server --yes
 
 ## 另请参阅
 
-- **[服务器管理指南](../../guide/server-management)**
+- **[服务器管理指南](../../guide/essentials/server-management)**

@@ -2,7 +2,7 @@
 
 Checks the status and details of configured MCP servers.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Synopsis
 
@@ -39,4 +39,4 @@ LOG_LEVEL=debug npx -y @1mcp/agent mcp status
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
+- **[Server Management Guide](../../guide/essentials/server-management)**

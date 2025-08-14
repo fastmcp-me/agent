@@ -2,7 +2,7 @@
 
 The `app` command group helps you consolidate MCP server configurations from various desktop applications into a unified 1MCP proxy.
 
-For a complete overview of the consolidation workflow, supported applications, and best practices, please see the **[App Consolidation Guide](../../guide/app-consolidation)**.
+For a complete overview of the consolidation workflow, supported applications, and best practices, please see the **[App Consolidation Guide](../../guide/integrations/app-consolidation)**.
 
 ## Commands
 

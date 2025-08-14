@@ -106,4 +106,4 @@ export ONE_MCP_CONFIG_PATH=/custom/config.json
 
 ## 配置文件
 
-1MCP Agent 使用 JSON 配置文件来存储服务器定义和设置。有关配置文件格式和选项的详细信息，请参阅[配置指南](../guide/configuration)。
+1MCP Agent 使用 JSON 配置文件来存储服务器定义和设置。有关配置文件格式和选项的详细信息，请参阅[配置指南](../guide/essentials/configuration)。

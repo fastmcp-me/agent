@@ -13,7 +13,7 @@ npx -y @1mcp/agent [options]  # serve is the default command
 
 The `serve` command starts the 1MCP server, which acts as a unified proxy/multiplexer for multiple MCP servers. It can operate in different transport modes and provides a unified interface for MCP clients.
 
-For a complete list of command-line flags, environment variables, and JSON configuration options, please see the \*\*[Configuration Deep Dive](../guide/configuration.md)
+For a complete list of command-line flags, environment variables, and JSON configuration options, please see the \*\*[Configuration Deep Dive](../guide/essentials/configuration.md)
 
 ## Examples
 
@@ -68,6 +68,6 @@ npx -y @1mcp/agent serve \
 
 ## See Also
 
-- **[Configuration Deep Dive](../guide/configuration)**
+- **[Configuration Deep Dive](../guide/essentials/configuration)**
 - **[Security Guide](../reference/security)**
 - **[Health Check API Reference](../reference/health-check)**

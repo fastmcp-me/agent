@@ -2,7 +2,7 @@
 
 Removes an MCP server from the 1MCP configuration.
 
-For a complete overview of server management, see the **[Server Management Guide](../../guide/server-management)**.
+For a complete overview of server management, see the **[Server Management Guide](../../guide/essentials/server-management)**.
 
 ## Synopsis
 
@@ -33,4 +33,4 @@ npx -y @1mcp/agent mcp remove old-server --yes
 
 ## See Also
 
-- **[Server Management Guide](../../guide/server-management)**
+- **[Server Management Guide](../../guide/essentials/server-management)**

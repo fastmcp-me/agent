@@ -133,7 +133,7 @@ sequenceDiagram
 
 You can customize the async loading behavior, such as timeouts and retry logic, in the `loading` section of your JSON configuration file.
 
-For a complete list of options, see the **[Configuration Deep Dive](./configuration#loading-section-async-loading)**.
+For a complete list of options, see the **[Configuration Deep Dive](/guide/essentials/configuration#loading-section-async-loading)**.
 
 ## Health Check API
 

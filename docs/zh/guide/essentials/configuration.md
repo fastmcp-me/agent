@@ -103,7 +103,7 @@
 
 ### 网络选项
 
-- `--trust-proxy <config>`：信任代理配置。请参阅[信任代理指南](../reference/trust-proxy)。默认值：`loopback`。
+- `--trust-proxy <config>`：信任代理配置。请参阅[信任代理指南](/reference/trust-proxy)。默认值：`loopback`。
 
 ### 过滤选项
 

@@ -133,7 +133,7 @@ sequenceDiagram
 
 您可以在 JSON 配置文件的 `loading` 部分自定义异步加载行为，例如超时和重试逻辑。
 
-有关选项的完整列表，请参阅 **[配置深入探讨](./configuration#loading-section-async-loading)**。
+有关选项的完整列表，请参阅 **[配置深入探讨](/guide/essentials/configuration#loading-section-async-loading)**。
 
 ## 健康检查 API
 

@@ -38,8 +38,8 @@ That's it! Your 1MCP proxy is now running and aggregating MCP servers.
 
 ## Next Steps
 
-- [Enable Authentication](/guide/authentication) for production use
-- [Add More Servers](/guide/configuration) to expand capabilities
+- [Enable Authentication](/guide/advanced/authentication) for production use
+- [Add More Servers](/guide/essentials/configuration) to expand capabilities
 
 ## Common Issues
 

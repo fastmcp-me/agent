@@ -307,7 +307,7 @@ npx -y @1mcp/agent --config mcp.json --pagination --log-level debug
 
 ## 相关文档
 
-- [配置指南](/zh/guide/configuration) - 完整配置选项
+- [配置指南](/zh/guide/essentials/configuration) - 完整配置选项
 - [功能概述](/zh/guide/features) - 所有 1MCP 功能
-- [服务器管理](/zh/guide/server-management) - 管理 MCP 服务器
+- [服务器管理](/zh/guide/essentials/server-management) - 管理 MCP 服务器
 - [健康检查 API](/zh/reference/health-check) - 监控服务器状态
