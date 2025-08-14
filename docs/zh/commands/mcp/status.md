@@ -17,8 +17,8 @@ npx -y @1mcp/agent mcp status [name] [options]
 
 ## 选项
 
-- **`--verbose, -v`**
-  - 显示详细的配置信息。
+- **环境变量 `LOG_LEVEL=debug`**
+  - 设置 `LOG_LEVEL=debug` 以显示详细的配置信息。
 
 ## 描述
 
@@ -34,7 +34,7 @@ npx -y @1mcp/agent mcp status
 npx -y @1mcp/agent mcp status my-server
 
 # 获取详细的状态信息
-npx -y @1mcp/agent mcp status --verbose
+LOG_LEVEL=debug npx -y @1mcp/agent mcp status
 ```
 
 ## 另请参阅

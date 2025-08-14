@@ -70,7 +70,7 @@ npx -y @1mcp/agent mcp add remote-api --type=http --url="https://mcp.example.com
     ```
 2.  **验证配置**：列出您的服务器并检查新服务器的状态。
     ```bash
-    npx -y @1mcp/agent mcp list --verbose
+    LOG_LEVEL=debug npx -y @1mcp/agent mcp list
     npx -y @1mcp/agent mcp status git-main
     ```
 3.  **根据需要更新**：修改服务器的配置。例如，添加一个标签。

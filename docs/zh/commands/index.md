@@ -90,8 +90,8 @@ npx -y @1mcp/agent mcp add remote-api --type=http --url=https://api.example.com/
 # 批量整合多个应用程序
 npx -y @1mcp/agent app consolidate claude-desktop cursor vscode --yes
 
-# 按标签过滤服务器
-npx -y @1mcp/agent mcp list --tags=prod,api --verbose
+# 按标签过滤服务器并显示详细信息
+LOG_LEVEL=debug npx -y @1mcp/agent mcp list --tags=prod,api
 ```
 
 ## 环境变量

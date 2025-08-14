@@ -16,9 +16,9 @@ The agent uses a JSON file (e.g., `mcp.json`) to define backend servers and glob
 
 ### Default Locations
 
-- **macOS**: `~/Library/Application Support/1mcp/config.json`
-- **Linux**: `~/.config/1mcp/config.json`
-- **Windows**: `%APPDATA%\1mcp\config.json`
+- **macOS**: `~/.config/1mcp/mcp.json`
+- **Linux**: `~/.config/1mcp/mcp.json`
+- **Windows**: `%APPDATA%\1mcp\mcp.json`
 
 You can override the path using the `--config` flag.
 
@@ -82,35 +82,33 @@ Flags override settings from the JSON configuration file.
 
 ### HTTP Transport Options
 
-- `--port, -P <port>`: HTTP port. Default: `3051`.
+- `--port, -P <port>`: HTTP port. Default: `3050`.
 - `--host, -H <host>`: HTTP host. Default: `localhost`.
-- `--external-url <url>`: Public-facing URL for the server.
+- `--external-url, -u <url>`: External URL for the server (used for OAuth callbacks and public URLs).
 
 ### Configuration Options
 
 - `--config, -c <path>`: Path to configuration file.
-- `--config-watch`: Enable/disable configuration file watching. Default: `true`.
-
-### Logging Options
-
-- `--log-level <level>`: `error`, `warn`, `info`, `debug`.
-- `--log-file <path>`: Path to log file.
 
 ### Security Options
 
-- `--auth`: Enable OAuth 2.1 authentication. Default: `false`.
-- `--client-id <id>`: OAuth client ID.
-- `--client-secret <secret>`: OAuth client secret.
-- `--scope-validation`: Enable scope-based authorization. Default: `false`.
-- `--enhanced-security`: Enable extra security features. Default: `false`.
+- `--auth`: Enable OAuth 2.1 authentication (deprecated, use `--enable-auth`). Default: `false`.
+- `--enable-auth`: Enable authentication (OAuth 2.1). Default: `false`.
+- `--enable-scope-validation`: Enable tag-based scope validation. Default: `true`.
+- `--enable-enhanced-security`: Enable enhanced security middleware. Default: `false`.
+- `--session-ttl <minutes>`: Session expiry time in minutes. Default: `1440` (24 hours).
+- `--session-storage-path <path>`: Custom session storage directory path.
+- `--rate-limit-window <minutes>`: OAuth rate limit window in minutes. Default: `15`.
+- `--rate-limit-max <requests>`: Maximum requests per OAuth rate limit window. Default: `100`.
 
 ### Network Options
 
 - `--trust-proxy <config>`: Trust proxy configuration. See [Trust Proxy Guide](../reference/trust-proxy). Default: `loopback`.
 
-### Pagination Options
+### Filtering Options
 
-- `--pagination, -p`: Enable pagination for MCP protocol responses. Default: `false`. See [Pagination Guide](./pagination) for details.
+- `--tags, -g <tags>`: Tags to filter clients (comma-separated).
+- `--pagination, -p`: Enable pagination. Default: `false`.
 
 ### Health Check Options
 
@@ -133,19 +131,19 @@ Environment variables are prefixed with `ONE_MCP_` and are useful for containeri
 - `ONE_MCP_CONFIG_WATCH`
 - `ONE_MCP_LOG_LEVEL`
 - `ONE_MCP_LOG_FILE`
-- `ONE_MCP_AUTH`
-- `ONE_MCP_CLIENT_ID`
-- `ONE_MCP_CLIENT_SECRET`
-- `ONE_MCP_SCOPE_VALIDATION`
-- `ONE_MCP_ENHANCED_SECURITY`
-- `ONE_MCP_TRUST_PROXY`
+- `ONE_MCP_TAGS`
 - `ONE_MCP_PAGINATION`
-- `ONE_MCP_HEALTH_INFO_LEVEL`
-- `ONE_E_MCP_ENABLE_ASYNC_LOADING`
+- `ONE_MCP_AUTH`
+- `ONE_MCP_ENABLE_AUTH`
+- `ONE_MCP_ENABLE_SCOPE_VALIDATION`
+- `ONE_MCP_ENABLE_ENHANCED_SECURITY`
 - `ONE_MCP_SESSION_TTL`
 - `ONE_MCP_SESSION_STORAGE_PATH`
 - `ONE_MCP_RATE_LIMIT_WINDOW`
 - `ONE_MCP_RATE_LIMIT_MAX`
+- `ONE_MCP_TRUST_PROXY`
+- `ONE_MCP_HEALTH_INFO_LEVEL`
+- `ONE_MCP_ENABLE_ASYNC_LOADING`
 
 ---
 

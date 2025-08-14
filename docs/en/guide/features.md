@@ -1,591 +1,144 @@
-# 1MCP Features: What Can You Do?
+# 1MCP Features Overview
 
 > **🎯 Philosophy**: Every feature exists to solve a real user problem. We built capabilities you actually need, not just features that sound impressive.
 
 ## 🚀 Quick Discovery (Choose Your Path)
 
-**👋 I'm new to 1MCP** → [Core Features](#-core-features-what-everyone-gets)
-**🔒 I need security** → [Security Features](#-security--access-control)
-**⚡ I want performance** → [Performance Features](#-performance--reliability)
-**🏢 I run production systems** → [Enterprise Features](#-enterprise--operations)
-**🔧 I'm a developer** → [Developer Features](#-developer--integration)
+**👋 I'm new to 1MCP** → [Core Features](/guide/essentials/core-features)
+**🔒 I need security** → [Security & Access Control](/guide/advanced/security)
+**⚡ I want performance** → [Performance & Reliability](/guide/advanced/performance)
+**🏢 I run production systems** → [Enterprise & Operations](/guide/advanced/enterprise)
+**🔧 I'm a developer** → [Developer & Integration](/guide/integrations/developer-tools)
+**🔗 I want to consolidate apps** → [App Consolidation](/guide/integrations/app-consolidation)
+**🖥️ I use Claude Desktop** → [Claude Desktop Integration](/guide/integrations/claude-desktop)
+**⚙️ I need server management** → [Server Management](/guide/essentials/server-management)
+**🏷️ I want server filtering** → [Server Filtering](/guide/advanced/server-filtering)
+**⚡ I need fast startup** → [Fast Startup](/guide/advanced/fast-startup)
 
 ---
 
-## 🌟 Core Features (What Everyone Gets)
+## 🌟 [Core Features](/guide/essentials/core-features)
 
-### **🔗 Universal MCP Aggregation**
+Essential features that work out of the box for every user:
 
-**What it does**: Connects to all your MCP servers through one endpoint
-**Why you need it**: Stop managing dozens of individual server connections
-**How it helps**: One configuration file, one health check, one connection to manage
+- **🔗 Universal MCP Aggregation** - Connect all your MCP servers through one endpoint
+- **🔄 Hot Configuration Reload** - Add/remove servers instantly with zero downtime
+- **📊 Basic Status Monitoring** - Track connections and troubleshoot issues
 
-```mermaid
-graph LR
-    A[Your AI Assistant] --> B[1MCP Proxy]
-    B --> C[Server 1]
-    B --> D[Server 2]
-    B --> E[Server 3]
-    B --> F[Server N...]
-
-    style A fill:#e1f5fe
-    style B fill:#f3e5f5
-    style C fill:#e8f5e8
-    style D fill:#e8f5e8
-    style E fill:#e8f5e8
-    style F fill:#e8f5e8
-```
-
-**⏱️ Setup Time**: 5 minutes
-**🎯 Perfect For**: Anyone using 2+ MCP servers
-**✅ You Get**: Unified interface, automatic health monitoring, connection pooling
+Perfect for: Getting started, basic proxy needs, development environments
 
 ---
 
-### **🔄 Hot Configuration Reload**
+## 🔒 [Security & Access Control](/guide/advanced/security)
 
-**What it does**: Updates server configuration without restarting or losing connections
-**Why you need it**: Add/remove MCP servers instantly with zero downtime
-**How it helps**: Edit config file → Changes applied automatically in <30 seconds
+Enterprise-grade security with granular permissions:
 
-**Real Example**:
+- **🛡️ OAuth 2.1 Authentication** - Industry-standard secure token management
+- **🏷️ Tag-Based Access Control** - Granular permissions using server tags and scopes
+- **🚫 Rate Limiting & DDoS Protection** - Configurable request limits per client
 
-```bash
-# Edit your config file
-vim ~/.config/1mcp/mcp.json
-
-# Add a new server:
-"new-server": {
-  "command": ["npx", "-y", "@modelcontextprotocol/server-web"],
-  "tags": ["web", "search"]
-}
-
-# Save file → Server automatically detected and connected
-# No restart needed, existing connections preserved
-```
-
-**⏱️ Setup Time**: Built-in (no setup required)
-**🎯 Perfect For**: Development, production environments, frequent config changes
-**✅ You Get**: Zero-downtime updates, instant server addition/removal, preserved sessions
+Perfect for: Teams, shared environments, security compliance, production systems
 
 ---
 
-### **📊 Basic Status Monitoring**
+## ⚡ [Performance & Reliability](/guide/advanced/performance)
 
-**What it does**: Provides logging and basic status information for MCP servers
-**Why you need it**: Track server connections and troubleshoot issues
-**How it helps**: Structured logging, connection status, error tracking
+Built for production with intelligent recovery:
 
-**Status Information**:
+- **🔄 Efficient Request Handling** - Direct forwarding with proper error handling
+- **🔄 Automatic Retry & Recovery** - Exponential backoff for failed connections
+- **📊 Monitoring & Logging** - Structured logging and basic system monitoring
 
-- Server status available through logs
-- Connection information via MCP protocol responses
-- No dedicated health endpoint
-- Monitor through application logs and server behavior
-
-**⏱️ Setup Time**: Automatic
-**🎯 Perfect For**: Production monitoring, troubleshooting, system reliability
-**✅ You Get**: Structured logging, error tracking, connection monitoring
+Perfect for: Production systems, unreliable networks, critical workflows
 
 ---
 
-## 🔒 Security & Access Control
+## 🏢 [Enterprise & Operations](/guide/advanced/enterprise)
 
-### **🛡️ OAuth 2.1 Authentication**
+Production-ready deployment and operational features:
 
-**What it does**: Industry-standard authentication with secure token management
-**Why you need it**: Control who can access your MCP servers with enterprise-grade security
-**How it helps**: User sessions, token refresh, audit trails, scope-based permissions
+- **🔧 Single-Instance Deployment** - Simple, reliable process management
+- **⚡ Async Loading & Real-Time Updates** - Progressive capability discovery
+- **💊 Health Monitoring & Observability** - Comprehensive health endpoints
+- **📋 Security Operation Logging** - Track authentication and access events
+- **🔧 Advanced Configuration Management** - Environment-specific configs and secrets
 
-**Authentication Flow**:
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant 1MCP
-    participant AI Assistant
-
-    User->>1MCP: Register OAuth client
-    1MCP-->>User: Client credentials
-    AI Assistant->>1MCP: Request token with scopes
-    1MCP-->>AI Assistant: Access token
-    AI Assistant->>1MCP: API calls with Bearer token
-    1MCP-->>AI Assistant: Authorized responses
-```
-
-**⏱️ Setup Time**: 15 minutes
-**🎯 Perfect For**: Teams, shared environments, security compliance
-**✅ You Get**: Secure authentication, session management, token refresh, audit logs
+Perfect for: Production deployments, DevOps automation, enterprise environments
 
 ---
 
-### **🏷️ Tag-Based Access Control**
+## 🔧 [Developer & Integration](/guide/integrations/developer-tools)
 
-**What it does**: Granular permissions using server tags and OAuth scopes
-**Why you need it**: Give users access to only the MCP servers they need
-**How it helps**: Tag servers by sensitivity/function, grant access by role
+Developer-friendly APIs and integration tools:
 
-**Permission Examples**:
+- **🔌 RESTful API & Standards Compliance** - Clean REST API with full MCP compatibility
+- **📡 HTTP Transport with MCP Protocol** - Standards-compliant communication
+- **🧪 Development & Integration Support** - Hot-reload, debugging, MCP Inspector support
 
-```yaml
-# Server Configuration
-filesystem: { tags: ['files', 'sensitive'] }
-database: { tags: ['database', 'sensitive'] }
-web-search: { tags: ['web', 'safe'] }
-memory: { tags: ['memory', 'safe'] }
-
-# User Roles
-Developer: 'tag:files tag:database tag:web tag:memory' # Full access
-Analyst: 'tag:database tag:web' # Data access only
-Demo: 'tag:web' # Public APIs only
-```
-
-**⏱️ Setup Time**: 5 minutes per role
-**🎯 Perfect For**: Multi-user environments, principle of least privilege
-**✅ You Get**: Role-based access, fine-grained permissions, security compliance
+Perfect for: Custom integrations, API clients, development workflows, testing
 
 ---
 
-### **🚫 Rate Limiting & DDoS Protection**
+## 🔗 [App Consolidation](/guide/integrations/app-consolidation)
 
-**What it does**: Prevents abuse with configurable request limits per client
-**Why you need it**: Protect your MCP servers from overload and malicious usage
-**How it helps**: Per-client limits, burst handling, automatic throttling
+Unify MCP server configurations from multiple desktop applications:
 
-**Rate Limit Configuration**:
+- **🎯 Multi-App Integration** - Consolidate Claude Desktop, Cursor, VS Code, and more
+- **🔄 Safe Configuration Management** - Automatic backups with easy restoration
+- **⚡ Instant Setup** - One command to consolidate any supported application
 
-```bash
-# Configure via CLI flags
-npx -y @1mcp/agent --config mcp.json --enable-auth \
-  --rate-limit-window 15 \     # 15 minute window
-  --rate-limit-max 100         # 100 requests per window
-
-# Or via environment variables
-export ONE_MCP_RATE_LIMIT_WINDOW=15
-export ONE_MCP_RATE_LIMIT_MAX=100
-npx -y @1mcp/agent --config mcp.json --enable-auth
-```
-
-**⏱️ Setup Time**: Built-in with sensible defaults
-**🎯 Perfect For**: Public APIs, high-traffic environments, abuse prevention
-**✅ You Get**: Automatic protection, configurable limits, fair usage enforcement
+Perfect for: Managing multiple MCP-enabled applications, sharing servers across tools
 
 ---
 
-## ⚡ Performance & Reliability
+## 🖥️ [Claude Desktop Integration](/guide/integrations/claude-desktop)
 
-### **🔄 Efficient Request Handling**
+Seamlessly integrate 1MCP with Claude Desktop using two flexible approaches:
 
-**What it does**: Direct request forwarding to backend MCP servers with proper error handling
-**Why you need it**: Reliable communication between AI assistants and MCP servers
-**How it helps**: Consistent request processing, error recovery, connection management
+- **📍 Local Configuration Consolidation** - Auto-configure Claude Desktop via stdio (recommended)
+- **🌐 Remote Custom Connectors** - Connect to remote 1MCP servers via HTTPS
+- **🔐 OAuth 2.1 Support** - Secure authentication for remote connections
 
-**⏱️ Setup Time**: Built-in functionality
-**🎯 Perfect For**: Reliable MCP server communication, error handling
-**✅ You Get**: Stable connections, proper error handling, request forwarding
+Perfect for: Claude Desktop users, remote team collaboration, secure enterprise deployments
 
 ---
 
-### **🔄 Automatic Retry & Recovery**
+## ⚙️ [Server Management](/guide/essentials/server-management)
 
-**What it does**: Intelligent retry logic with exponential backoff for failed connections
-**Why you need it**: Handle temporary server failures gracefully without manual intervention
-**How it helps**: Automatic recovery, circuit breaker pattern, minimal service disruption
+Comprehensive MCP server lifecycle and configuration management:
 
-**Recovery Strategy**:
+- **🔧 Multiple Transport Types** - Support for stdio, HTTP, and SSE transports
+- **🏷️ Tag-Based Organization** - Organize servers with flexible tagging system
+- **🔄 Lifecycle Management** - Add, update, enable, disable, and remove servers
+- **🛡️ Security & Environment** - Secure environment variable and configuration handling
 
-```
-Connection Failure → Wait 1s → Retry
-Still Failing → Wait 2s → Retry
-Still Failing → Wait 4s → Retry
-Still Failing → Wait 8s → Mark server unavailable
-Server Recovers → Immediate reconnection
-```
-
-**Reliability Impact**:
-
-- **Individual Server Uptime**: 95% typical
-- **Effective System Uptime**: 99.9% with retry logic
-- **Recovery Time**: Seconds instead of manual intervention
-
-**⏱️ Setup Time**: Built-in resilience
-**🎯 Perfect For**: Production systems, unreliable networks, critical workflows
-**✅ You Get**: Automatic recovery, improved uptime, reduced maintenance
+Perfect for: DevOps teams, complex server configurations, production deployments
 
 ---
 
-### **📊 Basic Monitoring & Logging**
+## 🏷️ [Server Filtering](/guide/advanced/server-filtering)
 
-**What it does**: Structured logging and basic monitoring for system status
-**Why you need it**: Track system status and troubleshoot issues
-**How it helps**: Winston-based logging, request/error tracking, connection monitoring
+Control access to specific MCP servers using flexible tag-based filtering:
 
-**Available Monitoring**:
+- **🎯 Tag-Based Access Control** - Filter servers by assigned tags for granular access
+- **🔍 Selective Server Exposure** - Only connect to servers that match specified criteria
+- **🚫 Multi-Criteria Filtering** - Combine multiple tags for precise server selection
+- **🔧 Runtime Configuration** - Dynamic filtering without server restarts
 
-```bash
-# Main MCP endpoint
-POST /mcp
-
-# OAuth management dashboard
-GET /oauth
-
-# Application logs for monitoring
-# Request/response logging
-# Error tracking with stack traces
-```
-
-**⏱️ Setup Time**: Built-in logging
-**🎯 Perfect For**: Basic monitoring, troubleshooting, system status
-**✅ You Get**: Structured logs, error tracking, request monitoring
+Perfect for: Multi-tenant environments, role-based access, environment separation
 
 ---
 
-## 🏢 Enterprise & Operations
+## ⚡ [Fast Startup](/guide/advanced/fast-startup)
 
-### **🔧 Single-Instance Deployment**
+Get 1MCP running instantly with asynchronous server loading:
 
-**What it does**: Runs as a single process managing multiple MCP server connections
-**Why you need it**: Simple, reliable deployment with minimal resource overhead
-**How it helps**: Easy deployment, process management, unified configuration
+- **🚀 Sub-Second Startup** - 1MCP ready in under 1 second regardless of server count
+- **🔄 Background Server Loading** - Servers connect asynchronously without blocking startup
+- **📊 Real-Time Status Updates** - Live notifications as servers become available
+- **🛡️ Resilient Operation** - Individual server failures don't break the entire system
 
-**Deployment Architecture**:
-
-```mermaid
-graph TB
-    AI[AI Assistant] --> MCP[1MCP Instance<br/>:3050]
-
-    subgraph "MCP Servers"
-        S1[Server 1]
-        S2[Server 2]
-        S3[Server N...]
-    end
-
-    MCP --> S1
-    MCP --> S2
-    MCP --> S3
-```
-
-**⏱️ Setup Time**: 5 minutes
-**🎯 Perfect For**: Individual use, small teams, simple deployments
-**✅ You Get**: Simple deployment, easy management, reliable operation
-
----
-
-### **⚡ Async Loading & Real-Time Updates**
-
-**What it does**: Loads MCP servers asynchronously with real-time capability notifications
-**Why you need it**: Get immediate access to the server while other MCP servers start up in background
-**How it helps**: Faster startup times, progressive capability discovery, listChanged notifications
-
-**Loading Strategy**:
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant 1MCP
-    participant Server1
-    participant Server2
-
-    Client->>1MCP: Connect
-    1MCP-->>Client: Immediate connection
-
-    par Background Loading
-        1MCP->>Server1: Start server 1
-        Server1-->>1MCP: Server ready
-        1MCP-->>Client: listChanged notification (tools)
-    and
-        1MCP->>Server2: Start server 2
-        Server2-->>1MCP: Server ready
-        1MCP-->>Client: listChanged notification (resources)
-    end
-```
-
-**Configuration Example**:
-
-```bash
-# Enable async loading with CLI flag
-npx -y @1mcp/agent --config mcp.json --enable-async-loading
-
-# Or via environment variable
-export ONE_MCP_ENABLE_ASYNC_LOADING=true
-npx -y @1mcp/agent --config mcp.json
-```
-
-**Real-World Impact**:
-
-- **Startup Time**: Immediate connection vs. waiting for all servers
-- **Progressive Loading**: Capabilities appear as servers come online
-- **Better UX**: No blocking on slow-starting servers
-- **Batched Notifications**: Prevents client spam during initialization
-
-**⏱️ Setup Time**: Single CLI flag
-**🎯 Perfect For**: Fast startup times, better user experience, large server configurations
-**✅ You Get**: Immediate connection, progressive capabilities, real-time updates, batched notifications
-
----
-
-### **📋 Security Operation Logging**
-
-**What it does**: Logs security-related operations including authentication and scope validation
-**Why you need it**: Track OAuth operations and security events for monitoring
-**How it helps**: Structured logging of scope operations, authentication events, access control
-
-**Security Log Examples**:
-
-```bash
-# Scope validation events
-INFO: Scope operation: scope_validation_success {
-  "operation": "scope_validation_success",
-  "clientId": "app-client",
-  "requestedScopes": ["tag:filesystem"],
-  "grantedScopes": ["tag:filesystem", "tag:memory"],
-  "success": true
-}
-
-# Authorization events
-INFO: Scope operation: authorization_granted {
-  "operation": "authorization_granted",
-  "clientId": "app-client",
-  "requestedScopes": ["tag:web"],
-  "success": true
-}
-```
-
-**⏱️ Setup Time**: Built-in security logging
-**🎯 Perfect For**: Security monitoring, access tracking, OAuth debugging
-**✅ You Get**: Security event logs, scope operation tracking, authentication monitoring
-
----
-
-### **💊 Health Monitoring & Observability**
-
-**What it does**: Comprehensive health check endpoints with system metrics and server status
-**Why you need it**: Monitor production deployments, enable automated health checks, and debugging
-**How it helps**: Real-time system status, automated alerts, load balancer integration
-
-**Health Check Endpoints**:
-
-```bash
-# Complete health status
-GET /health
-
-# Liveness probe (Kubernetes ready)
-GET /health/live
-
-# Readiness probe (configuration loaded)
-GET /health/ready
-```
-
-**Health Response Example**:
-
-```json
-{
-  "status": "healthy",
-  "timestamp": "2025-01-30T12:00:00.000Z",
-  "version": "0.15.0",
-  "system": {
-    "uptime": 3600,
-    "memory": {
-      "used": 50.5,
-      "total": 100.0,
-      "percentage": 50.5
-    }
-  },
-  "servers": {
-    "total": 3,
-    "healthy": 2,
-    "unhealthy": 1,
-    "details": [
-      {
-        "name": "filesystem-server",
-        "status": "connected",
-        "healthy": true,
-        "lastConnected": "2025-01-30T11:30:00.000Z",
-        "tags": ["filesystem"]
-      },
-      {
-        "name": "web-server",
-        "status": "error",
-        "healthy": false,
-        "lastError": "Connection timeout",
-        "tags": ["network", "web"]
-      }
-    ]
-  },
-  "configuration": {
-    "loaded": true,
-    "serverCount": 3,
-    "enabledCount": 2,
-    "disabledCount": 1,
-    "authEnabled": true,
-    "transport": "http"
-  }
-}
-```
-
-**Health Status Levels**:
-
-- **`healthy`** (200) - All systems operational
-- **`degraded`** (200) - Some issues but functional
-- **`unhealthy`** (503) - Critical issues affecting service
-
-**Integration Examples**:
-
-```yaml
-# Kubernetes deployment
-livenessProbe:
-  httpGet:
-    path: /health/live
-    port: 3050
-  initialDelaySeconds: 30
-  periodSeconds: 10
-
-readinessProbe:
-  httpGet:
-    path: /health/ready
-    port: 3050
-  initialDelaySeconds: 5
-  periodSeconds: 5
-
-# Docker Compose healthcheck
-healthcheck:
-  test: ['CMD', 'curl', '-f', 'http://localhost:3050/health']
-  interval: 30s
-  timeout: 10s
-  retries: 3
-```
-
-**⏱️ Setup Time**: Available immediately (built-in)
-**🎯 Perfect For**: Production monitoring, DevOps automation, debugging server issues
-**✅ You Get**: System metrics, server status, Kubernetes probes, load balancer health checks
-
----
-
-### **🔧 Advanced Configuration Management**
-
-**What it does**: Environment-specific configs, secret management, feature flags
-**Why you need it**: Manage complex deployments across development, staging, production
-**How it helps**: Configuration templating, secret injection, environment isolation
-
-**Configuration Hierarchy**:
-
-```
-1. Environment Variables (highest priority)
-2. CLI Arguments
-3. Configuration Files
-4. Default Values (lowest priority)
-```
-
-**Secret Management Example**:
-
-```json
-{
-  "mcpServers": {
-    "database": {
-      "command": ["mcp-postgres"],
-      "env": {
-        "DATABASE_URL": "${DATABASE_URL}", // From environment
-        "API_KEY": "${SECRET:api-key}" // From secret store
-      }
-    }
-  }
-}
-```
-
-**⏱️ Setup Time**: 30 minutes for advanced configuration
-**🎯 Perfect For**: Multi-environment deployments, secret management, configuration as code
-**✅ You Get**: Environment separation, secret security, configuration templating
-
----
-
-## 🔧 Developer & Integration
-
-### **🔌 RESTful API & Standards Compliance**
-
-**What it does**: Clean REST API with full MCP protocol compatibility
-**Why you need it**: Easy integration with any client, maintain MCP standard compliance
-**How it helps**: Well-documented endpoints, standard HTTP methods, consistent responses
-
-**API Examples**:
-
-```bash
-# MCP protocol endpoint
-POST /mcp
-Content-Type: application/json
-Authorization: Bearer {token}
-
-# OAuth management dashboard
-GET /oauth
-
-# OAuth endpoints (when auth enabled)
-POST /oauth/token
-GET /oauth/callback/:serverName
-```
-
-**⏱️ Setup Time**: Ready to use immediately
-**🎯 Perfect For**: Custom integrations, API clients, third-party tools
-**✅ You Get**: Standard REST API, MCP compliance, comprehensive documentation
-
----
-
-### **📡 HTTP Transport with MCP Protocol**
-
-**What it does**: Reliable HTTP-based communication using the MCP protocol standard
-**Why you need it**: Standards-compliant communication between AI clients and MCP servers
-**How it helps**: Request/response patterns, proper error handling, protocol compliance
-
-**HTTP MCP Example**:
-
-```bash
-# MCP protocol over HTTP
-POST /mcp
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/list",
-  "params": {}
-}
-```
-
-**⏱️ Setup Time**: Built-in, default transport
-**🎯 Perfect For**: Standard MCP client integration, reliable communication
-**✅ You Get**: MCP protocol compliance, reliable transport, standard HTTP methods
-
-**Note**: SSE transport is deprecated - use HTTP transport instead
-
----
-
-### **🧪 Development & Integration Support**
-
-**What it does**: Provides development-friendly features for testing and integration
-**Why you need it**: Easier development, debugging, and integration testing
-**How it helps**: Hot-reload configuration, structured logging, MCP Inspector support
-
-**Development Features**:
-
-```bash
-# Hot-reload configuration changes
-npx -y @1mcp/agent --config dev.json
-# Edit dev.json → changes applied automatically
-
-# Use MCP Inspector for testing
-npx @modelcontextprotocol/inspector
-# Connect to http://localhost:3050 for interactive testing
-
-# Environment-specific logging
-LOG_LEVEL=debug npx -y @1mcp/agent --config dev.json
-
-# Multiple environment configs
-npx -y @1mcp/agent --config dev.json --port 3051
-npx -y @1mcp/agent --config staging.json --port 3052
-```
-
-**⏱️ Setup Time**: Built-in development features
-**🎯 Perfect For**: Development workflows, testing, debugging integration issues
-**✅ You Get**: Hot-reload configs, MCP Inspector integration, structured logging, multi-environment support
+Perfect for: Development workflows, unreliable networks, large server configurations
 
 ---
 
@@ -604,38 +157,35 @@ npx -y @1mcp/agent --config staging.json --port 3052
 | **Single-Instance**   | ✅ Simple      | ✅ Easy Deploy  | ✅ Manageable  | ✅ Reliable    | 🔧 Custom Setup |
 | **Basic Logging**     | 🚫 Hidden      | 🔍 Debug        | 📋 Monitoring  | 📋 Analysis    | 📋 Custom       |
 | **HTTP Transport**    | ⚡ Automatic   | 🔌 API Feature  | 📊 Monitoring  | 📊 Integration | 📊 Custom       |
+| **App Consolidation** | ✅ Simple      | 🔧 Integration  | ✅ Management  | ✅ Automation  | ✅ Enterprise   |
+| **Claude Desktop**    | ✅ Essential   | 🔌 Integration  | 🔧 Setup       | 📊 Remote      | 🛡️ Secure       |
+| **Server Management** | 🚫 Hidden      | ✅ Essential    | ✅ Critical    | ✅ Critical    | ✅ Advanced     |
+| **Server Filtering**  | 🚫 Transparent | 🔧 Configurable | 🛡️ Access Ctrl | 🛡️ Policies    | 🛡️ Multi-Tenant |
 
-**Legend**:
-
-- ✅ Primary benefit
-- ⚡ Performance feature
-- 🔒 Security feature
-- 🔧 Technical capability
-- 🛡️ Protection feature
-- 📊 Monitoring/analytics
-- 🚫 Not relevant for user type
+**Legend**: ✅ Primary benefit | ⚡ Performance | 🔒 Security | 🔧 Technical | 🛡️ Protection | 📊 Monitoring | 🚫 Not relevant
 
 ---
 
 ## 🎯 Getting Started with Features
 
-### **Quick Start Path**
+### Quick Start Path
 
-1. **[5 minutes]** Basic MCP aggregation → [Level 1 Setup](/guide/getting-started#🌟-level-1-basic-proxy-5-minutes)
-2. **[15 minutes]** Add authentication → [Level 2 Setup](/guide/getting-started#🔒-level-2-secure-access-15-minutes)
-3. **[45 minutes]** Production features → [Level 3 Setup](/guide/getting-started#🏗️-level-3-production-ready-15-minutes)
+1. **[5 minutes]** Basic MCP aggregation → [Getting Started](/guide/getting-started)
+2. **[15 minutes]** Add authentication → [Security Features](/guide/advanced/security)
+3. **[30 minutes]** Production features → [Enterprise Features](/guide/advanced/enterprise)
 
-### **Feature-Specific Guides**
+### Feature-Specific Guides
 
-- **Security Setup** → [Security Documentation](/reference/security)
-- **Configuration Guide** → [Configuration Reference](/guide/configuration)
-- **Authentication Guide** → [Authentication Setup](/guide/authentication)
-- **Architecture Overview** → [System Architecture](/reference/architecture)
-
-### **Real-World Examples**
-
-- **Comparison Guide** → [Feature Comparison](/reference/feature-comparison)
+- **Security Setup** → [Authentication Guide](/guide/advanced/authentication)
+- **Configuration** → [Configuration Guide](/guide/essentials/configuration)
+- **Development** → [Developer Features](/guide/integrations/developer-tools)
+- **App Integration** → [App Consolidation Guide](/guide/integrations/app-consolidation)
+- **Claude Desktop** → [Claude Desktop Integration](/guide/integrations/claude-desktop)
+- **Server Management** → [Server Management Guide](/guide/essentials/server-management)
+- **Server Filtering** → [Server Filtering Guide](/guide/advanced/server-filtering)
+- **Performance** → [Fast Startup Guide](/guide/advanced/fast-startup)
+- **Architecture** → [System Architecture](/reference/architecture)
 
 ---
 
-> **💡 Pro Tip**: Start with the features you need most, then add advanced capabilities as your requirements grow. Every feature is designed to work independently and can be enabled incrementally without breaking existing functionality.
+> **💡 Pro Tip**: Start with [Core Features](/guide/essentials/core-features), then add advanced capabilities as your requirements grow. Every feature is designed to work independently and can be enabled incrementally.

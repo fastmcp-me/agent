@@ -16,9 +16,9 @@
 
 ### 默认位置
 
-- **macOS**：`~/Library/Application Support/1mcp/config.json`
-- **Linux**：`~/.config/1mcp/config.json`
-- **Windows**：`%APPDATA%\1mcp\config.json`
+- **macOS**：`~/.config/1mcp/mcp.json`
+- **Linux**：`~/.config/1mcp/mcp.json`
+- **Windows**：`%APPDATA%\1mcp\mcp.json`
 
 您可以使用 `--config` 标志覆盖路径。
 
@@ -82,31 +82,33 @@
 
 ### HTTP 传输选项
 
-- `--port, -P <port>`：HTTP 端口。默认值：`3051`。
+- `--port, -P <port>`：HTTP 端口。默认值：`3050`。
 - `--host, -H <host>`：HTTP 主机。默认值：`localhost`。
-- `--external-url <url>`：服务器的面向公众的 URL。
+- `--external-url, -u <url>`：服务器的外部 URL（用于 OAuth 回调和公共 URL）。
 
 ### 配置选项
 
 - `--config, -c <path>`：配置文件的路径。
-- `--config-watch`：启用/禁用配置文件监视。默认值：`true`。
-
-### 日志记录选项
-
-- `--log-level <level>`：`error`、`warn`、`info`、`debug`。
-- `--log-file <path>`：日志文件的路径。
 
 ### 安全选项
 
-- `--auth`：启用 OAuth 2.1 身份验证。默认值：`false`。
-- `--client-id <id>`：OAuth 客户端 ID。
-- `--client-secret <secret>`：OAuth 客户端密钥。
-- `--scope-validation`：启用基于范围的授权。默认值：`false`。
-- `--enhanced-security`：启用额外的安全功能。默认值：`false`。
+- `--auth`：启用 OAuth 2.1 身份验证（已弃用，请使用 `--enable-auth`）。默认值：`false`。
+- `--enable-auth`：启用身份验证（OAuth 2.1）。默认值：`false`。
+- `--enable-scope-validation`：启用基于标签的范围验证。默认值：`true`。
+- `--enable-enhanced-security`：启用增强安全中间件。默认值：`false`。
+- `--session-ttl <minutes>`：会话过期时间（分钟）。默认值：`1440`（24 小时）。
+- `--session-storage-path <path>`：自定义会话存储目录路径。
+- `--rate-limit-window <minutes>`：OAuth 速率限制窗口（分钟）。默认值：`15`。
+- `--rate-limit-max <requests>`：每个 OAuth 速率限制窗口的最大请求数。默认值：`100`。
 
 ### 网络选项
 
 - `--trust-proxy <config>`：信任代理配置。请参阅[信任代理指南](../reference/trust-proxy)。默认值：`loopback`。
+
+### 过滤选项
+
+- `--tags, -g <tags>`：过滤客户端的标签（逗号分隔）。
+- `--pagination, -p`：启用分页。默认值：`false`。
 
 ### 健康检查选项
 
@@ -129,18 +131,19 @@
 - `ONE_MCP_CONFIG_WATCH`
 - `ONE_MCP_LOG_LEVEL`
 - `ONE_MCP_LOG_FILE`
+- `ONE_MCP_TAGS`
+- `ONE_MCP_PAGINATION`
 - `ONE_MCP_AUTH`
-- `ONE_MCP_CLIENT_ID`
-- `ONE_MCP_CLIENT_SECRET`
-- `ONE_MCP_SCOPE_VALIDATION`
-- `ONE_MCP_ENHANCED_SECURITY`
-- `ONE_MCP_TRUST_PROXY`
-- `ONE_MCP_HEALTH_INFO_LEVEL`
-- `ONE_E_MCP_ENABLE_ASYNC_LOADING`
+- `ONE_MCP_ENABLE_AUTH`
+- `ONE_MCP_ENABLE_SCOPE_VALIDATION`
+- `ONE_MCP_ENABLE_ENHANCED_SECURITY`
 - `ONE_MCP_SESSION_TTL`
 - `ONE_MCP_SESSION_STORAGE_PATH`
 - `ONE_MCP_RATE_LIMIT_WINDOW`
 - `ONE_MCP_RATE_LIMIT_MAX`
+- `ONE_MCP_TRUST_PROXY`
+- `ONE_MCP_HEALTH_INFO_LEVEL`
+- `ONE_MCP_ENABLE_ASYNC_LOADING`
 
 ---
 

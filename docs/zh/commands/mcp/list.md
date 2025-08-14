@@ -18,8 +18,8 @@ npx -y @1mcp/agent mcp list [options]
 - **`--show-disabled`**
   - 在列表中包括禁用的服务器。
 
-- **`--verbose, -v`**
-  - 显示详细信息，包括命令/URL、参数和环境变量。
+- **环境变量 `LOG_LEVEL=debug`**
+  - 设置 `LOG_LEVEL=debug` 以显示详细信息，包括命令/URL、参数和环境变量。
 
 ## 示例
 
@@ -34,7 +34,7 @@ npx -y @1mcp/agent mcp list --show-disabled
 npx -y @1mcp/agent mcp list --tags=prod
 
 # 显示所有服务器的详细信息
-npx -y @1mcp/agent mcp list --verbose
+LOG_LEVEL=debug npx -y @1mcp/agent mcp list
 ```
 
 ## 另请参阅

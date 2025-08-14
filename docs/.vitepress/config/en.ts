@@ -65,6 +65,11 @@ function sidebar(): DefaultTheme.Sidebar {
         text: 'Features',
         items: [
           { text: 'Feature Overview', link: '/guide/features' },
+          { text: 'Core Features', link: '/guide/features/core' },
+          { text: 'Security & Access Control', link: '/guide/features/security' },
+          { text: 'Performance & Reliability', link: '/guide/features/performance' },
+          { text: 'Enterprise & Operations', link: '/guide/features/enterprise' },
+          { text: 'Developer & Integration', link: '/guide/features/developer' },
           { text: 'Fast Startup', link: '/guide/fast-startup' },
           { text: 'Pagination Support', link: '/guide/pagination' },
           { text: 'Server Filtering', link: '/guide/server-filtering' },
