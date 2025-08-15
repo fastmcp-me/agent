@@ -458,6 +458,10 @@ pnpm watch
 Run the server:
 
 ```bash
+# Copy the example environment file first
+cp .env.example .env
+
+# Then run the development server
 pnpm dev
 ```
 

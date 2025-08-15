@@ -54,7 +54,7 @@
     ]
   },
   "scripts": {
-    "dev": "ONE_MCP_LOG_LEVEL=debug tsc-watch --project tsconfig.build.json --onSuccess \"node build/index.js --config ./mcp.json --port 3051 --enable-auth --enable-async-loading\"",
+    "dev": "tsc-watch --project tsconfig.build.json --onSuccess \"node --env-file=.env build/index.js\"",
     "build": "tsc --project tsconfig.build.json && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "clean": "rm -rf build",
     "prepare": "husky || true",

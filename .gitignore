@@ -4,6 +4,7 @@ build/
 logs/
 *.log
 .env*
+!.env.example
 .cursorrules
 .cursorignore
 .cursor/
@@ -17,3 +18,6 @@ docs/.vitepress/cache
 
 /.ai
 /xnotes
+/notes
+CLAUDE.md
+GEMINI.md
