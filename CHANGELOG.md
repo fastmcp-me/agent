@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.0] - 2025-08-15
+
+### 🚀 Features
+- Add example environment configuration and update .gitignore by @xizhibei
+- Introduce ONE_MCP_LOG_LEVEL for enhanced logging configuration by @xizhibei
+- Enhance secure logging and add OAuth-related tests by @xizhibei
+- Add pagination support documentation in English and Chinese by @xizhibei
+- Add notifications for clients after configuration reload by @xizhibei
+- Implement secure logging functionality to redact sensitive information by @xizhibei
+- Restructure VitePress documentation and add new guides by @xizhibei
+- Add abort signal support for connection and loading operations by @xizhibei
+
+### 🐛 Bug Fixes
+- Correct broken links to app consolidation guide by @xizhibei
+- Update listChanged property to true for server capabilities by @xizhibei
+- Prevent default config corruption by ensuring --config has a value in CLI commands by @xizhibei
+
+### 📚 Documentation
+- Enhance feature guides and sidebar navigation for 1MCP by @xizhibei
+- Enhance README with updated MCP server setup instructions for Cursor and VSCode by @xizhibei
+- Update README for 1MCP setup and usage instructions by @xizhibei
+- Update command syntax in server management and app consolidation guides by @xizhibei
+- Update README for 1MCP Agent with multilingual support and enhanced structure by @xizhibei
+- Streamline integration guide and update commands by @xizhibei
+- Update MCP server addition commands to use new package references by @xizhibei
+- Update MCP server addition commands to use new pattern for auto-detection by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Update GitHub Actions workflow to ignore specific paths for push and pull request events by @xizhibei
+
+
 ## [0.17.0] - 2025-08-07
 
 ### 🚀 Features
@@ -507,6 +538,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.18.0]: https://github.com/1mcp-app/agent/compare/v0.17.0..v0.18.0
 [0.17.0]: https://github.com/1mcp-app/agent/compare/v0.16.0..v0.17.0
 [0.16.0]: https://github.com/1mcp-app/agent/compare/v0.15.0..v0.16.0
 [0.15.0]: https://github.com/1mcp-app/agent/compare/v0.14.0..v0.15.0
