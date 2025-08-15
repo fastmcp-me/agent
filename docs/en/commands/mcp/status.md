@@ -17,8 +17,8 @@ npx -y @1mcp/agent mcp status [name] [options]
 
 ## Options
 
-- **Environment Variable `LOG_LEVEL=debug`**
-  - Set `LOG_LEVEL=debug` to show detailed configuration information.
+- **Environment Variable `ONE_MCP_LOG_LEVEL=debug`**
+  - Set `ONE_MCP_LOG_LEVEL=debug` to show detailed configuration information.
 
 ## Description
 
@@ -34,7 +34,7 @@ npx -y @1mcp/agent mcp status
 npx -y @1mcp/agent mcp status my-server
 
 # Get detailed status information
-LOG_LEVEL=debug npx -y @1mcp/agent mcp status
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent mcp status
 ```
 
 ## See Also

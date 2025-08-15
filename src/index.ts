@@ -7,7 +7,7 @@ import { hideBin } from 'yargs/helpers';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
 import { setupServer } from './server.js';
-import logger, { enableConsoleTransport } from './logger/logger.js';
+import logger, { configureLogger } from './logger/logger.js';
 import configReloadService from './services/configReloadService.js';
 import { ServerManager } from './core/server/serverManager.js';
 import { McpConfigManager } from './config/mcpConfigManager.js';
@@ -120,6 +120,17 @@ const serverOptions = {
     describe: 'Enable asynchronous MCP server loading with listChanged notifications',
     type: 'boolean' as const,
     default: false,
+  },
+  'log-level': {
+    describe: 'Set the log level (debug, info, warn, error)',
+    type: 'string' as const,
+    choices: ['debug', 'info', 'warn', 'error'] as const,
+    default: undefined,
+  },
+  'log-file': {
+    describe: 'Write logs to a file in addition to console (disables console logging only for stdio transport)',
+    type: 'string' as const,
+    default: undefined,
   },
 };
 
@@ -242,8 +253,14 @@ async function main() {
   const parsedArgv = (await yargsInstance.parse()) as any;
 
   try {
-    if (parsedArgv.transport !== 'stdio') {
-      enableConsoleTransport();
+    // Configure logger with CLI options and transport awareness
+    configureLogger({
+      logLevel: parsedArgv['log-level'],
+      logFile: parsedArgv['log-file'],
+      transport: parsedArgv.transport,
+    });
+
+    if (parsedArgv.transport !== 'stdio' && !parsedArgv['log-file']) {
       displayLogo();
     }
 

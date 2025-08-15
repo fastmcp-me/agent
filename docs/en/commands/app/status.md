@@ -19,8 +19,8 @@ npx -y @1mcp/agent app status [app-name] [options]
 
 ## Options
 
-- **Environment Variable `LOG_LEVEL=debug`**
-  - Set `LOG_LEVEL=debug` to show detailed configuration and backup information.
+- **Environment Variable `ONE_MCP_LOG_LEVEL=debug`**
+  - Set `ONE_MCP_LOG_LEVEL=debug` to show detailed configuration and backup information.
 
 ## Examples
 
@@ -32,7 +32,7 @@ npx -y @1mcp/agent app status
 npx -y @1mcp/agent app status claude-desktop
 
 # Show detailed status information
-LOG_LEVEL=debug npx -y @1mcp/agent app status
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent app status
 ```
 
 ## See Also

@@ -78,7 +78,7 @@ npx @modelcontextprotocol/inspector
 # 连接到 http://localhost:3050 进行交互式测试
 
 # 环境特定日志
-LOG_LEVEL=debug npx -y @1mcp/agent --config dev.json
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent --config dev.json
 
 # 多环境配置
 npx -y @1mcp/agent --config dev.json --port 3051

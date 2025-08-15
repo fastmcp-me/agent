@@ -19,8 +19,8 @@ npx -y @1mcp/agent app status [app-name] [options]
 
 ## 选项
 
-- **环境变量 `LOG_LEVEL=debug`**
-  - 设置 `LOG_LEVEL=debug` 以显示详细的配置和备份信息。
+- **环境变量 `ONE_MCP_LOG_LEVEL=debug`**
+  - 设置 `ONE_MCP_LOG_LEVEL=debug` 以显示详细的配置和备份信息。
 
 ## 示例
 
@@ -32,7 +32,7 @@ npx -y @1mcp/agent app status
 npx -y @1mcp/agent app status claude-desktop
 
 # 显示详细的状态信息
-LOG_LEVEL=debug npx -y @1mcp/agent app status
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent app status
 ```
 
 ## 另请参阅

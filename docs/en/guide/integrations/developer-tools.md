@@ -78,7 +78,7 @@ npx @modelcontextprotocol/inspector
 # Connect to http://localhost:3050 for interactive testing
 
 # Environment-specific logging
-LOG_LEVEL=debug npx -y @1mcp/agent --config dev.json
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent --config dev.json
 
 # Multiple environment configs
 npx -y @1mcp/agent --config dev.json --port 3051

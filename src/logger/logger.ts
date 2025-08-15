@@ -5,6 +5,7 @@ const MCP_TO_WINSTON_LEVEL: Record<string, string> = {
   debug: 'debug',
   info: 'info',
   notice: 'info',
+  warn: 'warn', // Support both 'warn' and 'warning' for user convenience
   warning: 'warn',
   error: 'error',
   critical: 'error',
@@ -67,6 +68,70 @@ export function setLogLevel(mcpLevel: string): void {
   logger.transports.forEach((transport) => {
     transport.level = winstonLevel;
   });
+}
+
+/**
+ * Configure logger with CLI options and transport awareness
+ * @param options Configuration options for the logger
+ */
+export function configureLogger(options: { logLevel?: string; logFile?: string; transport?: string }): void {
+  // Determine log level priority: CLI > ONE_MCP_LOG_LEVEL > LOG_LEVEL (deprecated)
+  let logLevel = options.logLevel;
+
+  if (!logLevel) {
+    logLevel = process.env.ONE_MCP_LOG_LEVEL;
+  }
+
+  if (!logLevel) {
+    logLevel = process.env.LOG_LEVEL;
+    if (logLevel) {
+      logger.warn(
+        'LOG_LEVEL environment variable is deprecated. Please use ONE_MCP_LOG_LEVEL or --log-level CLI option instead.',
+      );
+    }
+  }
+
+  logLevel = logLevel || 'info';
+
+  // Convert MCP log level to Winston log level
+  const winstonLevel = MCP_TO_WINSTON_LEVEL[logLevel] || 'info';
+
+  // Clear existing transports
+  logger.clear();
+
+  // Set logger level
+  logger.level = winstonLevel;
+
+  // Configure transports based on options
+  if (options.logFile) {
+    // Add file transport
+    logger.add(
+      new winston.transports.File({
+        filename: options.logFile,
+        format: customFormat,
+        level: winstonLevel,
+      }),
+    );
+
+    // Add console transport except for stdio transport
+    if (options.transport !== 'stdio') {
+      logger.add(
+        new winston.transports.Console({
+          format: consoleFormat,
+          level: winstonLevel,
+        }),
+      );
+    }
+  } else {
+    // Add console transport (default behavior)
+    logger.add(
+      new winston.transports.Console({
+        format: consoleFormat,
+        level: winstonLevel,
+        silent: false,
+      }),
+    );
+  }
 }
 
 export default logger;

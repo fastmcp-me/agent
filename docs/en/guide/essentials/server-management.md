@@ -70,7 +70,7 @@ A typical workflow for managing servers looks like this:
     ```
 2.  **Verify the Configuration**: List your servers and check the status of the new one.
     ```bash
-    LOG_LEVEL=debug npx -y @1mcp/agent mcp list
+    ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent mcp list
     npx -y @1mcp/agent mcp status git-main
     ```
 3.  **Update as Needed**: Modify the server's configuration. For example, add a tag.

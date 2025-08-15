@@ -525,7 +525,7 @@ systemctl status 1mcp
 
 # Problem: "MCP server not responding"
 # Solution: Check individual server health
-LOG_LEVEL=debug npx -y @1mcp/agent --config ~/.config/1mcp/mcp.json
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent --config ~/.config/1mcp/mcp.json
 ```
 
 #### **🔐 Authentication Issues**

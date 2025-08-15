@@ -18,8 +18,8 @@ npx -y @1mcp/agent mcp list [options]
 - **`--show-disabled`**
   - Include disabled servers in the list.
 
-- **Environment Variable `LOG_LEVEL=debug`**
-  - Set `LOG_LEVEL=debug` to show detailed information, including command/URL, arguments, and environment variables.
+- **Environment Variable `ONE_MCP_LOG_LEVEL=debug`**
+  - Set `ONE_MCP_LOG_LEVEL=debug` to show detailed information, including command/URL, arguments, and environment variables.
 
 ## Examples
 
@@ -34,7 +34,7 @@ npx -y @1mcp/agent mcp list --show-disabled
 npx -y @1mcp/agent mcp list --tags=prod
 
 # Show detailed information for all servers
-LOG_LEVEL=debug npx -y @1mcp/agent mcp list
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent mcp list
 ```
 
 ## See Also

@@ -288,7 +288,7 @@ npx -y @1mcp/agent serve --transport http --port 3001 --host 0.0.0.0 --external-
 2. **查看服务器日志**：
 
    ```bash
-   LOG_LEVEL=debug npx -y @1mcp/agent serve --transport http --port 3001
+   ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent serve --transport http --port 3001
    ```
 
 3. **健康检查**：

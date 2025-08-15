@@ -525,7 +525,7 @@ systemctl status 1mcp
 
 # 问题：“MCP 服务器无响应”
 # 解决方案：检查单个服务器的健康状况
-LOG_LEVEL=debug npx -y @1mcp/agent --config ~/.config/1mcp/mcp.json
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent --config ~/.config/1mcp/mcp.json
 ```
 
 #### **🔐 认证问题**

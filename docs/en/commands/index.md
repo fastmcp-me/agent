@@ -91,7 +91,7 @@ npx -y @1mcp/agent mcp add remote-api --type=http --url=https://api.example.com/
 npx -y @1mcp/agent app consolidate claude-desktop cursor vscode --yes
 
 # Filter servers by tags with detailed information
-LOG_LEVEL=debug npx -y @1mcp/agent mcp list --tags=prod,api
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent mcp list --tags=prod,api
 ```
 
 ## Environment Variables

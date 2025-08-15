@@ -118,6 +118,42 @@ Flags override settings from the JSON configuration file.
 
 - `--enable-async-loading`: Enables asynchronous MCP server loading.
 
+### Logging Options
+
+- `--log-level <level>`: Set the log level (`debug`, `info`, `warn`, `error`). Default: `info`.
+- `--log-file <path>`: Write logs to a file in addition to console. When specified, console logging is disabled only for stdio transport.
+
+#### Logging Examples
+
+```bash
+# Set log level via CLI
+npx -y @1mcp/agent --log-level debug
+
+# Log to file (disables console output)
+npx -y @1mcp/agent --log-file /var/log/1mcp.log
+
+# Combined logging configuration
+npx -y @1mcp/agent --log-level debug --log-file app.log
+
+# Using environment variables
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent
+ONE_MCP_LOG_FILE=/var/log/1mcp.log npx -y @1mcp/agent
+```
+
+#### Migration from LOG_LEVEL
+
+The legacy `LOG_LEVEL` environment variable is still supported but deprecated:
+
+```bash
+# ⚠️  Deprecated (shows warning)
+LOG_LEVEL=debug npx -y @1mcp/agent
+
+# ✅ Recommended
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent
+# or
+npx -y @1mcp/agent --log-level debug
+```
+
 ---
 
 ## 3. Environment Variables

@@ -118,6 +118,42 @@
 
 - `--enable-async-loading`：启用异步 MCP 服务器加载。
 
+### 日志选项
+
+- `--log-level <level>`：设置日志级别（`debug`、`info`、`warn`、`error`）。默认值：`info`。
+- `--log-file <path>`：将日志写入文件跟控制台。指定后，除 stdio 传输外，控制台日志将被禁用。
+
+#### 日志示例
+
+```bash
+# 通过 CLI 设置日志级别
+npx -y @1mcp/agent --log-level debug
+
+# 记录到文件（禁用控制台输出）
+npx -y @1mcp/agent --log-file /var/log/1mcp.log
+
+# 组合日志配置
+npx -y @1mcp/agent --log-level debug --log-file app.log
+
+# 使用环境变量
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent
+ONE_MCP_LOG_FILE=/var/log/1mcp.log npx -y @1mcp/agent
+```
+
+#### 从 LOG_LEVEL 迁移
+
+传统的 `LOG_LEVEL` 环境变量仍然受支持，但已弃用：
+
+```bash
+# ⚠️  已弃用（显示警告）
+LOG_LEVEL=debug npx -y @1mcp/agent
+
+# ✅ 推荐
+ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent
+# 或
+npx -y @1mcp/agent --log-level debug
+```
+
 ---
 
 ## 3. 环境变量

@@ -119,7 +119,7 @@ If you need to undo a consolidation, you can easily restore the original configu
 
 1.  Start by consolidating one application at a time.
 2.  After consolidating an app, launch it and test its functionality.
-3.  Set `LOG_LEVEL=debug` if you encounter issues to get more detailed logs.
+3.  Set `ONE_MCP_LOG_LEVEL=debug` if you encounter issues to get more detailed logs.
 
 ### After Consolidation
 

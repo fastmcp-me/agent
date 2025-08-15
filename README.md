@@ -199,6 +199,8 @@ Available options:
 
 | `--enable-async-loading` | `ONE_MCP_ENABLE_ASYNC_LOADING` | Enable asynchronous MCP server loading(boolean) | false |
 | `--health-info-level` | `ONE_MCP_HEALTH_INFO_LEVEL` | Health endpoint information detail level ("full", "basic", "minimal") | "minimal" |
+| `--log-level` | `ONE_MCP_LOG_LEVEL` | Set the log level ("debug", "info", "warn", "error") | "info" |
+| `--log-file` | `ONE_MCP_LOG_FILE` | Write logs to a file in addition to console (disables console logging only for stdio transport) | |
 | `--help`, `-h` | | Show help | |
 
 ## Docker
@@ -228,10 +230,11 @@ Available image tags:
 Examples:
 
 ```bash
-# Custom port and tags
+# Custom port, tags, and logging
 docker run -p 3051:3051 \
   -e ONE_MCP_PORT=3051 \
   -e ONE_MCP_TAGS=network,filesystem \
+  -e ONE_MCP_LOG_LEVEL=debug \
   ghcr.io/1mcp-app/agent
 
 # With external URL for reverse proxy
