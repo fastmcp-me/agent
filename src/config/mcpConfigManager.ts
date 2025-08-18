@@ -22,6 +22,7 @@ export class McpConfigManager extends EventEmitter {
   private configFilePath: string;
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly debounceDelayMs: number = 500; // 500ms debounce delay
+  private lastModified: number = 0;
 
   /**
    * Private constructor to enforce singleton pattern
@@ -71,12 +72,35 @@ export class McpConfigManager extends EventEmitter {
    */
   private loadConfig(): void {
     try {
+      const stats = fs.statSync(this.configFilePath);
+      this.lastModified = stats.mtime.getTime();
+
       const configData = JSON.parse(fs.readFileSync(this.configFilePath, 'utf8'));
       this.transportConfig = configData.mcpServers || {};
       logger.info('Configuration loaded successfully');
     } catch (error) {
       logger.error(`Failed to load configuration: ${error}`);
       this.transportConfig = {};
+    }
+  }
+
+  /**
+   * Check if the configuration file has been modified
+   */
+  private checkFileModified(): boolean {
+    try {
+      const stats = fs.statSync(this.configFilePath);
+      const currentModified = stats.mtime.getTime();
+
+      if (currentModified !== this.lastModified) {
+        this.lastModified = currentModified;
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      logger.error(`Failed to check file modification time: ${error}`);
+      return false;
     }
   }
 
@@ -89,13 +113,43 @@ export class McpConfigManager extends EventEmitter {
     }
 
     try {
-      this.configWatcher = fs.watch(this.configFilePath, (eventType: fs.WatchEventType, filename: string | null) => {
-        if (filename === path.basename(this.configFilePath) && eventType === 'change') {
-          logger.debug(`Configuration file ${filename} changed, debouncing reload...`);
-          this.debouncedReloadConfig();
+      const configDir = path.dirname(this.configFilePath);
+      const configFileName = path.basename(this.configFilePath);
+
+      // Watch the directory instead of the file to handle atomic operations like vim's :x
+      this.configWatcher = fs.watch(configDir, (eventType: fs.WatchEventType, filename: string | null) => {
+        logger.debug(`Directory change detected: event=${eventType}, filename=${filename}`);
+
+        // Check if the change is related to our config file
+        // Handle both direct changes and atomic renames affecting our config file
+        const isConfigFileEvent =
+          filename === configFileName ||
+          (filename && filename.startsWith(configFileName)) ||
+          (eventType === 'rename' && filename && filename.includes(path.parse(configFileName).name));
+
+        if (isConfigFileEvent) {
+          logger.debug(
+            `Configuration file change detected (event: ${eventType}, filename: ${filename}), checking modification time...`,
+          );
+
+          // Double-check by comparing modification times to handle vim's atomic saves
+          if (this.checkFileModified()) {
+            logger.debug(`File modification confirmed, debouncing reload...`);
+            this.debouncedReloadConfig();
+          } else {
+            logger.debug(`File modification time unchanged, ignoring event`);
+          }
+        } else {
+          // For debugging: check if file was actually modified despite not matching our criteria
+          if (this.checkFileModified()) {
+            logger.debug(
+              `File was modified but event didn't match criteria. Event: ${eventType}, filename: ${filename}. Debouncing reload anyway...`,
+            );
+            this.debouncedReloadConfig();
+          }
         }
       });
-      logger.info(`Started watching configuration file: ${this.configFilePath}`);
+      logger.info(`Started watching configuration directory: ${configDir} for file: ${configFileName}`);
     } catch (error) {
       logger.error(`Failed to start watching configuration file: ${error}`);
     }
