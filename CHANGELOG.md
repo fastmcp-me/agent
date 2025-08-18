@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.18.1] - 2025-08-18
+
+### 🚀 Features
+- Enhance configuration file monitoring and modification detection by @xizhibei
+
+### 📚 Documentation
+- Update README with additional badges for project visibility by @xizhibei
+
+### 🧪 Testing
+- Improve mocking for file system interactions in McpConfigManager tests by @xizhibei
+
+
 ## [0.18.0] - 2025-08-15
 
 ### 🚀 Features
@@ -538,6 +550,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.18.1]: https://github.com/1mcp-app/agent/compare/v0.18.0..v0.18.1
 [0.18.0]: https://github.com/1mcp-app/agent/compare/v0.17.0..v0.18.0
 [0.17.0]: https://github.com/1mcp-app/agent/compare/v0.16.0..v0.17.0
 [0.16.0]: https://github.com/1mcp-app/agent/compare/v0.15.0..v0.16.0
