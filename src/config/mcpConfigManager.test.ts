@@ -25,12 +25,14 @@ vi.mock('fs', async () => {
       mkdirSync: vi.fn(),
       writeFileSync: vi.fn(),
       readFileSync: vi.fn(),
+      statSync: vi.fn(() => ({ mtime: new Date() })),
       watch: vi.fn(() => ({ close: vi.fn() })),
     },
     existsSync: vi.fn(),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
     readFileSync: vi.fn(),
+    statSync: vi.fn(() => ({ mtime: new Date() })),
     watch: vi.fn(() => ({ close: vi.fn() })),
   };
 });
@@ -52,6 +54,7 @@ describe('McpConfigManager', () => {
     // Default mock implementations
     (fs.existsSync as unknown as MockInstance).mockReturnValue(true);
     (fs.readFileSync as unknown as MockInstance).mockReturnValue(JSON.stringify({ mcpServers: {} }));
+    (fs.statSync as unknown as MockInstance).mockReturnValue({ mtime: new Date() });
   });
 
   describe('getInstance', () => {
@@ -81,11 +84,11 @@ describe('McpConfigManager', () => {
   });
 
   describe('config watching', () => {
-    it('should start and stop watching config file', () => {
+    it('should start and stop watching config directory', () => {
       const instance = McpConfigManager.getInstance(testConfigPath);
 
       instance.startWatching();
-      expect(fs.watch).toHaveBeenCalledWith(testConfigPath, expect.any(Function));
+      expect(fs.watch).toHaveBeenCalledWith(path.dirname(testConfigPath), expect.any(Function));
 
       instance.stopWatching();
       expect(instance['configWatcher']).toBeNull();
@@ -94,6 +97,15 @@ describe('McpConfigManager', () => {
     it('should reload config on file change', () => {
       // Use fake timers to control debouncing
       vi.useFakeTimers();
+
+      // Mock file modification time change to simulate file being modified
+      const originalTime = new Date('2023-01-01T00:00:00Z');
+      const newTime = new Date('2023-01-01T00:00:01Z'); // 1 second later
+
+      // Set up the statSync mock sequence
+      (fs.statSync as unknown as MockInstance)
+        .mockReturnValueOnce({ mtime: originalTime }) // Constructor call to loadConfig
+        .mockReturnValueOnce({ mtime: newTime }); // checkFileModified call during watch callback
 
       const instance = McpConfigManager.getInstance(testConfigPath);
       const mockWatcher = { close: vi.fn() };
@@ -112,7 +124,7 @@ describe('McpConfigManager', () => {
       // Mock new config data
       (fs.readFileSync as unknown as MockInstance).mockReturnValueOnce(JSON.stringify(testConfig));
 
-      // Simulate file change
+      // Simulate directory change for our config file
       watchCallback('change', path.basename(testConfigPath));
 
       // Fast-forward timers to trigger debounced reload
