@@ -8,7 +8,6 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 [![GitHub Repo stars](https://img.shields.io/github/stars/1mcp-app/agent)](https://github.com/1mcp-app/agent/stargazers)
 [![NPM Downloads](https://img.shields.io/npm/dm/%401mcp%252Fagent)](https://www.npmjs.com/package/@1mcp/agent)
 [![1MCP](https://img.shields.io/badge/1MCP-Docs-blue)](https://docs.1mcp.app)
-
 [![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/1mcp-app/agent)](https://archestra.ai/mcp-catalog/1mcp-app__agent)
 
 ## Table of Contents
