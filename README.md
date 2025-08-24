@@ -184,29 +184,28 @@ npx -y @1mcp/agent --help
 
 Available options:
 
-| Option (CLI)                 | Environment Variable               | Description                                                                   |  Default   |
-| :--------------------------- | :--------------------------------- | :---------------------------------------------------------------------------- | :--------: |
-| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                             |   "http"   |
-| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                    |            |
-| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                              |    3050    |
-| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                              | localhost  |
-| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com)  |            |
-| `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset) | "loopback" |
-| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                        |            |
-| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                           |   false    |
-| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                             |   false    |
-| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                   |    true    |
-| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                 |   false    |
-| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                       |    1440    |
-| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                |            |
-| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                   |     15     |
-| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                         |    100     |
-
-| `--enable-async-loading` | `ONE_MCP_ENABLE_ASYNC_LOADING` | Enable asynchronous MCP server loading(boolean) | false |
-| `--health-info-level` | `ONE_MCP_HEALTH_INFO_LEVEL` | Health endpoint information detail level ("full", "basic", "minimal") | "minimal" |
-| `--log-level` | `ONE_MCP_LOG_LEVEL` | Set the log level ("debug", "info", "warn", "error") | "info" |
-| `--log-file` | `ONE_MCP_LOG_FILE` | Write logs to a file in addition to console (disables console logging only for stdio transport) | |
-| `--help`, `-h` | | Show help | |
+| Option (CLI)                 | Environment Variable               | Description                                                                                     |  Default   |
+| :--------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------------- | :--------: |
+| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                                               |   "http"   |
+| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                                      |            |
+| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                                                |    3050    |
+| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                                                | localhost  |
+| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com)                    |            |
+| `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset)                   | "loopback" |
+| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags                                                                          |            |
+| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                                             |   false    |
+| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                                               |   false    |
+| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                                     |    true    |
+| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                                   |   false    |
+| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                                         |    1440    |
+| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                                  |            |
+| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                                     |     15     |
+| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                                           |    100     |
+| `--enable-async-loading`     | `ONE_MCP_ENABLE_ASYNC_LOADING`     | Enable asynchronous MCP server loading(boolean)                                                 |   false    |
+| `--health-info-level`        | `ONE_MCP_HEALTH_INFO_LEVEL`        | Health endpoint information detail level ("full", "basic", "minimal")                           | "minimal"  |
+| `--log-level`                | `ONE_MCP_LOG_LEVEL`                | Set the log level ("debug", "info", "warn", "error")                                            |   "info"   |
+| `--log-file`                 | `ONE_MCP_LOG_FILE`                 | Write logs to a file in addition to console (disables console logging only for stdio transport) |            |
+| `--help`, `-h`               |                                    | Show help                                                                                       |            |
 
 ## Docker
 
