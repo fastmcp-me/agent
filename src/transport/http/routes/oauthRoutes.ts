@@ -15,11 +15,13 @@ import {
 import { validateScopes } from '../../../utils/scopeValidation.js';
 import { SDKOAuthServerProvider } from '../../../auth/sdkOAuthServerProvider.js';
 import { sensitiveOperationLimiter } from '../middlewares/securityMiddleware.js';
+import { McpLoadingManager } from '../../../core/loading/mcpLoadingManager.js';
+import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 
 /**
  * Creates OAuth routes with the provided OAuth provider
  */
-export function createOAuthRoutes(oauthProvider: SDKOAuthServerProvider): Router {
+export function createOAuthRoutes(oauthProvider: SDKOAuthServerProvider, loadingManager?: McpLoadingManager): Router {
   const router: Router = Router();
 
   // Rate limiter for OAuth endpoints
@@ -170,6 +172,17 @@ export function createOAuthRoutes(oauthProvider: SDKOAuthServerProvider): Router
       clientInfo.status = ClientStatus.Connected;
       clientInfo.lastConnected = new Date();
       clientInfo.lastError = undefined;
+
+      // Notify the loading manager that the server is now ready
+      // This triggers the AsyncLoadingOrchestrator to send list_changed notifications
+      if (loadingManager) {
+        try {
+          loadingManager.getStateTracker().updateServerState(serverName, LoadingState.Ready);
+          logger.debug(`Updated LoadingStateTracker: ${serverName} is now Ready after OAuth completion`);
+        } catch (stateError) {
+          logger.warn(`Failed to update LoadingStateTracker for ${serverName}: ${stateError}`);
+        }
+      }
 
       // Redirect back to dashboard with success
       res.redirect('/oauth?success=1');

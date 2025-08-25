@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClientStatus } from '../../../core/types/index.js';
+import { LoadingState } from '../../../core/loading/loadingStateTracker.js';
 
 // Mock all dependencies
 vi.mock('../../../logger/logger.js', () => ({
@@ -370,6 +371,47 @@ describe('OAuth Routes', () => {
       await callbackRoute?.route?.stack[0].handle(mockRequest, mockResponse);
 
       expect(mockTransport.finishAuth).toHaveBeenCalledWith('auth-code-123');
+      expect(mockResponse.redirect).toHaveBeenCalledWith('/oauth?success=1');
+    });
+
+    it('should update LoadingStateTracker when loading manager is provided', async () => {
+      mockRequest.params = { serverName: 'test-server' };
+      mockRequest.query = { code: 'auth-code-123' };
+
+      const mockTransport = {
+        start: vi.fn().mockResolvedValue(undefined),
+        send: vi.fn().mockResolvedValue(undefined),
+        close: vi.fn().mockResolvedValue(undefined),
+        finishAuth: vi.fn().mockResolvedValue(undefined),
+      } as any;
+
+      const clientInfo = {
+        name: 'test-server',
+        transport: mockTransport,
+        client: {} as any,
+        status: ClientStatus.AwaitingOAuth,
+      };
+
+      // Mock loading manager with state tracker
+      const mockStateTracker = {
+        updateServerState: vi.fn(),
+      };
+      const mockLoadingManager = {
+        getStateTracker: vi.fn().mockReturnValue(mockStateTracker),
+      } as any;
+
+      const { ServerManager } = await import('../../../core/server/serverManager.js');
+      vi.mocked(ServerManager.current.getClient).mockReturnValue(clientInfo);
+
+      const router = createOAuthRoutes(mockOAuthProvider, mockLoadingManager);
+      const callbackRoute = router.stack.find(
+        (layer: any) => layer.route?.path === '/callback/:serverName' && layer.route?.methods?.get,
+      );
+
+      await callbackRoute?.route?.stack[0].handle(mockRequest, mockResponse);
+
+      expect(mockTransport.finishAuth).toHaveBeenCalledWith('auth-code-123');
+      expect(mockStateTracker.updateServerState).toHaveBeenCalledWith('test-server', LoadingState.Ready);
       expect(mockResponse.redirect).toHaveBeenCalledWith('/oauth?success=1');
     });
 

@@ -153,7 +153,7 @@ export class ExpressServer {
     this.app.use(authRouter);
 
     // Setup OAuth management routes (no auth required)
-    this.app.use('/oauth', createOAuthRoutes(this.oauthProvider));
+    this.app.use('/oauth', createOAuthRoutes(this.oauthProvider, this.loadingManager));
 
     // Setup health check routes (no auth required for monitoring)
     this.app.use('/health', createHealthRoutes(this.loadingManager));
