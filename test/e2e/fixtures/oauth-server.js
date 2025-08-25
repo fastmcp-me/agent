@@ -11,6 +11,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { sanitizeForLogging } from '../../../src/logger/secureLogger.js';
 
 // Track OAuth state - normally this would be persisted somewhere
 let isAuthenticated = process.env.OAUTH_AUTHENTICATED === 'true';
@@ -128,25 +129,25 @@ class MockOAuthServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    // Log authentication status for debugging
-    console.error(`OAuth server ${serverName} started. Authenticated: ${isAuthenticated}`);
+    // Log authentication status for debugging - sanitize server name to prevent sensitive data exposure
+    console.error(`OAuth server ${sanitizeForLogging(serverName)} started. Authenticated: ${isAuthenticated}`);
   }
 }
 
 // Handle OAuth completion signal
 process.on('SIGUSR1', () => {
   isAuthenticated = true;
-  console.error(`OAuth server ${serverName} received authentication signal`);
+  console.error(`OAuth server ${sanitizeForLogging(serverName)} received authentication signal`);
 });
 
 // Handle process termination gracefully
 process.on('SIGINT', () => {
-  console.error(`OAuth server ${serverName} shutting down`);
+  console.error(`OAuth server ${sanitizeForLogging(serverName)} shutting down`);
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
-  console.error(`OAuth server ${serverName} shutting down`);
+  console.error(`OAuth server ${sanitizeForLogging(serverName)} shutting down`);
   process.exit(0);
 });
 
