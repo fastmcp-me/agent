@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.20.0] - 2025-08-27
+
+### 🚀 Features
+- Add sensitive data redaction in list command output by @xizhibei
+- Enhance tag extraction and validation in middleware by @xizhibei
+- Introduce advanced tag filtering with new tag-filter parameter by @xizhibei
+- Enhance OAuth route handling with loading manager integration by @xizhibei
+
+### 🐛 Bug Fixes
+- Improve OAuth server name sanitization for CodeQL detection by @xizhibei
+- Sanitize OAuth server names in test fixture logging by @xizhibei
+
+### 📚 Documentation
+- Update list command documentation to include new flags by @xizhibei in [#104](https://github.com/1mcp-app/agent/pull/104)
+- Enhance server filtering documentation with tag character handling by @xizhibei in [#101](https://github.com/1mcp-app/agent/pull/101)
+- Update tag filtering documentation to reflect deprecation of --tags parameter by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Remove Claude workflows for code review and issue handling by @xizhibei
+- Remove unnecessary whitespace in README.md options section by @xizhibei
+- Update README.md badges for clarity and accuracy by @xizhibei
+
+
 ## [0.19.0] - 2025-08-21
 
 ### 🚀 Features
@@ -16,14 +39,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve mocking of StdioClientTransport in restartableStdioTransport tests by @xizhibei in [#97](https://github.com/1mcp-app/agent/pull/97)
 
 ### 💼 Other
-- MCP Trust Score by @Matvey-Kuk in [#95](https://github.com/1mcp-app/agent/pull/95)
+- MCP Trust Score by @Matvey-Kuk
 
 ### ⚙️ Miscellaneous Tasks
 - Remove unnecessary whitespace in README.md by @xizhibei
 - Clean up whitespace and add allowed_bots to Claude code review workflow by @xizhibei
 
 ## New Contributors
-* @Matvey-Kuk made their first contribution in [#95](https://github.com/1mcp-app/agent/pull/95)
+* @Matvey-Kuk made their first contribution
 
 ## [0.18.1] - 2025-08-18
 
@@ -570,6 +593,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.20.0]: https://github.com/1mcp-app/agent/compare/v0.19.0..v0.20.0
 [0.19.0]: https://github.com/1mcp-app/agent/compare/v0.18.1..v0.19.0
 [0.18.1]: https://github.com/1mcp-app/agent/compare/v0.18.0..v0.18.1
 [0.18.0]: https://github.com/1mcp-app/agent/compare/v0.17.0..v0.18.0
