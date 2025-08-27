@@ -42,7 +42,7 @@ function getTagFilter(inboundConn: InboundConnection) {
   if (inboundConn.tagFilterMode === 'advanced' && inboundConn.tagExpression) {
     return byTagExpression(inboundConn.tagExpression);
   } else if (inboundConn.tagFilterMode === 'simple-or' || inboundConn.tags) {
-    return getTagFilter(inboundConn);
+    return byTags(inboundConn.tags);
   } else {
     // No filtering - return function that passes all clients through
     return byTags(undefined);
