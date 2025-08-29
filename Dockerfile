@@ -47,18 +47,24 @@ CMD ["node", "index.js"]
 # Extended image with additional tools (uv, bun)
 FROM basic AS extended
 
-# Install additional system packages for extra tools
-RUN apk update && apk add --no-cache curl python3 py3-pip bash
+RUN apk update && apk add --no-cache curl python3 bash ca-certificates && \
+  # Clean up package cache
+  rm -rf /var/cache/apk/*
 
-# Install uv (Python package manager)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+# Define versions for reproducible builds
+ARG UV_VERSION=0.5.11
+ARG BUN_VERSION=1.1.42
+
+# Install uv (Python package manager) with version pinning
+RUN curl -LsSf https://astral.sh/uv/${UV_VERSION}/install.sh | sh && \
   . $HOME/.local/bin/env && \
   ln -sf $HOME/.local/bin/uv /usr/local/bin/uv && \
-  ln -sf $HOME/.local/bin/uvx /usr/local/bin/uvx
+  ln -sf $HOME/.local/bin/uvx /usr/local/bin/uvx && \
+  # Verify installations work
+  uv --version
 
-# Install bun (JavaScript runtime and package manager)
-RUN curl -fsSL https://bun.sh/install | bash && \
-  ln -sf ~/.bun/bin/bun /usr/local/bin/bun
-
-# Default to extended image (with extra tools)
-FROM extended
+# Install bun (JavaScript runtime and package manager) with version pinning
+RUN curl -fsSL https://bun.com/install | bash -s "bun-v${BUN_VERSION}" && \
+  ln -sf ~/.bun/bin/bun /usr/local/bin/bun && \
+  # Verify installations work
+  bun --version
