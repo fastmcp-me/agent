@@ -210,44 +210,119 @@ Available options:
 
 ## Docker
 
-You can also run 1MCP using Docker:
+You can also run 1MCP using Docker. We provide two image variants:
+
+### Image Variants
+
+- **`latest`**: Full-featured image with extra tools (uv, bun) - default
+- **`lite`**: Lightweight image with basic Node.js package managers only (npm, pnpm, yarn)
+
+### Basic Usage
 
 ```bash
-# Pull the latest image
+# Pull the latest full-featured image (default)
 docker pull ghcr.io/1mcp-app/agent:latest
 
-# Run with HTTP transport (default)
-docker run -p 3050:3050 ghcr.io/1mcp-app/agent
+# Or pull the lightweight version
+docker pull ghcr.io/1mcp-app/agent:lite
+
+# Run with HTTP transport (default) - IMPORTANT: Set host to 0.0.0.0 for Docker networking
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  ghcr.io/1mcp-app/agent
+
+# Run the lite version with proper networking
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  ghcr.io/1mcp-app/agent:lite
 
 # Run with a custom config file
-docker run -p 3050:3050 -v /path/to/config.json:/config.json ghcr.io/1mcp-app/agent --config /config.json
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -v /path/to/config.json:/config.json \
+  ghcr.io/1mcp-app/agent --config /config.json
 
 # Run with stdio transport
 docker run -i ghcr.io/1mcp-app/agent --transport stdio
 ```
 
-Available image tags:
+### Available Image Tags
 
-- `latest`: Latest stable release
+#### Full-Featured Images (with uv, bun)
+
+- `latest`: Latest stable release with extra tools
 - `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
+- `vX.Y`: Major.minor version (e.g. `v1.0`)
+- `vX`: Major version (e.g. `v1`)
 - `sha-<commit>`: Specific commit
 
-Examples:
+#### Lightweight Images (npm, pnpm, yarn only)
+
+- `lite`: Latest stable lite release
+- `vX.Y.Z-lite`: Specific version lite (e.g. `v1.0.0-lite`)
+- `vX.Y-lite`: Major.minor version lite (e.g. `v1.0-lite`)
+- `vX-lite`: Major version lite (e.g. `v1-lite`)
+- `sha-<commit>-lite`: Specific commit lite
+
+### Configuration Examples
 
 ```bash
-# Custom port, tags, and logging
+# Essential networking configuration
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3050 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
+  ghcr.io/1mcp-app/agent
+
+# Custom port, tags, and logging (full image)
 docker run -p 3051:3051 \
+  -e ONE_MCP_HOST=0.0.0.0 \
   -e ONE_MCP_PORT=3051 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3051 \
   -e ONE_MCP_TAGS=network,filesystem \
   -e ONE_MCP_LOG_LEVEL=debug \
   ghcr.io/1mcp-app/agent
 
-# With external URL for reverse proxy
+# With external URL for reverse proxy (lite image)
 docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
   -e ONE_MCP_EXTERNAL_URL=https://mcp.example.com \
   -e ONE_MCP_TRUST_PROXY=true \
+  ghcr.io/1mcp-app/agent:lite
+
+# For users in China mainland - faster package installation
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3050 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
+  -e npm_config_registry=https://registry.npmmirror.com \
+  -e UV_INDEX=http://mirrors.aliyun.com/pypi/simple \
+  -e UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple \
+  ghcr.io/1mcp-app/agent
+
+# Behind corporate proxy
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e https_proxy=${https_proxy} \
+  -e http_proxy=${http_proxy} \
   ghcr.io/1mcp-app/agent
 ```
+
+### Image Details
+
+**Full Image (`latest`):**
+
+- Node.js (version from `.node-version`)
+- npm, pnpm, yarn
+- uv (Python package manager)
+- bun (JavaScript runtime)
+- curl, python3, bash
+
+**Lite Image (`lite`):**
+
+- Node.js (version from `.node-version`)
+- npm, pnpm, yarn only
+- Smaller size, faster downloads
 
 ## Trust Proxy Configuration
 

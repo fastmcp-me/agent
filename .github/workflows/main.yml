@@ -181,8 +181,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
-        id: meta
+      - name: Extract metadata for basic Docker image
+        id: meta-basic
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=sha,format=long,suffix=-lite
+            type=raw,value=lite,enable={{is_default_branch}}
+            type=semver,pattern=v{{version}}-lite
+            type=semver,pattern=v{{major}}.{{minor}}-lite
+            type=semver,pattern=v{{major}}-lite
+
+      - name: Extract metadata for extended Docker image
+        id: meta-extended
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
@@ -193,17 +205,41 @@ jobs:
             type=semver,pattern=v{{major}}.{{minor}}
             type=semver,pattern=v{{major}}
 
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat .node-version)" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push basic Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
+          target: basic
+          build-args: |
+            NODE_VERSION=${{ steps.node-version.outputs.version }}
+          tags: ${{ steps.meta-basic.outputs.tags }}
+          labels: ${{ steps.meta-basic.outputs.labels }}
+          annotations: ${{ steps.meta-basic.outputs.annotations }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          provenance: true
+          sbom: true
+
+      - name: Build and push extended Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          target: extended
+          build-args: |
+            NODE_VERSION=${{ steps.node-version.outputs.version }}
+          tags: ${{ steps.meta-extended.outputs.tags }}
+          labels: ${{ steps.meta-extended.outputs.labels }}
+          annotations: ${{ steps.meta-extended.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64

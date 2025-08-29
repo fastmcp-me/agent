@@ -16,11 +16,40 @@ npx @1mcp/agent --config mcp.json
 
 ### Docker
 
-```bash
-# 拉取并运行
-docker run -p 3050:3050 -v $(pwd)/mcp.json:/app/mcp.json ghcr.io/1mcp-app/agent:latest
+我们提供两种 Docker 镜像变体：
 
-# 使用 docker-compose
+- **`latest`**: 包含额外工具 (uv, bun) 的全功能镜像
+- **`lite`**: 仅包含基本 Node.js 包管理器的轻量级镜像
+
+```bash
+# 拉取并运行 (全功能镜像) - 重要：设置主机为 0.0.0.0 以支持 Docker 网络
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3050 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
+  -v $(pwd)/mcp.json:/app/mcp.json \
+  ghcr.io/1mcp-app/agent:latest
+
+# 拉取并运行 (轻量级镜像) 带正确的网络配置
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3050 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
+  -v $(pwd)/mcp.json:/app/mcp.json \
+  ghcr.io/1mcp-app/agent:lite
+
+# 中国用户 - 更快的包安装速度
+docker run -p 3050:3050 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3050 \
+  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
+  -e npm_config_registry=https://registry.npmmirror.com \
+  -e UV_INDEX=http://mirrors.aliyun.com/pypi/simple \
+  -e UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple \
+  -v $(pwd)/mcp.json:/app/mcp.json \
+  ghcr.io/1mcp-app/agent:latest
+
+# 使用 docker-compose (推荐)
 cat > docker-compose.yml << 'EOF'
 services:
   1mcp:
@@ -30,18 +59,38 @@ services:
     volumes:
       - ./mcp.json:/app/mcp.json
     environment:
-      - LOG_LEVEL=info
+      - ONE_MCP_HOST=0.0.0.0
+      - ONE_MCP_PORT=3050
+      - ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050
+      - ONE_MCP_LOG_LEVEL=info
       - ONE_MCP_CONFIG=/app/mcp.json
+      # 可选：中国大陆用户加速
+      # - npm_config_registry=https://registry.npmmirror.com
+      # - UV_INDEX=http://mirrors.aliyun.com/pypi/simple
+      # - UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple
+      # 可选：企业代理环境
+      # - https_proxy=${https_proxy}
+      # - http_proxy=${http_proxy}
 EOF
 
 docker compose up -d
 ```
 
+#### 可用标签
+
+**全功能镜像:**
+
+- `latest`, `vX.Y.Z`, `vX.Y`, `vX`, `sha-<commit>`
+
+**轻量级镜像:**
+
+- `lite`, `vX.Y.Z-lite`, `vX.Y-lite`, `vX-lite`, `sha-<commit>-lite`
+
 ## 从源码构建
 
 ### 先决条件
 
-- Node.js 18+
+- Node.js (来自 `.node-version` 的版本 - 目前为 22)
 - pnpm 包管理器
 
 ### 构建步骤
