@@ -40,3 +40,17 @@ COPY --from=build-stage /usr/src/app/build .
 EXPOSE 3050
 
 CMD ["node", "index.js"]
+
+FROM production
+
+RUN apk update && apk add --no-cache curl python3 py3-pip bash
+
+# Install uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh && \
+  . $HOME/.local/bin/env && \
+  ln -sf $HOME/.local/bin/uv /usr/local/bin/uv && \
+  ln -sf $HOME/.local/bin/uvx /usr/local/bin/uvx
+
+# Install bun (JavaScript runtime and package manager)
+RUN curl -fsSL https://bun.sh/install | bash && \
+  ln -sf ~/.bun/bin/bun /usr/local/bin/bun

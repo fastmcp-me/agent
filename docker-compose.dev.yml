@@ -1,0 +1,27 @@
+services:
+  1mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.extras
+      network: host
+      args:
+        - https_proxy=${https_proxy}
+        - http_proxy=${http_proxy}
+        - HTTP_PROXY=${http_proxy}
+        - HTTPS_PROXY=${https_proxy}
+    ports:
+      - '3051:3051'
+    volumes:
+      - ~/.config/1mcp/:/root/.config/1mcp # 1mcp config
+      - ./mcp.json:/root/mcp.json # mcp config
+    environment:
+      - ONE_MCP_LOG_LEVEL=debug
+      - ONE_MCP_CONFIG=/root/mcp.json
+      - ONE_MCP_HOST=0.0.0.0
+      - ONE_MCP_PORT=3050
+      - ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050
+      # - https_proxy=${https_proxy}
+      # - http_proxy=${http_proxy}
+      - npm_config_registry=https://registry.npmmirror.com
+      - UV_INDEX=http://mirrors.aliyun.com/pypi/simple
+      - UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple

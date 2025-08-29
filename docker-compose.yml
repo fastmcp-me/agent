@@ -1,0 +1,16 @@
+services:
+  1mcp:
+    image: ghcr.io/1mcp-app/agent:latest
+    ports:
+      - '3050:3050'
+    volumes:
+      - ~/.config/1mcp/:/root/.config/1mcp # 1mcp config
+    environment:
+      - ONE_MCP_HOST=0.0.0.0
+      - ONE_MCP_PORT=3050
+      - ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050
+      # - https_proxy=${https_proxy}
+      # - http_proxy=${http_proxy}
+      - npm_config_registry=https://registry.npmmirror.com
+      - UV_INDEX=http://mirrors.aliyun.com/pypi/simple
+      - UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple
