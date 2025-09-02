@@ -11,6 +11,7 @@ logs/
 .vscode/
 .claude/
 mcp.json
+.mcp.json
 
 # VitePress build artifacts
 docs/.vitepress/dist
