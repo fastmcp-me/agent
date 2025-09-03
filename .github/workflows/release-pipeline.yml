@@ -1,4 +1,4 @@
-name: Main
+name: Release Pipeline
 
 on:
   push:
@@ -12,21 +12,21 @@ concurrency:
 jobs:
   # Trigger CI workflow for testing and validation
   ci:
-    uses: ./.github/workflows/ci.yml
+    uses: ./.github/workflows/test-and-validate.yml
     permissions:
       contents: read
 
   # Build binaries (needed for release)
   binaries:
     needs: ci
-    uses: ./.github/workflows/binaries.yml
+    uses: ./.github/workflows/build-binaries.yml
     permissions:
       contents: write
 
   # Publish to npm (needs binaries for release)
   release:
     needs: [ci, binaries]
-    uses: ./.github/workflows/release.yml
+    uses: ./.github/workflows/publish-to-npm.yml
     secrets: inherit
     permissions:
       contents: write
@@ -35,7 +35,7 @@ jobs:
   # Build and publish Docker images
   docker:
     needs: ci
-    uses: ./.github/workflows/docker.yml
+    uses: ./.github/workflows/build-docker-images.yml
     secrets: inherit
     permissions:
       contents: read

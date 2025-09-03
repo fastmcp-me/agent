@@ -1,9 +1,7 @@
 name: Docker
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,7 +46,6 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=sha,format=long,suffix=${{ matrix.suffix }}
             type=raw,value=${{ matrix.latest }}
             type=semver,pattern=v{{version}}${{ matrix.suffix }}
             type=semver,pattern=v{{major}}.{{minor}}${{ matrix.suffix }}
@@ -72,12 +69,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: |
-            type=gha,scope=${{ matrix.target }}
-            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-${{ matrix.target }}
-          cache-to: |
-            type=gha,mode=max,scope=${{ matrix.target }}
-            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-${{ matrix.target }},mode=max
-          platforms: linux/amd64
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
           provenance: false
           sbom: false
