@@ -69,8 +69,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=gha,scope=${{ matrix.target }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+          cache-from: |
+            type=gha,scope=${{ matrix.target }}
+            type=gha,scope=shared
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.target }}
+            type=gha,mode=max,scope=shared
           platforms: linux/amd64,linux/arm64
           provenance: false
           sbom: false
