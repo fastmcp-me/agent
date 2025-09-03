@@ -72,8 +72,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
-          provenance: true
-          sbom: true
+          cache-from: |
+            type=gha,scope=${{ matrix.target }}
+            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-${{ matrix.target }}
+          cache-to: |
+            type=gha,mode=max,scope=${{ matrix.target }}
+            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-${{ matrix.target }},mode=max
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
