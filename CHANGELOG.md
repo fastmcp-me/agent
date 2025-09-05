@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.21.0] - 2025-09-05
+
+### 🚀 Features
+- Add mcp tokens command for token usage estimation by @xizhibei in [#106](https://github.com/1mcp-app/agent/pull/106)
+
+### ⚙️ Miscellaneous Tasks
+- Remove Trust Score badge from README.md for clarity by @xizhibei
+
+
 ## [0.20.3] - 2025-09-03
 
 ### 🚀 Features
@@ -69,14 +78,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve mocking of StdioClientTransport in restartableStdioTransport tests by @xizhibei in [#97](https://github.com/1mcp-app/agent/pull/97)
 
 ### 💼 Other
-- MCP Trust Score by @Matvey-Kuk
+- MCP Trust Score by @Matvey-Kuk in [#95](https://github.com/1mcp-app/agent/pull/95)
 
 ### ⚙️ Miscellaneous Tasks
 - Remove unnecessary whitespace in README.md by @xizhibei
 - Clean up whitespace and add allowed_bots to Claude code review workflow by @xizhibei
 
 ## New Contributors
-* @Matvey-Kuk made their first contribution
+* @Matvey-Kuk made their first contribution in [#95](https://github.com/1mcp-app/agent/pull/95)
 
 ## [0.18.1] - 2025-08-18
 
@@ -623,6 +632,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.21.0]: https://github.com/1mcp-app/agent/compare/v0.20.3..v0.21.0
 [0.20.3]: https://github.com/1mcp-app/agent/compare/v0.20.2..v0.20.3
 [0.20.2]: https://github.com/1mcp-app/agent/compare/v0.20.1..v0.20.2
 [0.20.1]: https://github.com/1mcp-app/agent/compare/v0.20.0..v0.20.1
