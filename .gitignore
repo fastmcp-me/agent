@@ -1,29 +1,38 @@
 coverage
 node_modules/
+.tmp/
 build/
 logs/
 *.log
 .env*
 !.env.example
+# VitePress build artifacts
+docs/.vitepress/dist
+docs/.vitepress/cache
+
 .cursorrules
 .cursorignore
 .cursor/
 .vscode/
 .claude/
+.gemini/
+.qwen/
 mcp.json
 .mcp.json
 
-# VitePress build artifacts
-docs/.vitepress/dist
-docs/.vitepress/cache
 
 /.ai
 /xnotes
 /notes
+.serena/
+
 CLAUDE.md
 GEMINI.md
+AGENTS.md
 
 sea-prep.blob
 1mcp
 1mcp.exe
-1mcp-portable/
+
+.mcpregistry_github_token
+.mcpregistry_registry_token
