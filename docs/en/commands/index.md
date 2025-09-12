@@ -9,15 +9,31 @@
 - **`serve`** - Start the 1MCP server (default command)
 - **`app`** - Manage desktop application MCP configurations
 - **`mcp`** - Manage MCP server configurations
+- **`preset`** - Manage server presets for dynamic filtering
 
 ### Global Options
+
+All 1MCP commands support the following global options:
 
 - **`--help, -h`** - Show help information
 - **`--version`** - Show version information
 - **`--config, -c <path>`** - Specify configuration file path
-- **`--transport, -t <type>`** - Transport type (stdio, http, sse)
-- **`--port, -P <port>`** - HTTP port (default: 3051)
-- **`--host, -H <host>`** - HTTP host (default: localhost)
+- **`--config-dir, -d <path>`** - Path to the config directory
+
+**Environment Variables**: All global options can be set via environment variables with the `ONE_MCP_` prefix:
+
+- `ONE_MCP_CONFIG=/path/to/config.json`
+- `ONE_MCP_CONFIG_DIR=/path/to/config/dir`
+
+### Command-Specific Options
+
+In addition to global options, each command may have specific options. Use `--help` with any command to see all available options:
+
+```bash
+npx -y @1mcp/agent mcp add --help
+npx -y @1mcp/agent preset create --help
+npx -y @1mcp/agent serve --help
+```
 
 ## Command Groups
 
@@ -41,6 +57,17 @@ npx -y @1mcp/agent mcp list                       # List configured servers
 npx -y @1mcp/agent mcp status                     # Check server status
 ```
 
+### [Preset Commands](./preset/)
+
+Manage server presets for dynamic filtering and context switching.
+
+```bash
+npx -y @1mcp/agent preset create dev --filter "web,api,database"
+npx -y @1mcp/agent preset list                    # List all presets
+npx -y @1mcp/agent preset show development        # Show preset details
+npx -y @1mcp/agent preset edit staging           # Edit preset configuration
+```
+
 ### [Serve Command](./serve)
 
 Start the 1MCP server with various configuration options.
@@ -59,6 +86,7 @@ If you're new to 1MCP Agent, start with:
 2. **[Quick Start](../guide/quick-start)** - Basic setup and first server
 3. **[App Commands](./app/)** - Consolidate existing MCP configurations
 4. **[MCP Commands](./mcp/)** - Add and manage MCP servers
+5. **[Preset Commands](./preset/)** - Create and manage server presets
 
 ## Examples
 
@@ -92,6 +120,10 @@ npx -y @1mcp/agent app consolidate claude-desktop cursor vscode --yes
 
 # Filter servers by tags with detailed information
 ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent mcp list --tags=prod,api
+
+# Create and use presets for dynamic server selection
+npx -y @1mcp/agent preset create production --filter "web AND database AND monitoring"
+npx -y @1mcp/agent preset url production
 ```
 
 ## Environment Variables

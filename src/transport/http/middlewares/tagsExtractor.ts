@@ -2,32 +2,168 @@ import { Request, Response, NextFunction } from 'express';
 import { ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { TagQueryParser } from '../../../utils/tagQueryParser.js';
 import { validateAndSanitizeTags } from '../../../utils/sanitization.js';
+import { PresetManager } from '../../../utils/presetManager.js';
+import { TagQuery } from '../../../utils/presetTypes.js';
 import logger from '../../../logger/logger.js';
 
 /**
+ * Extract simple tags from a MongoDB-style query for backward compatibility
+ */
+function extractTagsFromQuery(query: TagQuery): string[] {
+  if (!query || typeof query !== 'object') {
+    return [];
+  }
+
+  const tags: string[] = [];
+
+  function extractFromQuery(q: TagQuery): void {
+    if (!q || typeof q !== 'object') {
+      return;
+    }
+
+    // Simple tag match
+    if (q.tag) {
+      tags.push(q.tag);
+      return;
+    }
+
+    // $or with tag matches - only extract simple direct tags
+    if (q.$or && Array.isArray(q.$or)) {
+      for (const subQuery of q.$or) {
+        if (subQuery.tag) {
+          tags.push(subQuery.tag);
+        }
+        // Don't recurse into nested queries for simplicity
+      }
+      return;
+    }
+
+    // $and with tag matches - only extract simple direct tags
+    if (q.$and && Array.isArray(q.$and)) {
+      for (const subQuery of q.$and) {
+        if (subQuery.tag) {
+          tags.push(subQuery.tag);
+        }
+        // Don't recurse into nested queries for simplicity
+      }
+      return;
+    }
+  }
+
+  extractFromQuery(query);
+  return tags;
+}
+
+/**
  * Middleware to extract and validate tag filters from query parameters.
- * Supports both simple 'tags' parameter (OR logic, backward compatible)
- * and advanced 'tag-filter' parameter (boolean expressions).
+ * Supports:
+ * - 'preset' parameter (dynamic preset-based filtering)
+ * - 'tag-filter' parameter (advanced boolean expressions)
+ * - 'tags' parameter (simple OR logic, deprecated)
  *
  * Attaches to res.locals:
  * - tags: string[] | undefined (for backward compatibility)
  * - tagExpression: TagExpression | undefined (for advanced filtering)
- * - tagFilterMode: 'simple-or' | 'advanced' | 'none'
+ * - tagQuery: TagQuery | undefined (for MongoDB-style preset queries)
+ * - tagFilterMode: 'preset' | 'advanced' | 'simple-or' | 'none'
+ * - presetName: string | undefined (for preset tracking)
  */
 export default function tagsExtractor(req: Request, res: Response, next: NextFunction) {
+  const hasPreset = req.query.preset !== undefined;
   const hasTags = req.query.tags !== undefined;
   const hasTagFilter = req.query['tag-filter'] !== undefined;
 
-  // Mutual exclusion check
-  if (hasTags && hasTagFilter) {
+  // Mutual exclusion check - preset takes priority
+  const paramCount = [hasPreset, hasTags, hasTagFilter].filter(Boolean).length;
+  if (paramCount > 1) {
     res.status(400).json({
       error: {
         code: ErrorCode.InvalidParams,
         message:
-          'Cannot use both "tags" and "tag-filter" parameters. Use "tags" for simple OR filtering, or "tag-filter" for advanced expressions.',
+          'Cannot use multiple filtering parameters simultaneously. Use "preset" for dynamic presets, "tag-filter" for advanced expressions, or "tags" for simple OR filtering.',
       },
     });
     return;
+  }
+
+  // Handle preset parameter (highest priority)
+  if (hasPreset) {
+    const presetName = req.query.preset as string;
+    if (typeof presetName !== 'string') {
+      res.status(400).json({
+        error: {
+          code: ErrorCode.InvalidParams,
+          message: 'Invalid params: preset must be a string',
+        },
+      });
+      return;
+    }
+
+    try {
+      const presetManager = PresetManager.getInstance();
+      const tagExpression = presetManager.resolvePresetToExpression(presetName);
+
+      if (!tagExpression) {
+        res.status(400).json({
+          error: {
+            code: ErrorCode.InvalidParams,
+            message: `Preset '${presetName}' not found`,
+            examples: ['preset=development', 'preset=production', 'preset=staging'],
+          },
+        });
+        return;
+      }
+
+      // Use the preset's JSON tagQuery directly instead of parsing string expression
+      const preset = presetManager.getPreset(presetName);
+      if (!preset) {
+        res.status(400).json({
+          error: {
+            code: ErrorCode.InvalidParams,
+            message: `Preset '${presetName}' configuration invalid`,
+          },
+        });
+        return;
+      }
+
+      try {
+        // Store the MongoDB-style JSON query directly for evaluation
+        res.locals.tagQuery = preset.tagQuery;
+        res.locals.tagFilterMode = 'preset';
+        res.locals.presetName = presetName;
+
+        // For backward compatibility, extract simple tags if possible
+        const extractedTags = extractTagsFromQuery(preset.tagQuery);
+        res.locals.tags = extractedTags.length > 0 ? extractedTags : [];
+
+        logger.debug('Preset parameter processed', {
+          presetName,
+          strategy: preset.strategy,
+          tagQuery: preset.tagQuery,
+        });
+
+        next();
+        return;
+      } catch (error) {
+        logger.error('Failed to process preset tag query', { presetName, tagQuery: preset.tagQuery, error });
+        res.status(400).json({
+          error: {
+            code: ErrorCode.InvalidParams,
+            message: `Preset '${presetName}' has invalid tag query`,
+          },
+        });
+        return;
+      }
+    } catch (error) {
+      logger.error('Preset resolution failed', { presetName, error });
+      res.status(500).json({
+        error: {
+          code: ErrorCode.InternalError,
+          message: 'Failed to resolve preset configuration',
+        },
+      });
+      return;
+    }
   }
 
   // Handle legacy tags parameter (OR logic)

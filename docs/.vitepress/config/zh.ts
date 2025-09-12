@@ -125,6 +125,19 @@ function sidebar(): DefaultTheme.Sidebar {
               { text: 'status', link: '/zh/commands/mcp/status' },
             ],
           },
+          {
+            text: 'preset',
+            link: '/zh/commands/preset/',
+            items: [
+              { text: 'create', link: '/zh/commands/preset/create' },
+              { text: 'edit', link: '/zh/commands/preset/edit' },
+              { text: 'list', link: '/zh/commands/preset/list' },
+              { text: 'show', link: '/zh/commands/preset/show' },
+              { text: 'url', link: '/zh/commands/preset/url' },
+              { text: 'test', link: '/zh/commands/preset/test' },
+              { text: 'delete', link: '/zh/commands/preset/delete' },
+            ],
+          },
         ],
       },
       {

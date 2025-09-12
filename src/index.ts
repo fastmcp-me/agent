@@ -17,8 +17,10 @@ import { PORT, HOST } from './constants.js';
 import { displayLogo } from './utils/logo.js';
 import { setupAppCommands } from './commands/app/index.js';
 import { setupMcpCommands } from './commands/mcp/index.js';
+import { setupPresetCommands } from './commands/preset/index.js';
 import { McpLoadingManager } from './core/loading/mcpLoadingManager.js';
 import { TagQueryParser, TagExpression } from './utils/tagQueryParser.js';
+import { globalOptions } from './globalOptions.js';
 
 // Define server options that should only be available for serve commands
 const serverOptions = {
@@ -47,25 +49,11 @@ const serverOptions = {
     type: 'string' as const,
     default: undefined,
   },
-  config: {
-    alias: 'c',
-    describe: 'Path to the config file',
-    type: 'string' as const,
-    default: undefined,
-  },
-  tags: {
-    alias: 'g',
-    describe: 'Tags to filter clients (comma-separated, OR logic)',
-    type: 'string' as const,
-    default: undefined,
-    conflicts: 'tag-filter',
-  },
-  'tag-filter': {
+  filter: {
     alias: 'f',
-    describe: 'Advanced tag filter expression (and/or/not logic)',
+    describe: 'Filter expression for server selection (supports simple comma-separated or advanced boolean logic)',
     type: 'string' as const,
     default: undefined,
-    conflicts: 'tags',
   },
   pagination: {
     alias: 'p',
@@ -130,25 +118,15 @@ const serverOptions = {
     type: 'boolean' as const,
     default: false,
   },
-  'log-level': {
-    describe: 'Set the log level (debug, info, warn, error)',
-    type: 'string' as const,
-    choices: ['debug', 'info', 'warn', 'error'] as const,
-    default: undefined,
-  },
-  'log-file': {
-    describe: 'Write logs to a file in addition to console (disables console logging only for stdio transport)',
-    type: 'string' as const,
-    default: undefined,
-  },
 };
 
 // Parse command line arguments and set up commands
 let yargsInstance = yargs(hideBin(process.argv));
 
-// Set up base yargs with serve commands having server options
+// Set up base yargs with global options
 yargsInstance = yargsInstance
   .usage('Usage: $0 [command] [options]')
+  .options(globalOptions)
   .command('$0', 'Start the 1mcp server (default)', serverOptions, () => {
     // Default command handler - will be processed by main()
   })
@@ -159,9 +137,10 @@ yargsInstance = yargsInstance
   .help()
   .alias('help', 'h');
 
-// Register command groups (these will have clean option lists without server options)
+// Register command groups with global options
 yargsInstance = setupAppCommands(yargsInstance);
 yargsInstance = setupMcpCommands(yargsInstance);
+yargsInstance = setupPresetCommands(yargsInstance);
 
 /**
  * Set up graceful shutdown handling
@@ -207,6 +186,18 @@ function setupGracefulShutdown(
       }
     }
 
+    // Cleanup PresetManager if it exists
+    try {
+      const PresetManager = (await import('./utils/presetManager.js')).PresetManager;
+      const presetManager = PresetManager.getInstance();
+      if (presetManager && typeof presetManager.cleanup === 'function') {
+        await presetManager.cleanup();
+        logger.info('PresetManager cleanup complete');
+      }
+    } catch (error) {
+      logger.error(`Error cleaning up PresetManager: ${error}`);
+    }
+
     logger.info('Server shutdown complete');
     process.exit(0);
   };
@@ -221,7 +212,61 @@ function setupGracefulShutdown(
  * Check if the command is a CLI command that should not start the server
  */
 function isCliCommand(argv: string[]): boolean {
-  return argv.length >= 3 && (argv[2] === 'app' || argv[2] === 'mcp');
+  return argv.length >= 3 && (argv[2] === 'app' || argv[2] === 'mcp' || argv[2] === 'preset');
+}
+
+/**
+ * Check for conflicting global options (options specified both before and after the command)
+ */
+function checkGlobalOptionConflicts(argv: string[]): void {
+  const globalOptionNames = Object.keys(globalOptions).map((key) => (key.startsWith('--') ? key.slice(2) : key));
+  const globalOptionAliases = Object.values(globalOptions)
+    .map((opt) => ('alias' in opt ? opt.alias : null))
+    .filter(Boolean);
+  const allGlobalOptions = [...globalOptionNames, ...globalOptionAliases];
+
+  const commandIndex = argv.findIndex((arg) => arg === 'app' || arg === 'mcp' || arg === 'preset' || arg === 'serve');
+
+  if (commandIndex === -1) return;
+
+  const beforeCommandArgs = argv.slice(0, commandIndex);
+  const afterCommandArgs = argv.slice(commandIndex + 1);
+
+  const beforeGlobalOptions = new Set<string>();
+  const afterGlobalOptions = new Set<string>();
+
+  // Parse global options before command
+  for (let i = 0; i < beforeCommandArgs.length; i++) {
+    const arg = beforeCommandArgs[i];
+    const optionName = arg.replace(/^--?/, '');
+
+    if (allGlobalOptions.includes(optionName)) {
+      beforeGlobalOptions.add(optionName);
+    }
+  }
+
+  // Parse global options after command
+  for (let i = 0; i < afterCommandArgs.length; i++) {
+    const arg = afterCommandArgs[i];
+    const optionName = arg.replace(/^--?/, '');
+
+    if (allGlobalOptions.includes(optionName)) {
+      afterGlobalOptions.add(optionName);
+    }
+  }
+
+  // Check for conflicts
+  const conflicts = Array.from(beforeGlobalOptions).filter((opt) => afterGlobalOptions.has(opt));
+
+  if (conflicts.length > 0) {
+    console.error(
+      `❌ Error: Cannot specify the following global options both before and after the command: ${conflicts.map((opt) => `--${opt}`).join(', ')}`,
+    );
+    console.error('   Please specify global options either before OR after the command, not both.');
+    console.error('   Example: 1mcp --config test.json mcp list');
+    console.error('   OR:      1mcp mcp list --config test.json');
+    process.exit(1);
+  }
 }
 
 /**
@@ -245,6 +290,9 @@ function isServeCommand(argv: string[]): boolean {
  * Start the server using the specified transport.
  */
 async function main() {
+  // Check for global option conflicts before parsing
+  checkGlobalOptionConflicts(process.argv);
+
   // Check if this is a CLI command - if so, let yargs handle it and exit
   if (isCliCommand(process.argv)) {
     await yargsInstance.parse();
@@ -318,6 +366,11 @@ async function main() {
       }),
     });
 
+    // Initialize PresetManager with config directory option before server setup
+    // This ensures the singleton is created with the correct config directory
+    const PresetManager = (await import('./utils/presetManager.js')).PresetManager;
+    PresetManager.getInstance(parsedArgv['config-dir']);
+
     // Initialize server and get server manager with custom config path if provided
     const { serverManager, loadingManager, asyncOrchestrator } = await setupServer();
 
@@ -327,32 +380,40 @@ async function main() {
       case 'stdio': {
         // Use stdio transport
         const transport = new StdioServerTransport();
-        // Parse and validate tags/tag-filter from CLI if provided
+        // Parse and validate filter from CLI if provided
         let tags: string[] | undefined;
         let tagExpression: TagExpression | undefined;
         let tagFilterMode: 'simple-or' | 'advanced' | 'none' = 'none';
 
-        if (parsedArgv.tags) {
-          // Legacy simple OR filtering
-          tags = TagQueryParser.parseSimple(parsedArgv.tags);
-          tagFilterMode = 'simple-or';
-          if (!tags || tags.length === 0) {
-            logger.warn('No valid tags provided, ignoring tags parameter');
-            tags = undefined;
-            tagFilterMode = 'none';
-          }
-        } else if (parsedArgv['tag-filter']) {
-          // New advanced expression filtering
+        if (parsedArgv.filter) {
           try {
-            tagExpression = TagQueryParser.parseAdvanced(parsedArgv['tag-filter']);
+            // First try to parse as advanced expression
+            tagExpression = TagQueryParser.parseAdvanced(parsedArgv.filter);
             tagFilterMode = 'advanced';
             // Provide simple tags for backward compat where possible
             if (tagExpression.type === 'tag') {
               tags = [tagExpression.value!];
             }
-          } catch (error) {
-            logger.error(`Invalid tag-filter expression: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            process.exit(1);
+          } catch (_advancedError) {
+            // Fall back to simple parsing for comma-separated tags
+            try {
+              tags = TagQueryParser.parseSimple(parsedArgv.filter);
+              tagFilterMode = 'simple-or';
+              if (!tags || tags.length === 0) {
+                logger.warn('No valid tags provided, ignoring filter parameter');
+                tags = undefined;
+                tagFilterMode = 'none';
+              }
+            } catch (simpleError) {
+              logger.error(
+                `Invalid filter expression: ${simpleError instanceof Error ? simpleError.message : 'Unknown error'}`,
+              );
+              logger.error('Examples:');
+              logger.error('  --filter "web,api,database"           # OR logic (comma-separated)');
+              logger.error('  --filter "web AND database"           # AND logic');
+              logger.error('  --filter "(web OR api) AND database"  # Complex expressions');
+              process.exit(1);
+            }
           }
         }
 

@@ -1,4 +1,4 @@
-import { AUTH_CONFIG, HOST, PORT, RATE_LIMIT_CONFIG } from '../../constants.js';
+import { AUTH_CONFIG, HOST, PORT, RATE_LIMIT_CONFIG, STREAMABLE_HTTP_ENDPOINT } from '../../constants.js';
 
 /**
  * Configuration interface for agent-specific settings.
@@ -264,6 +264,15 @@ export class AgentConfigManager {
    */
   public getUrl(): string {
     return this.config.externalUrl || `http://${this.config.host}:${this.config.port}`;
+  }
+
+  /**
+   * Gets the streamable HTTP URL, which includes the streamable HTTP endpoint.
+   *
+   * @returns The streamable HTTP URL
+   */
+  public getStreambleHttpUrl(): string {
+    return `${this.getUrl()}${STREAMABLE_HTTP_ENDPOINT}`;
   }
 
   /**
