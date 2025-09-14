@@ -5,12 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.22.2] - 2025-09-14
+
+### ⚙️ Miscellaneous Tasks
+- Improve commit and push process in publish-to-npm workflow by @xizhibei
+
+
 ## [0.22.1] - 2025-09-14
 
 ### 🚀 Features
 - Enhance binary distribution with multi-platform support and compressed archives by @xizhibei in [#116](https://github.com/1mcp-app/agent/pull/116)
 
 ### 💼 Other
+- Update binary naming and archive creation for Windows by @xizhibei
 - Add explicit sea:build step before build binaries by @xizhibei
 - Update zod to v4.1.8 by @xizhibei
 
@@ -22,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add link for MCP tokens command by @xizhibei
 
 ### ⚙️ Miscellaneous Tasks
+- Add check for changes before committing and pushing by @xizhibei
 - Simplify artifact upload process by @xizhibei
 - Update commit parsers in cliff-release.toml by @xizhibei
 - Add manual E2E test trigger option by @xizhibei
@@ -663,6 +671,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.22.2]: https://github.com/1mcp-app/agent/compare/v0.22.1..v0.22.2
 [0.22.1]: https://github.com/1mcp-app/agent/compare/v0.22.0..v0.22.1
 [0.22.0]: https://github.com/1mcp-app/agent/compare/v0.21.0..v0.22.0
 [0.21.0]: https://github.com/1mcp-app/agent/compare/v0.20.3..v0.21.0
