@@ -59,13 +59,18 @@ jobs:
           # Add both files and check if there are changes to commit
           git add package.json src/constants.ts
 
-          # Check if there are any changes to commit
+          # Check if there are any staged changes to commit
           if git diff --cached --quiet; then
             echo "No changes to commit, skipping commit and push"
           else
-            git commit -m "chore: update changelog and version to $VERSION [skip ci]"
-            # Push to main branch
-            git push origin temp-release-branch:main
+            echo "Committing and pushing changes"
+            if git commit -m "chore: update changelog and version to $VERSION [skip ci]"; then
+              # Push to main branch
+              git push origin temp-release-branch:main
+            else
+              echo "Commit failed, skipping push"
+              exit 1
+            fi
           fi
 
       - name: Build
