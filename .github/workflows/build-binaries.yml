@@ -53,7 +53,9 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: Build and create SEA binary
-        run: pnpm ${{ matrix.script }}
+        run: |
+          pnpm sea:build
+          pnpm ${{ matrix.script }}
 
       - name: Create compressed archive
         run: pnpm archive
