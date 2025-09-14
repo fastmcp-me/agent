@@ -13,21 +13,47 @@ npx -y @1mcp/agent [options]  # serve is the default command
 
 The `serve` command starts the 1MCP server, which acts as a unified proxy/multiplexer for multiple MCP servers. It can operate in different transport modes and provides a unified interface for MCP clients.
 
-For a complete list of command-line flags, environment variables, and JSON configuration options, please see the \*\*[Configuration Deep Dive](../guide/essentials/configuration.md)
+For a complete list of command-line flags, environment variables, and JSON configuration options, please see the **[Configuration Deep Dive](../guide/essentials/configuration.md)**. For MCP server configuration (backend servers, environment management), see the **[MCP Servers Reference](../reference/mcp-servers.md)**.
 
-## Global Options
+## Options
 
-This command supports all global options:
+The serve command supports all configuration options. Here are the most commonly used:
+
+### Configuration Options
 
 - **`--config, -c <path>`** - Specify configuration file path
 - **`--config-dir, -d <path>`** - Path to the config directory
+
+### Transport Options
+
+- **`--transport, -t <type>`** - Choose transport type (`stdio`, `http`)
+- **`--port, -P <port>`** - Change HTTP port (default: 3050)
+- **`--host, -H <host>`** - Change HTTP host (default: localhost)
+
+### Security Options
+
+- **`--enable-auth`** - Enable OAuth 2.1 authentication
+- **`--enable-enhanced-security`** - Enable enhanced security middleware
+- **`--trust-proxy <config>`** - Trust proxy configuration
+
+### Filtering Options
+
+- **`--tag-filter, -f <expression>`** - Advanced tag filter expression
+- **`--tags, -g <tags>`** - ⚠️ Deprecated - use `--tag-filter`
+
+### Logging Options
+
+- **`--log-level <level>`** - Set log level (`debug`, `info`, `warn`, `error`)
+- **`--log-file <path>`** - Write logs to file
+
+For all options, see the **[Configuration Deep Dive](../guide/essentials/configuration.md)**.
 
 ## Examples
 
 ### Basic Usage
 
 ```bash
-# Start with default settings (HTTP on localhost:3051)
+# Start with default settings (HTTP on localhost:3050)
 npx -y @1mcp/agent serve
 
 # Start on custom port
@@ -54,22 +80,29 @@ npx -y @1mcp/agent serve --log-level=debug
 npx -y @1mcp/agent serve \
   --host=0.0.0.0 \
   --port=3051 \
-  --auth \
-  --enhanced-security \
+  --enable-auth \
+  --enable-enhanced-security \
   --trust-proxy=true
 
 # With external URL for OAuth redirects
 npx -y @1mcp/agent serve \
   --external-url=https://mcp.yourdomain.com \
-  --auth
+  --enable-auth
 ```
 
 ### Development
 
 ```bash
-# Development with file watching
+# Development with debug logging and full health info
 npx -y @1mcp/agent serve \
-  --health-info-level=full
+  --log-level=debug \
+  --health-info-level=full \
+  --enable-async-loading
+
+# Development with custom config directory
+npx -y @1mcp/agent serve \
+  --config-dir=./dev-config \
+  --log-level=debug
 ```
 
 ### Tag Filtering
@@ -88,6 +121,7 @@ npx -y @1mcp/agent serve --transport=stdio --tag-filter="web and api and not tes
 
 ## See Also
 
-- **[Configuration Deep Dive](../guide/essentials/configuration)**
-- **[Security Guide](../reference/security)**
-- **[Health Check API Reference](../reference/health-check)**
+- **[Configuration Deep Dive](../guide/essentials/configuration.md)** - CLI flags and environment variables
+- **[MCP Servers Reference](../reference/mcp-servers.md)** - Backend server configuration
+- **[Security Guide](../reference/security.md)** - Security best practices
+- **[Health Check API Reference](../reference/health-check.md)** - Monitoring endpoints

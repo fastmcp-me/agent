@@ -1,418 +1,344 @@
 # Configuration Deep Dive
 
-The 1MCP Agent is highly configurable, allowing you to tailor its behavior for everything from local development to production deployments. Configuration can be managed through a JSON file, command-line arguments, and environment variables, which are applied in that order of precedence.
+The 1MCP Agent provides extensive configuration options for runtime behavior, transport settings, authentication, and more. This guide covers command-line flags and environment variables that control how the agent operates.
+
+For MCP server configuration (backend servers, environment management, process control), see the **[MCP Servers Reference](../../reference/mcp-servers.md)**.
 
 ## Configuration Methods
 
-1.  **JSON File**: The primary method for defining servers and settings.
-2.  **Command-Line Flags**: For overriding specific settings at runtime.
-3.  **Environment Variables**: Useful for containerized deployments and CI/CD.
+The agent supports three configuration methods, applied in this order of precedence:
+
+1. **Environment Variables**: Highest priority, useful for containerized deployments
+2. **Command-Line Flags**: Override settings at runtime
+3. **Configuration File**: Base configuration (covered in MCP Servers Reference)
 
 ---
 
-## 1. JSON Configuration File
+## Command-Line Options
 
-The agent uses a JSON file (e.g., `mcp.json`) to define backend servers and global settings.
+All available command-line options and their corresponding environment variables:
 
-### Default Locations
-
-- **macOS**: `~/.config/1mcp/mcp.json`
-- **Linux**: `~/.config/1mcp/mcp.json`
-- **Windows**: `%APPDATA%\1mcp\mcp.json`
-
-You can override the path using the `--config` flag.
-
-### Config Directory Override
-
-The agent supports overriding the entire config directory location, which affects where the configuration file, backups, and other related files are stored.
-
-**Default Locations:**
-
-- **macOS**: `~/.config/1mcp/`
-- **Linux**: `~/.config/1mcp/`
-- **Windows**: `%APPDATA%\1mcp\`
-
-**Override Methods:**
-
-1. **Command Line Flag:**
-
-   ```bash
-   npx -y @1mcp/agent --config-dir /custom/config/path
-   ```
-
-2. **Environment Variable:**
-   ```bash
-   ONE_MCP_CONFIG_DIR=/custom/config/path npx -y @1mcp/agent
-   ```
-
-When you override the config directory, the agent will:
-
-- Look for `mcp.json` in the specified directory
-- Store backups in a `backups` subdirectory
-- Store presets and other configuration files in the specified directory
-
-**Example:**
-
-```bash
-# Use a project-specific config directory
-npx -y @1mcp/agent --config-dir ./project-config
-```
-
-This creates a self-contained configuration setup for projects that need isolated configurations.
-
-### Top-Level Structure
-
-```json
-{
-  "mcpServers": {
-    // Server definitions
-  }
-}
-```
-
-### `mcpServers` Section
-
-This is a dictionary of all the backend MCP servers the agent will manage.
-
-- **Key**: A unique, human-readable name for the server (e.g., `my-filesystem`).
-- **Value**: A server configuration object.
-
-#### Server Properties
-
-**Common Properties:**
-
-- `transport` (string, optional): `stdio` or `http`. Defaults to `stdio` if `command` is present, `http` if `url` is present.
-- `tags` (array of strings, required): Tags for routing and access control.
-- `timeout` (number, optional): Connection timeout in milliseconds.
-- `enabled` (boolean, optional): Set to `false` to disable the server. Defaults to `true`.
-
-**HTTP Transport Properties:**
-
-- `url` (string, required for `http`): The URL for the remote MCP server.
-
-**Stdio Transport Properties:**
-
-- `command` (string, required for `stdio`): The command to execute.
-- `args` (array of strings, optional): Arguments for the command.
-- `cwd` (string, optional): Working directory for the process.
-- `env` (object or array, optional): Environment variables. Can be an object `{"KEY": "value"}` or array `["KEY=value", "PATH"]`.
-- `inheritParentEnv` (boolean, optional): Inherit environment variables from parent process. Defaults to `false`.
-- `envFilter` (array of strings, optional): Patterns for filtering inherited environment variables. Supports `*` wildcards and `!` for exclusion.
-- `restartOnExit` (boolean, optional): Automatically restart the process when it exits. Defaults to `false`.
-- `maxRestarts` (number, optional): Maximum number of restart attempts. If not specified, unlimited restarts are allowed.
-- `restartDelay` (number, optional): Delay in milliseconds between restart attempts. Defaults to `1000` (1 second).
-
-#### Example `mcpServers`
-
-**Basic Configuration:**
-
-```json
-{
-  "mcpServers": {
-    "filesystem": {
-      "command": "mcp-server-filesystem",
-      "args": ["--root", "/data"],
-      "tags": ["files", "local-data"]
-    },
-    "remote-api": {
-      "transport": "http",
-      "url": "https://api.example.com/mcp",
-      "tags": ["api", "prod"],
-      "timeout": 15000
-    }
-  }
-}
-```
-
-**Enhanced Stdio Configuration:**
-
-```json
-{
-  "mcpServers": {
-    "enhanced-server": {
-      "command": "node",
-      "args": ["server.js"],
-      "cwd": "/app",
-      "inheritParentEnv": true,
-      "envFilter": ["PATH", "HOME", "NODE_*", "!SECRET_*", "!BASH_FUNC_*"],
-      "env": {
-        "NODE_ENV": "production",
-        "API_KEY": "${MCP_API_KEY}",
-        "DEBUG": "false"
-      },
-      "restartOnExit": true,
-      "maxRestarts": 5,
-      "restartDelay": 2000,
-      "tags": ["production", "api"],
-      "timeout": 30000
-    }
-  }
-}
-```
-
-**Array Environment Format:**
-
-```json
-{
-  "mcpServers": {
-    "array-env-server": {
-      "command": "python",
-      "args": ["server.py"],
-      "env": ["PATH", "NODE_ENV=production", "API_KEY=${SECRET_KEY}"],
-      "tags": ["python", "api"]
-    }
-  }
-}
-```
+| Option (CLI)                 | Environment Variable               | Description                                                                                     |  Default   |
+| :--------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------------- | :--------: |
+| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                                               |   "http"   |
+| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                                      |            |
+| `--config-dir`, `-d`         | `ONE_MCP_CONFIG_DIR`               | Path to the config directory (overrides default config location)                                |            |
+| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                                                |    3050    |
+| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                                                | localhost  |
+| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com)                    |            |
+| `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset)                   | "loopback" |
+| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags (comma-separated, OR logic) ⚠️ **Deprecated - use --tag-filter**         |            |
+| `--tag-filter`, `-f`         | `ONE_MCP_TAG_FILTER`               | Advanced tag filter expression (and/or/not logic)                                               |            |
+| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                                             |   false    |
+| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                                               |   false    |
+| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                                     |    true    |
+| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                                   |   false    |
+| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                                         |    1440    |
+| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                                  |            |
+| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                                     |     15     |
+| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                                           |    100     |
+| `--enable-async-loading`     | `ONE_MCP_ENABLE_ASYNC_LOADING`     | Enable asynchronous MCP server loading(boolean)                                                 |   false    |
+| `--health-info-level`        | `ONE_MCP_HEALTH_INFO_LEVEL`        | Health endpoint information detail level ("full", "basic", "minimal")                           | "minimal"  |
+| `--log-level`                | `ONE_MCP_LOG_LEVEL`                | Set the log level ("debug", "info", "warn", "error")                                            |   "info"   |
+| `--log-file`                 | `ONE_MCP_LOG_FILE`                 | Write logs to a file in addition to console (disables console logging only for stdio transport) |            |
+| `--help`, `-h`               |                                    | Show help                                                                                       |            |
 
 ---
 
-## 2. Enhanced Environment Variable Features
-
-The 1MCP Agent provides advanced environment variable management for stdio transport servers.
-
-### Environment Variable Substitution
-
-Use `${VARIABLE_NAME}` syntax in your configuration to substitute environment variables at runtime:
-
-```json
-{
-  "mcpServers": {
-    "dynamic-server": {
-      "command": "${SERVER_COMMAND}",
-      "args": ["--port", "${SERVER_PORT}"],
-      "env": {
-        "API_KEY": "${SECRET_API_KEY}",
-        "DATABASE_URL": "${DB_CONNECTION_STRING}"
-      },
-      "tags": ["dynamic"]
-    }
-  }
-}
-```
-
-### Environment Inheritance and Filtering
-
-**Inherit Parent Environment:**
-Set `inheritParentEnv: true` to inherit environment variables from the parent process:
-
-```json
-{
-  "inheritParentEnv": true
-}
-```
-
-**Environment Filtering:**
-Use `envFilter` to control which variables are inherited using pattern matching:
-
-```json
-{
-  "inheritParentEnv": true,
-  "envFilter": [
-    "PATH", // Allow PATH variable
-    "HOME", // Allow HOME variable
-    "NODE_*", // Allow all NODE_* variables
-    "NPM_*", // Allow all NPM_* variables
-    "!SECRET_*", // Block all SECRET_* variables
-    "!BASH_FUNC_*" // Block bash function definitions
-  ]
-}
-```
-
-**Filter Patterns:**
-
-- `VARIABLE_NAME`: Include specific variable
-- `PREFIX_*`: Include all variables starting with PREFIX\_
-- `!VARIABLE_NAME`: Exclude specific variable
-- `!PREFIX_*`: Exclude all variables starting with PREFIX\_
-
-### Flexible Environment Formats
-
-**Object Format (Traditional):**
-
-```json
-{
-  "env": {
-    "NODE_ENV": "production",
-    "DEBUG": "false",
-    "API_TIMEOUT": "30000"
-  }
-}
-```
-
-**Array Format (Docker-style):**
-
-```json
-{
-  "env": [
-    "NODE_ENV=production",
-    "DEBUG=false",
-    "PATH", // Inherit PATH from parent
-    "API_TIMEOUT=${TIMEOUT_VALUE}"
-  ]
-}
-```
-
-### Process Management
-
-**Automatic Restart:**
-Enable automatic process restart when the server exits unexpectedly:
-
-```json
-{
-  "restartOnExit": true,
-  "maxRestarts": 5,
-  "restartDelay": 2000
-}
-```
-
-**Restart Configuration Options:**
-
-- `restartOnExit`: Enable automatic restart functionality
-- `maxRestarts`: Limit restart attempts (omit for unlimited restarts)
-- `restartDelay`: Milliseconds to wait between restart attempts (default: 1000ms)
-
-**Working Directory:**
-Set a custom working directory for the process:
-
-```json
-{
-  "cwd": "/path/to/server/directory"
-}
-```
-
-### Complete Example
-
-```json
-{
-  "mcpServers": {
-    "production-server": {
-      "command": "node",
-      "args": ["dist/server.js"],
-      "cwd": "/app",
-
-      // Environment inheritance with security filtering
-      "inheritParentEnv": true,
-      "envFilter": [
-        "PATH",
-        "HOME",
-        "USER", // Basic system vars
-        "NODE_*",
-        "NPM_*", // Node.js related
-        "!SECRET_*",
-        "!KEY_*", // Block secrets
-        "!BASH_FUNC_*" // Block functions
-      ],
-
-      // Custom environment with substitution
-      "env": {
-        "NODE_ENV": "production",
-        "API_KEY": "${PROD_API_KEY}",
-        "DB_URL": "${DATABASE_CONNECTION}",
-        "LOG_LEVEL": "info"
-      },
-
-      // Process management
-      "restartOnExit": true,
-      "maxRestarts": 3,
-      "restartDelay": 1500,
-
-      // Standard MCP properties
-      "tags": ["production", "api"],
-      "timeout": 30000
-    }
-  }
-}
-```
-
----
-
-## 3. Command-Line Flags
-
-Flags override settings from the JSON configuration file.
+## Configuration Categories
 
 ### Transport Options
 
-- `--transport, -t <type>`: Transport type (`stdio`, `http`). `sse` is deprecated.
+Control how the agent communicates with clients and backend servers.
 
-### HTTP Transport Options
+**`--transport, -t <type>`**
 
-- `--port, -P <port>`: HTTP port. Default: `3050`.
-- `--host, -H <host>`: HTTP host. Default: `localhost`.
-- `--external-url, -u <url>`: External URL for the server (used for OAuth callbacks and public URLs).
+- **Values**: `stdio`, `http`, `sse` (deprecated)
+- **Default**: `http`
+- **Environment**: `ONE_MCP_TRANSPORT`
 
-### Configuration Options
-
-- `--config, -c <path>`: Path to configuration file.
-- `--config-dir, -d <path>`: Path to the config directory (overrides ONE_MCP_CONFIG_DIR environment variable).
-
-### Security Options
-
-- `--auth`: Enable OAuth 2.1 authentication (deprecated, use `--enable-auth`). Default: `false`.
-- `--enable-auth`: Enable authentication (OAuth 2.1). Default: `false`.
-- `--enable-scope-validation`: Enable tag-based scope validation. Default: `true`.
-- `--enable-enhanced-security`: Enable enhanced security middleware. Default: `false`.
-- `--session-ttl <minutes>`: Session expiry time in minutes. Default: `1440` (24 hours).
-- `--session-storage-path <path>`: Custom session storage directory path.
-- `--rate-limit-window <minutes>`: OAuth rate limit window in minutes. Default: `15`.
-- `--rate-limit-max <requests>`: Maximum requests per OAuth rate limit window. Default: `100`.
-
-### Network Options
-
-- `--trust-proxy <config>`: Trust proxy configuration. See [Trust Proxy Guide](/reference/trust-proxy). Default: `loopback`.
-
-### Filtering Options
-
-- `--tags, -g <tags>`: Tags to filter clients (comma-separated, OR logic). ⚠️ **Deprecated - use --tag-filter**.
-- `--tag-filter, -f <expression>`: Advanced tag filter expression (boolean AND/OR/NOT logic).
-- `--pagination, -p`: Enable pagination. Default: `false`.
-
-### Health Check Options
-
-- `--health-info-level <level>`: `full`, `basic`, `minimal`. Default: `minimal`.
-
-### Async Loading
-
-- `--enable-async-loading`: Enables asynchronous MCP server loading.
-
-### Logging Options
-
-- `--log-level <level>`: Set the log level (`debug`, `info`, `warn`, `error`). Default: `info`.
-- `--log-file <path>`: Write logs to a file in addition to console. When specified, console logging is disabled only for stdio transport.
-
-#### Tag Filtering Examples
+**Examples:**
 
 ```bash
-# Simple tag filtering (OR logic) - ⚠️ Deprecated
-npx -y @1mcp/agent --tags "web,api"
-ONE_MCP_TAGS="web,api" npx -y @1mcp/agent
+# HTTP transport (default)
+npx -y @1mcp/agent --transport http
 
-# Advanced tag filtering (boolean expressions) - Recommended
-npx -y @1mcp/agent --tag-filter "web+api"
-npx -y @1mcp/agent --tag-filter "(web,api)+prod-test"
-npx -y @1mcp/agent --tag-filter "web and api and not test"
-ONE_MCP_TAG_FILTER="web+api" npx -y @1mcp/agent
+# Stdio transport for direct MCP client integration
+npx -y @1mcp/agent --transport stdio
+
+# Using environment variable
+ONE_MCP_TRANSPORT=stdio npx -y @1mcp/agent
 ```
 
-#### Logging Examples
+### Network Configuration
+
+Configure HTTP server settings for network access.
+
+**`--port, -P <port>`**
+
+- **Default**: `3050`
+- **Environment**: `ONE_MCP_PORT`
+
+**`--host, -H <host>`**
+
+- **Default**: `localhost`
+- **Environment**: `ONE_MCP_HOST`
+
+**`--external-url, -u <url>`**
+
+- **Purpose**: External URL for OAuth callbacks and public URLs
+- **Environment**: `ONE_MCP_EXTERNAL_URL`
+
+**Examples:**
 
 ```bash
-# Set log level via CLI
+# Custom port and host
+npx -y @1mcp/agent --port 3051 --host 0.0.0.0
+
+# External URL for reverse proxy setups
+npx -y @1mcp/agent --external-url https://mcp.example.com
+
+# Environment variables for Docker
+ONE_MCP_HOST=0.0.0.0 ONE_MCP_PORT=3051 npx -y @1mcp/agent
+```
+
+### Configuration Management
+
+Control configuration file location and loading behavior.
+
+**`--config, -c <path>`**
+
+- **Purpose**: Use a specific config file
+- **Environment**: `ONE_MCP_CONFIG`
+
+**`--config-dir, -d <path>`**
+
+- **Purpose**: Path to the config directory (overrides default location)
+- **Environment**: `ONE_MCP_CONFIG_DIR`
+
+**Examples:**
+
+```bash
+# Use specific config file
+npx -y @1mcp/agent --config ./my-config.json
+
+# Use custom config directory
+npx -y @1mcp/agent --config-dir ./project-config
+
+# Environment variable for config directory
+ONE_MCP_CONFIG_DIR=/opt/1mcp/config npx -y @1mcp/agent
+```
+
+### Security Configuration
+
+Authentication, authorization, and security features.
+
+**`--enable-auth`**
+
+- **Purpose**: Enable OAuth 2.1 authentication
+- **Default**: `false`
+- **Environment**: `ONE_MCP_ENABLE_AUTH`
+
+**`--enable-scope-validation`**
+
+- **Purpose**: Enable tag-based scope validation
+- **Default**: `true`
+- **Environment**: `ONE_MCP_ENABLE_SCOPE_VALIDATION`
+
+**`--enable-enhanced-security`**
+
+- **Purpose**: Enable enhanced security middleware
+- **Default**: `false`
+- **Environment**: `ONE_MCP_ENABLE_ENHANCED_SECURITY`
+
+**Session Management:**
+
+- `--session-ttl <minutes>`: Session expiry time (default: 1440)
+- `--session-storage-path <path>`: Custom session storage directory
+- `--rate-limit-window <minutes>`: OAuth rate limit window (default: 15)
+- `--rate-limit-max <requests>`: Maximum requests per window (default: 100)
+
+**Examples:**
+
+```bash
+# Enable authentication with enhanced security
+npx -y @1mcp/agent --enable-auth --enable-enhanced-security
+
+# Custom session configuration
+npx -y @1mcp/agent \
+  --enable-auth \
+  --session-ttl 720 \
+  --rate-limit-window 10 \
+  --rate-limit-max 50
+
+# Environment variables
+ONE_MCP_ENABLE_AUTH=true \
+ONE_MCP_ENABLE_ENHANCED_SECURITY=true \
+npx -y @1mcp/agent
+```
+
+### Network Security
+
+Configure trust proxy settings for reverse proxy deployments.
+
+**`--trust-proxy <config>`**
+
+- **Default**: `"loopback"`
+- **Environment**: `ONE_MCP_TRUST_PROXY`
+- **Values**:
+  - `true`: Trust all proxies
+  - `false`: Trust no proxies
+  - IP address: Trust specific IP
+  - CIDR: Trust IP range
+  - `"loopback"`: Trust loopback addresses only
+
+**Examples:**
+
+```bash
+# Trust all proxies (CDN/Cloudflare)
+npx -y @1mcp/agent --trust-proxy true
+
+# Trust specific proxy IP
+npx -y @1mcp/agent --trust-proxy 192.168.1.100
+
+# Trust IP range
+npx -y @1mcp/agent --trust-proxy 10.0.0.0/8
+```
+
+For detailed trust proxy configuration, see the **[Trust Proxy Reference](../../reference/trust-proxy.md)**.
+
+### Server Filtering
+
+Control which backend MCP servers are loaded and available.
+
+**`--tags, -g <tags>`** ⚠️ **Deprecated**
+
+- **Purpose**: Filter servers by tags (comma-separated, OR logic)
+- **Environment**: `ONE_MCP_TAGS`
+
+**`--tag-filter, -f <expression>`** ✅ **Recommended**
+
+- **Purpose**: Advanced tag filter expression with boolean logic
+- **Environment**: `ONE_MCP_TAG_FILTER`
+
+**Tag Filter Syntax:**
+
+- `tag1,tag2`: OR logic (either tag)
+- `tag1+tag2`: AND logic (both tags)
+- `(tag1,tag2)+tag3`: Complex expressions
+- `tag1 and tag2 and not tag3`: Natural language syntax
+
+**Examples:**
+
+```bash
+# Simple OR filtering (deprecated)
+npx -y @1mcp/agent --tags "network,filesystem"
+
+# Advanced filtering (recommended)
+npx -y @1mcp/agent --tag-filter "network+api"
+npx -y @1mcp/agent --tag-filter "(web,api)+production-test"
+npx -y @1mcp/agent --tag-filter "web and api and not test"
+
+# Environment variables
+ONE_MCP_TAG_FILTER="network+api" npx -y @1mcp/agent
+```
+
+### Performance Options
+
+Control performance and resource usage behavior.
+
+**`--enable-async-loading`**
+
+- **Purpose**: Enable asynchronous MCP server loading
+- **Default**: `false`
+- **Environment**: `ONE_MCP_ENABLE_ASYNC_LOADING`
+
+**`--pagination, -p`**
+
+- **Purpose**: Enable pagination for client/server lists
+- **Default**: `false`
+- **Environment**: `ONE_MCP_PAGINATION`
+
+**Examples:**
+
+```bash
+# Enable async loading for faster startup
+npx -y @1mcp/agent --enable-async-loading
+
+# Enable pagination for large server lists
+npx -y @1mcp/agent --pagination
+
+# Environment variables
+ONE_MCP_ENABLE_ASYNC_LOADING=true \
+ONE_MCP_PAGINATION=true \
+npx -y @1mcp/agent
+```
+
+### Monitoring and Health
+
+Configure health check endpoints and information detail levels.
+
+**`--health-info-level <level>`**
+
+- **Values**: `"full"`, `"basic"`, `"minimal"`
+- **Default**: `"minimal"`
+- **Environment**: `ONE_MCP_HEALTH_INFO_LEVEL`
+
+**Levels:**
+
+- `minimal`: Basic health status only
+- `basic`: Health status with basic metrics
+- `full`: Complete system information and metrics
+
+**Examples:**
+
+```bash
+# Full health information for monitoring
+npx -y @1mcp/agent --health-info-level full
+
+# Basic health information
+npx -y @1mcp/agent --health-info-level basic
+
+# Environment variable
+ONE_MCP_HEALTH_INFO_LEVEL=full npx -y @1mcp/agent
+```
+
+For detailed health check information, see the **[Health Check Reference](../../reference/health-check.md)**.
+
+### Logging Configuration
+
+Control log output, levels, and destinations.
+
+**`--log-level <level>`**
+
+- **Values**: `"debug"`, `"info"`, `"warn"`, `"error"`
+- **Default**: `"info"`
+- **Environment**: `ONE_MCP_LOG_LEVEL`
+
+**`--log-file <path>`**
+
+- **Purpose**: Write logs to file in addition to console
+- **Note**: Disables console logging only for stdio transport
+- **Environment**: `ONE_MCP_LOG_FILE`
+
+**Examples:**
+
+```bash
+# Debug logging
 npx -y @1mcp/agent --log-level debug
 
-# Log to file (disables console output)
+# Log to file
 npx -y @1mcp/agent --log-file /var/log/1mcp.log
 
 # Combined logging configuration
 npx -y @1mcp/agent --log-level debug --log-file app.log
 
-# Using environment variables
+# Environment variables
 ONE_MCP_LOG_LEVEL=debug npx -y @1mcp/agent
 ONE_MCP_LOG_FILE=/var/log/1mcp.log npx -y @1mcp/agent
 ```
 
-#### Migration from LOG_LEVEL
-
+**Migration from Legacy LOG_LEVEL:**
 The legacy `LOG_LEVEL` environment variable is still supported but deprecated:
 
 ```bash
@@ -427,22 +353,20 @@ npx -y @1mcp/agent --log-level debug
 
 ---
 
-## 3. Environment Variables
+## Environment Variables Reference
 
-Environment variables are prefixed with `ONE_MCP_` and are useful for containerized environments. They override both JSON and CLI settings.
+All environment variables are prefixed with `ONE_MCP_` and override both configuration file and CLI settings:
 
+- `ONE_MCP_TRANSPORT`
+- `ONE_MCP_CONFIG`
+- `ONE_MCP_CONFIG_DIR`
 - `ONE_MCP_PORT`
 - `ONE_MCP_HOST`
 - `ONE_MCP_EXTERNAL_URL`
-- `ONE_MCP_CONFIG_PATH`
-- `ONE_MCP_CONFIG_WATCH`
-- `ONE_MCP_CONFIG_DIR`
-- `ONE_MCP_LOG_LEVEL`
-- `ONE_MCP_LOG_FILE`
-- `ONE_MCP_TAGS`
+- `ONE_MCP_TRUST_PROXY`
+- `ONE_MCP_TAGS` (deprecated)
 - `ONE_MCP_TAG_FILTER`
 - `ONE_MCP_PAGINATION`
-- `ONE_MCP_AUTH`
 - `ONE_MCP_ENABLE_AUTH`
 - `ONE_MCP_ENABLE_SCOPE_VALIDATION`
 - `ONE_MCP_ENABLE_ENHANCED_SECURITY`
@@ -450,12 +374,73 @@ Environment variables are prefixed with `ONE_MCP_` and are useful for containeri
 - `ONE_MCP_SESSION_STORAGE_PATH`
 - `ONE_MCP_RATE_LIMIT_WINDOW`
 - `ONE_MCP_RATE_LIMIT_MAX`
-- `ONE_MCP_TRUST_PROXY`
-- `ONE_MCP_HEALTH_INFO_LEVEL`
 - `ONE_MCP_ENABLE_ASYNC_LOADING`
+- `ONE_MCP_HEALTH_INFO_LEVEL`
+- `ONE_MCP_LOG_LEVEL`
+- `ONE_MCP_LOG_FILE`
 
 ---
 
-## Hot-Reloading
+## Configuration Examples
 
-The agent supports hot-reloading of the configuration file. If you modify the JSON file while the agent is running, it will automatically apply the new configuration without a restart.
+### Development Setup
+
+```bash
+# Development with debug logging and full health info
+npx -y @1mcp/agent \
+  --log-level debug \
+  --health-info-level full \
+  --enable-async-loading
+
+# Environment variables for development
+ONE_MCP_LOG_LEVEL=debug \
+ONE_MCP_HEALTH_INFO_LEVEL=full \
+ONE_MCP_ENABLE_ASYNC_LOADING=true \
+npx -y @1mcp/agent
+```
+
+### Production Deployment
+
+```bash
+# Production HTTP server with authentication
+npx -y @1mcp/agent \
+  --host 0.0.0.0 \
+  --port 3051 \
+  --enable-auth \
+  --enable-enhanced-security \
+  --trust-proxy true \
+  --external-url https://mcp.yourdomain.com
+
+# Docker environment variables
+docker run -p 3051:3051 \
+  -e ONE_MCP_HOST=0.0.0.0 \
+  -e ONE_MCP_PORT=3051 \
+  -e ONE_MCP_ENABLE_AUTH=true \
+  -e ONE_MCP_ENABLE_ENHANCED_SECURITY=true \
+  -e ONE_MCP_TRUST_PROXY=true \
+  -e ONE_MCP_EXTERNAL_URL=https://mcp.yourdomain.com \
+  ghcr.io/1mcp-app/agent
+```
+
+### Filtered Server Access
+
+```bash
+# Only network-capable servers
+npx -y @1mcp/agent --transport stdio --tag-filter "network"
+
+# Complex filtering: (web OR api) AND production, NOT test
+npx -y @1mcp/agent --transport stdio --tag-filter "(web,api)+production-test"
+
+# Natural language filtering
+npx -y @1mcp/agent --transport stdio --tag-filter "api and database and not test"
+```
+
+---
+
+## See Also
+
+- **[MCP Servers Reference](../../reference/mcp-servers.md)** - Backend server configuration
+- **[Serve Command Reference](../../commands/serve.md)** - Command-line usage examples
+- **[Trust Proxy Guide](../../reference/trust-proxy.md)** - Reverse proxy configuration
+- **[Health Check Reference](../../reference/health-check.md)** - Monitoring and health endpoints
+- **[Security Guide](../../reference/security.md)** - Security best practices

@@ -4,16 +4,16 @@
 
 ## 🚀 Quick Discovery (Choose Your Path)
 
-**👋 I'm new to 1MCP** → [Core Features](/guide/essentials/core-features)
-**🔒 I need security** → [Security & Access Control](/guide/advanced/security)
-**⚡ I want performance** → [Performance & Reliability](/guide/advanced/performance)
-**🏢 I run production systems** → [Enterprise & Operations](/guide/advanced/enterprise)
-**🔧 I'm a developer** → [Developer & Integration](/guide/integrations/developer-tools)
-**🔗 I want to consolidate apps** → [App Consolidation](/guide/integrations/app-consolidation)
-**🖥️ I use Claude Desktop** → [Claude Desktop Integration](/guide/integrations/claude-desktop)
-**⚙️ I need server management** → [Server Management](/guide/essentials/server-management)
-**🏷️ I want server filtering** → [Server Filtering](/guide/advanced/server-filtering)
-**⚡ I need fast startup** → [Fast Startup](/guide/advanced/fast-startup)
+- **👋 I'm new to 1MCP** → [Core Features](/guide/essentials/core-features)
+- **🔒 I need security** → [Security & Access Control](/guide/advanced/security)
+- **⚡ I want performance** → [Performance & Reliability](/guide/advanced/performance)
+- **🏢 I run production systems** → [Enterprise & Operations](/guide/advanced/enterprise)
+- **🔧 I'm a developer** → [Developer & Integration](/guide/integrations/developer-tools)
+- **🔗 I want to consolidate apps** → [App Consolidation](/guide/integrations/app-consolidation)
+- **🖥️ I use Claude Desktop** → [Claude Desktop Integration](/guide/integrations/claude-desktop)
+- **⚙️ I need server management** → [Server Management](/guide/essentials/server-management)
+- **🏷️ I want server filtering** → [Server Filtering](/guide/advanced/server-filtering)
+- **⚡ I need fast startup** → [Fast Startup](/guide/advanced/fast-startup)
 
 ---
 

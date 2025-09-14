@@ -4,16 +4,16 @@
 
 ## 🚀 快速发现（选择您的路径）
 
-**👋 我是 1MCP 的新手** → [核心功能](/guide/essentials/core-features)
-**🔒 我需要安全** → [安全与访问控制](/guide/advanced/security)
-**⚡ 我想要性能** → [性能与可靠性](/guide/advanced/performance)
-**🏢 我运行生产系统** → [企业版与运维](/guide/advanced/enterprise)
-**🔧 我是开发人员** → [开发者与集成](/guide/integrations/developer-tools)
-**🔗 我想要整合应用** → [应用整合](/guide/integrations/app-consolidation)
-**🖥️ 我使用 Claude Desktop** → [Claude Desktop 集成](/guide/integrations/claude-desktop)
-**⚙️ 我需要服务器管理** → [服务器管理](/guide/essentials/server-management)
-**🏷️ 我想要服务器过滤** → [服务器过滤](/guide/advanced/server-filtering)
-**⚡ 我需要快速启动** → [快速启动](/guide/advanced/fast-startup)
+- **👋 我是 1MCP 的新手** → [核心功能](/guide/essentials/core-features)
+- **🔒 我需要安全** → [安全与访问控制](/guide/advanced/security)
+- **⚡ 我想要性能** → [性能与可靠性](/guide/advanced/performance)
+- **🏢 我运行生产系统** → [企业版与运维](/guide/advanced/enterprise)
+- **🔧 我是开发人员** → [开发者与集成](/guide/integrations/developer-tools)
+- **🔗 我想要整合应用** → [应用整合](/guide/integrations/app-consolidation)
+- **🖥️ 我使用 Claude Desktop** → [Claude Desktop 集成](/guide/integrations/claude-desktop)
+- **⚙️ 我需要服务器管理** → [服务器管理](/guide/essentials/server-management)
+- **🏷️ 我想要服务器过滤** → [服务器过滤](/guide/advanced/server-filtering)
+- **⚡ 我需要快速启动** → [快速启动](/guide/advanced/fast-startup)
 
 ---
 

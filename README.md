@@ -19,7 +19,6 @@ A unified Model Context Protocol server implementation that aggregates multiple 
 - [Prerequisites](#prerequisites)
 - [Usage](#usage)
 - [Docker](#docker)
-- [Trust Proxy Configuration](#trust-proxy-configuration)
 - [Understanding Tags](#understanding-tags)
 - [Configuration](#configuration)
 - [Authentication](#authentication)
@@ -182,32 +181,10 @@ npx -y @1mcp/agent --trust-proxy=192.168.1.1
 npx -y @1mcp/agent --help
 ```
 
-Available options:
+For a complete list of all command-line options, environment variables, and configuration details, see:
 
-| Option (CLI)                 | Environment Variable               | Description                                                                                     |  Default   |
-| :--------------------------- | :--------------------------------- | :---------------------------------------------------------------------------------------------- | :--------: |
-| `--transport`, `-t`          | `ONE_MCP_TRANSPORT`                | Choose transport type ("stdio", "http", or "sse")                                               |   "http"   |
-| `--config`, `-c`             | `ONE_MCP_CONFIG`                   | Use a specific config file                                                                      |            |
-| `--config-dir`, `-d`         | `ONE_MCP_CONFIG_DIR`               | Path to the config directory (overrides default config location)                                |            |
-| `--port`, `-P`               | `ONE_MCP_PORT`                     | Change HTTP port                                                                                |    3050    |
-| `--host`, `-H`               | `ONE_MCP_HOST`                     | Change HTTP host                                                                                | localhost  |
-| `--external-url`, `-u`       | `ONE_MCP_EXTERNAL_URL`             | External URL for OAuth callbacks and public URLs (e.g., https://example.com)                    |            |
-| `--trust-proxy`              | `ONE_MCP_TRUST_PROXY`              | Trust proxy configuration for client IP detection (boolean, IP, CIDR, preset)                   | "loopback" |
-| `--tags`, `-g`               | `ONE_MCP_TAGS`                     | Filter servers by tags (comma-separated, OR logic) ⚠️ **Deprecated - use --tag-filter**         |            |
-| `--tag-filter`, `-f`         | `ONE_MCP_TAG_FILTER`               | Advanced tag filter expression (and/or/not logic)                                               |            |
-| `--pagination`, `-p`         | `ONE_MCP_PAGINATION`               | Enable pagination for client/server lists (boolean)                                             |   false    |
-| `--enable-auth`              | `ONE_MCP_ENABLE_AUTH`              | Enable authentication (OAuth 2.1)                                                               |   false    |
-| `--enable-scope-validation`  | `ONE_MCP_ENABLE_SCOPE_VALIDATION`  | Enable tag-based scope validation (boolean)                                                     |    true    |
-| `--enable-enhanced-security` | `ONE_MCP_ENABLE_ENHANCED_SECURITY` | Enable enhanced security middleware (boolean)                                                   |   false    |
-| `--session-ttl`              | `ONE_MCP_SESSION_TTL`              | Session expiry time in minutes (number)                                                         |    1440    |
-| `--session-storage-path`     | `ONE_MCP_SESSION_STORAGE_PATH`     | Custom session storage directory path (string)                                                  |            |
-| `--rate-limit-window`        | `ONE_MCP_RATE_LIMIT_WINDOW`        | OAuth rate limit window in minutes (number)                                                     |     15     |
-| `--rate-limit-max`           | `ONE_MCP_RATE_LIMIT_MAX`           | Maximum requests per OAuth rate limit window (number)                                           |    100     |
-| `--enable-async-loading`     | `ONE_MCP_ENABLE_ASYNC_LOADING`     | Enable asynchronous MCP server loading(boolean)                                                 |   false    |
-| `--health-info-level`        | `ONE_MCP_HEALTH_INFO_LEVEL`        | Health endpoint information detail level ("full", "basic", "minimal")                           | "minimal"  |
-| `--log-level`                | `ONE_MCP_LOG_LEVEL`                | Set the log level ("debug", "info", "warn", "error")                                            |   "info"   |
-| `--log-file`                 | `ONE_MCP_LOG_FILE`                 | Write logs to a file in addition to console (disables console logging only for stdio transport) |            |
-| `--help`, `-h`               |                                    | Show help                                                                                       |            |
+- **[Configuration Deep Dive](https://docs.1mcp.app/guide/essentials/configuration)** - CLI flags and environment variables
+- **[Serve Command Reference](https://docs.1mcp.app/commands/serve)** - Command usage examples
 
 ## Docker
 
@@ -255,7 +232,6 @@ docker run -i ghcr.io/1mcp-app/agent --transport stdio
 - `vX.Y.Z`: Specific version (e.g. `v1.0.0`)
 - `vX.Y`: Major.minor version (e.g. `v1.0`)
 - `vX`: Major version (e.g. `v1`)
-- `sha-<commit>`: Specific commit
 
 #### Lightweight Images (npm, pnpm, yarn only)
 
@@ -263,51 +239,8 @@ docker run -i ghcr.io/1mcp-app/agent --transport stdio
 - `vX.Y.Z-lite`: Specific version lite (e.g. `v1.0.0-lite`)
 - `vX.Y-lite`: Major.minor version lite (e.g. `v1.0-lite`)
 - `vX-lite`: Major version lite (e.g. `v1-lite`)
-- `sha-<commit>-lite`: Specific commit lite
 
-### Configuration Examples
-
-```bash
-# Essential networking configuration
-docker run -p 3050:3050 \
-  -e ONE_MCP_HOST=0.0.0.0 \
-  -e ONE_MCP_PORT=3050 \
-  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
-  ghcr.io/1mcp-app/agent
-
-# Custom port, tags, and logging (full image)
-docker run -p 3051:3051 \
-  -e ONE_MCP_HOST=0.0.0.0 \
-  -e ONE_MCP_PORT=3051 \
-  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3051 \
-  -e ONE_MCP_TAGS=network,filesystem \
-  -e ONE_MCP_LOG_LEVEL=debug \
-  ghcr.io/1mcp-app/agent
-
-# With external URL for reverse proxy (lite image)
-docker run -p 3050:3050 \
-  -e ONE_MCP_HOST=0.0.0.0 \
-  -e ONE_MCP_EXTERNAL_URL=https://mcp.example.com \
-  -e ONE_MCP_TRUST_PROXY=true \
-  ghcr.io/1mcp-app/agent:lite
-
-# For users in China mainland - faster package installation
-docker run -p 3050:3050 \
-  -e ONE_MCP_HOST=0.0.0.0 \
-  -e ONE_MCP_PORT=3050 \
-  -e ONE_MCP_EXTERNAL_URL=http://127.0.0.1:3050 \
-  -e npm_config_registry=https://registry.npmmirror.com \
-  -e UV_INDEX=http://mirrors.aliyun.com/pypi/simple \
-  -e UV_DEFAULT_INDEX=http://mirrors.aliyun.com/pypi/simple \
-  ghcr.io/1mcp-app/agent
-
-# Behind corporate proxy
-docker run -p 3050:3050 \
-  -e ONE_MCP_HOST=0.0.0.0 \
-  -e https_proxy=${https_proxy} \
-  -e http_proxy=${http_proxy} \
-  ghcr.io/1mcp-app/agent
-```
+For detailed Docker configuration examples with environment variables, see the **[Configuration Deep Dive](https://docs.1mcp.app/guide/essentials/configuration)** documentation.
 
 ### Image Details
 
@@ -324,23 +257,6 @@ docker run -p 3050:3050 \
 - Node.js (version from `.node-version`)
 - npm, pnpm, yarn only
 - Smaller size, faster downloads
-
-## Trust Proxy Configuration
-
-When running 1MCP behind a reverse proxy, configure trust proxy settings for proper client IP detection:
-
-```bash
-# Default (safe for local development)
-npx -y @1mcp/agent --trust-proxy=loopback
-
-# Behind reverse proxy
-npx -y @1mcp/agent --trust-proxy=192.168.1.1
-
-# Behind CDN/Cloudflare
-npx -y @1mcp/agent --trust-proxy=true
-```
-
-See [docs/TRUST_PROXY.md](docs/TRUST_PROXY.md) for detailed configuration options, security considerations, and reverse proxy setup examples.
 
 ## Understanding Tags
 
@@ -437,31 +353,12 @@ Example tags:
 
 ## Configuration
 
-### Global Configuration
+1MCP supports comprehensive configuration through JSON files, command-line options, and environment variables.
 
-The server automatically manages configuration in a global location:
+For complete configuration documentation, see:
 
-- macOS/Linux: `~/.config/1mcp/mcp.json`
-- Windows: `%APPDATA%/1mcp/mcp.json`
-
-### Configuration File Format
-
-```json
-{
-  "mcpServers": {
-    "mcp-server-fetch": {
-      "command": "uvx",
-      "args": ["mcp-server-fetch"],
-      "disabled": false
-    },
-    "server-memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "disabled": false
-    }
-  }
-}
-```
+- **[MCP Servers Reference](https://docs.1mcp.app/reference/mcp-servers)** - Backend server configuration
+- **[Configuration Deep Dive](https://docs.1mcp.app/guide/essentials/configuration)** - CLI flags and environment variables
 
 ## Authentication
 

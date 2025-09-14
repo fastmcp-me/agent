@@ -174,7 +174,10 @@ function sidebar(): DefaultTheme.Sidebar {
       },
       {
         text: '配置',
-        items: [{ text: '可信代理', link: '/zh/reference/trust-proxy' }],
+        items: [
+          { text: 'MCP 服务器', link: '/zh/reference/mcp-servers' },
+          { text: '可信代理', link: '/zh/reference/trust-proxy' },
+        ],
       },
     ],
   };

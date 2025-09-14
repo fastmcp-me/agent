@@ -155,7 +155,10 @@ function sidebar(): DefaultTheme.Sidebar {
       },
       {
         text: 'Configuration',
-        items: [{ text: 'Trust Proxy', link: '/reference/trust-proxy' }],
+        items: [
+          { text: 'MCP Servers', link: '/reference/mcp-servers' },
+          { text: 'Trust Proxy', link: '/reference/trust-proxy' },
+        ],
       },
     ],
   };
