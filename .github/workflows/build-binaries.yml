@@ -57,6 +57,15 @@ jobs:
           pnpm sea:build
           pnpm ${{ matrix.script }}
 
+      - name: Rename binary for platform-specific archive
+        run: |
+          if [[ "${{ matrix.platform }}" == win32-* ]]; then
+            mv 1mcp.exe ${{ matrix.artifact }}
+          else
+            mv 1mcp ${{ matrix.artifact }}
+          fi
+        shell: bash
+
       - name: Create compressed archive
         run: pnpm archive
 
