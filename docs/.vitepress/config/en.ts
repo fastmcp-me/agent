@@ -101,6 +101,7 @@ function sidebar(): DefaultTheme.Sidebar {
               { text: 'enable/disable', link: '/commands/mcp/enable-disable' },
               { text: 'list', link: '/commands/mcp/list' },
               { text: 'status', link: '/commands/mcp/status' },
+              { text: 'tokens', link: '/commands/mcp/tokens' },
             ],
           },
           {
