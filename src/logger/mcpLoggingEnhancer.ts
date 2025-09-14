@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, ZodObject, ZodLiteral } from 'zod';
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import { v4 as uuidv4 } from 'uuid';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -10,24 +10,21 @@ interface LogContext {
   startTime: number;
 }
 
-type RequestSchema = z.ZodObject<{
-  method: z.ZodLiteral<string>;
-  params?: z.ZodObject<any>;
+// Use the same constraint as the SDK Protocol class
+type SDKRequestSchema = ZodObject<{
+  method: ZodLiteral<string>;
 }>;
 
-type NotificationSchema = z.ZodObject<{
-  method: z.ZodLiteral<string>;
-  params?: z.ZodObject<any>;
+type SDKNotificationSchema = ZodObject<{
+  method: ZodLiteral<string>;
 }>;
 
-type ServerResult = { [key: string]: unknown; _meta?: { [key: string]: unknown } };
-
-type RequestHandler<T extends RequestSchema> = (
-  request: z.TypeOf<T>,
+type SDKRequestHandler<T extends SDKRequestSchema> = (
+  request: z.infer<T>,
   extra: RequestHandlerExtra<any, any>,
-) => Promise<ServerResult>;
+) => any | Promise<any>;
 
-type NotificationHandler<T extends NotificationSchema> = (notification: z.TypeOf<T>) => Promise<void>;
+type SDKNotificationHandler<T extends SDKNotificationSchema> = (notification: z.infer<T>) => void | Promise<void>;
 
 const activeRequests = new Map<string, LogContext>();
 
@@ -81,10 +78,10 @@ function logNotification(method: string, params: unknown): void {
 /**
  * Wraps the original request handler with logging
  */
-function wrapRequestHandler<T extends RequestSchema>(
-  originalHandler: RequestHandler<T>,
+function wrapRequestHandler<T extends SDKRequestSchema>(
+  originalHandler: SDKRequestHandler<T>,
   method: string,
-): RequestHandler<T> {
+): SDKRequestHandler<T> {
   return async (request, extra) => {
     const requestId = uuidv4();
     const startTime = Date.now();
@@ -97,7 +94,7 @@ function wrapRequestHandler<T extends RequestSchema>(
     });
 
     // Log request
-    logRequest(requestId, method, request.params);
+    logRequest(requestId, method, (request as any).params);
 
     try {
       // Execute original handler with the original extra object
@@ -133,13 +130,13 @@ function wrapRequestHandler<T extends RequestSchema>(
 /**
  * Wraps the original notification handler with logging
  */
-function wrapNotificationHandler<T extends NotificationSchema>(
-  originalHandler: NotificationHandler<T>,
+function wrapNotificationHandler<T extends SDKNotificationSchema>(
+  originalHandler: SDKNotificationHandler<T>,
   method: string,
-): NotificationHandler<T> {
+): SDKNotificationHandler<T> {
   return async (notification) => {
     // Log notification
-    logNotification(method, notification.params);
+    logNotification(method, (notification as any).params);
 
     // Execute original handler
     await originalHandler(notification);
@@ -155,17 +152,32 @@ export function enhanceServerWithLogging(server: Server): void {
   const originalSetNotificationHandler = server.setNotificationHandler.bind(server);
   const originalNotification = server.notification.bind(server);
 
-  // Override request handler registration
-  server.setRequestHandler = <T extends RequestSchema>(schema: T, handler: RequestHandler<T>) => {
-    return originalSetRequestHandler(schema, wrapRequestHandler(handler, schema._def.shape().method._def.value));
+  // Override request handler registration - cast server to bypass Zod version incompatibilities
+  const serverAny = server as any;
+  serverAny.setRequestHandler = <T extends ZodObject<{ method: ZodLiteral<string> }>>(
+    requestSchema: T,
+    handler: (request: z.infer<T>, extra: RequestHandlerExtra<any, any>) => any | Promise<any>,
+  ): void => {
+    const wrappedHandler = wrapRequestHandler(
+      handler as SDKRequestHandler<any>,
+      (requestSchema as unknown as { _def: { shape: () => { method: { _def: { value: string } } } } })?._def?.shape?.()
+        ?.method?._def?.value || 'unknown',
+    );
+    return originalSetRequestHandler.call(server, requestSchema as any, wrappedHandler as any);
   };
 
-  // Override notification handler registration
-  server.setNotificationHandler = <T extends NotificationSchema>(schema: T, handler: NotificationHandler<T>) => {
-    return originalSetNotificationHandler(
-      schema,
-      wrapNotificationHandler(handler, schema._def.shape().method._def.value),
+  // Override notification handler registration - cast server to bypass Zod version incompatibilities
+  serverAny.setNotificationHandler = <T extends ZodObject<{ method: ZodLiteral<string> }>>(
+    notificationSchema: T,
+    handler: (notification: z.infer<T>) => void | Promise<void>,
+  ): void => {
+    const wrappedHandler = wrapNotificationHandler(
+      handler as SDKNotificationHandler<any>,
+      (
+        notificationSchema as unknown as { _def: { shape: () => { method: { _def: { value: string } } } } }
+      )?._def?.shape?.()?.method?._def?.value || 'unknown',
     );
+    return originalSetNotificationHandler.call(server, notificationSchema as any, wrappedHandler as any);
   };
 
   // Override notification sending

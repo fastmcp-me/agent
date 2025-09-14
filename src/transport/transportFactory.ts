@@ -4,7 +4,7 @@ import {
   StreamableHTTPClientTransport,
   StreamableHTTPClientTransportOptions,
 } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { ZodError } from 'zod';
+import { z, ZodError } from 'zod';
 import logger from '../logger/logger.js';
 import { AuthProviderTransport, transportConfigSchema } from '../core/types/index.js';
 import { MCPServerParams } from '../core/types/index.js';
@@ -47,7 +47,7 @@ export function inferTransportType(params: MCPServerParams, name: string): MCPSe
  */
 function createOAuthProvider(
   name: string,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): SDKOAuthClientProvider {
   const configManager = AgentConfigManager.getInstance();
 
@@ -66,7 +66,7 @@ function createOAuthProvider(
  */
 function createSSETransport(
   name: string,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): AuthProviderTransport {
   if (!validatedTransport.url) {
     throw new Error(`URL is required for SSE transport: ${name}`);
@@ -92,7 +92,7 @@ function createSSETransport(
  */
 function createHTTPTransport(
   name: string,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): AuthProviderTransport {
   if (!validatedTransport.url) {
     throw new Error(`URL is required for HTTP transport: ${name}`);
@@ -121,7 +121,7 @@ function createHTTPTransport(
  */
 function createStdioTransport(
   name: string,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): AuthProviderTransport {
   if (!validatedTransport.command) {
     throw new Error(`Command is required for stdio transport: ${name}`);
@@ -174,7 +174,7 @@ function createStdioTransport(
  */
 function createSingleTransport(
   name: string,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): AuthProviderTransport {
   switch (validatedTransport.type) {
     case 'sse':
@@ -196,7 +196,7 @@ function assignTransport(
   transports: Record<string, AuthProviderTransport>,
   name: string,
   transport: AuthProviderTransport,
-  validatedTransport: typeof transportConfigSchema._type,
+  validatedTransport: z.infer<typeof transportConfigSchema>,
 ): void {
   transport.timeout = validatedTransport.timeout;
   transport.tags = validatedTransport.tags;
@@ -226,7 +226,7 @@ export function createTransports(config: Record<string, MCPServerParams>): Recor
       logger.debug(`Created transport: ${name}`);
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.error(`Invalid transport configuration for ${name}:`, error.errors);
+        logger.error(`Invalid transport configuration for ${name}:`, error.issues);
       } else {
         logger.error(`Error creating transport ${name}:`, error);
       }

@@ -202,7 +202,8 @@ function displayDetailedServerStatus(name: string, config: MCPServerParams, verb
       if (verbose) {
         console.log(`     ${key}=${value}`);
       } else {
-        const displayValue = value.length > 20 ? `${value.substring(0, 20)}...` : value;
+        const strValue = String(value);
+        const displayValue = strValue.length > 20 ? `${strValue.substring(0, 20)}...` : strValue;
         console.log(`     ${key}=${displayValue}`);
       }
     }

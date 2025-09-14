@@ -221,7 +221,6 @@ describe('TransportFactory', () => {
         {
           code: 'invalid_type',
           expected: 'string',
-          received: 'undefined',
           path: ['command'],
           message: 'Required',
         },
@@ -231,7 +230,7 @@ describe('TransportFactory', () => {
       });
 
       expect(() => createTransports(config)).toThrow();
-      expect(logger.error).toHaveBeenCalledWith('Invalid transport configuration for invalid-server:', zodError.errors);
+      expect(logger.error).toHaveBeenCalledWith('Invalid transport configuration for invalid-server:', zodError.issues);
     });
 
     it('should handle general errors', () => {

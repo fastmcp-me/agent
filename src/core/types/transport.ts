@@ -80,14 +80,14 @@ export const transportConfigSchema = z.object({
 
   // HTTP/SSE Parameters
   url: z.string().url().optional(),
-  headers: z.record(z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
 
   // StdioServerParameters fields
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
   stderr: z.union([z.string(), z.number()]).optional(), // Note: IOType validation is complex, keeping simple validation
   cwd: z.string().optional(),
-  env: z.union([z.record(z.string()), z.array(z.string())]).optional(),
+  env: z.union([z.record(z.string(), z.string()), z.array(z.string())]).optional(),
   inheritParentEnv: z.boolean().optional(),
   envFilter: z.array(z.string()).optional(),
   restartOnExit: z.boolean().optional(),

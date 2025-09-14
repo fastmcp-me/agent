@@ -207,7 +207,7 @@ function displayServer(name: string, config: MCPServerParams, verbose: boolean, 
 
     if (verbose) {
       for (const [key, value] of Object.entries(inferredConfig.env)) {
-        const displayValue = showSecrets ? value : redactSensitiveValue(value);
+        const displayValue = showSecrets ? value : redactSensitiveValue(String(value));
         console.log(`     ${key}=${displayValue}`);
       }
     }
