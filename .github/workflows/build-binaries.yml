@@ -60,29 +60,11 @@ jobs:
       - name: Create compressed archive
         run: pnpm archive
 
-      - name: Prepare artifacts
-        run: |
-          # Copy raw binary with artifact name
-          if [[ "${{ matrix.platform }}" == win32-* ]]; then
-            cp 1mcp.exe ${{ matrix.artifact }}
-          else
-            cp 1mcp ${{ matrix.artifact }}
-          fi
-        shell: bash
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
-          retention-days: 1
-
       - name: Upload compressed archive artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}.archive
+          name: ${{ matrix.artifact }}
           path: |
             *.tar.gz
             *.zip
           retention-days: 1
-        if: always()
