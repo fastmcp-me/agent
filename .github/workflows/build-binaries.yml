@@ -57,6 +57,19 @@ jobs:
           pnpm sea:build
           pnpm ${{ matrix.script }}
 
+      - name: Test binary functionality (Unix)
+        if: ${{ !startsWith(matrix.platform, 'win32') }}
+        run: |
+          chmod +x scripts/test-binary-unix.sh
+          ./scripts/test-binary-unix.sh ./1mcp ${{ matrix.platform }}
+        shell: bash
+
+      - name: Test binary functionality (Windows)
+        if: ${{ startsWith(matrix.platform, 'win32') }}
+        run: |
+          .\scripts\test-binary-windows.ps1 -BinaryPath ".\1mcp.exe" -Platform "${{ matrix.platform }}"
+        shell: powershell
+
       - name: Rename binary for platform-specific archive
         run: |
           if [[ "${{ matrix.platform }}" == win32-* ]]; then
