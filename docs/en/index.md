@@ -79,15 +79,35 @@ Start with a simple configuration:
 ```json
 {
   "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "tags": ["context7", "docs", "development", "code"],
+      "disabled": false
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "/path/to/your/awesome-project"],
+      "tags": ["git", "awesome-project"],
+      "disabled": false
+    },
     "filesystem": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
-      "description": "File system access"
+      "tags": ["files", "tmpdir"],
+      "disabled": false
     },
-    "search": {
+    "server-sequential-thinking": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-web-search"],
-      "description": "Web search capabilities"
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "tags": ["thinking"],
+      "disabled": false
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "tags": ["playwright", "frontend", "web", "ui", "browser"],
+      "disabled": false
     }
   }
 }
