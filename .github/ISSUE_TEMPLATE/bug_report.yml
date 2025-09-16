@@ -1,48 +1,135 @@
-name: Bug Report
-description: File a bug report
-labels: ["bug"]
+name: 🐛 Bug Report
+description: Report a bug to help us improve 1MCP
+title: '[Bug]: '
+labels: ['bug']
+assignees: []
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug! Please fill out this form with as much detail as possible.
+
+        **Language:** Please write your issue in English to help our global community understand and contribute to the discussion.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-submission checklist
+      description: Please verify these items before submitting your bug report
+      options:
+        - label: I have searched existing issues to ensure this bug hasn't been reported before
+          required: true
+        - label: I am using the latest version of 1MCP
+          required: false
+
   - type: input
     id: version
     attributes:
-      label: Which version of the app are you using?
-      description: Please specify the app version you're using (e.g. v0.2.0)
+      label: 1MCP Version
+      description: What version of 1MCP are you using? (Run `1mcp --version` or check package.json)
+      placeholder: 'v0.22.2'
     validations:
       required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: What operating system are you using?
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
   - type: input
-    id: server
+    id: node-version
     attributes:
-      label: Which server are you using?
-      description: Please specify the server you're using (e.g. https://github.com/modelcontextprotocol/servers/tree/main/src/memory)
+      label: Node.js Version
+      description: What version of Node.js are you using? (Run `node --version`)
+      placeholder: 'v18.17.0'
     validations:
       required: true
+
+  - type: input
+    id: mcp-server
+    attributes:
+      label: MCP Server(s) Involved
+      description: Which MCP server(s) are involved in this bug? (e.g., memory, filesystem, browser-automation)
+      placeholder: 'memory, context7'
+    validations:
+      required: false
+
   - type: textarea
-    id: what-happened
+    id: bug-description
     attributes:
-      label: What happened?
-      description: Also tell us, what did you expect to happen?
-      placeholder: Tell us what you see!
+      label: Bug Description
+      description: Clearly describe what happened and what you expected to happen
+      placeholder: |
+        **What happened:**
+        Describe the actual behavior you observed.
+
+        **What you expected:**
+        Describe what you expected to happen instead.
     validations:
       required: true
+
   - type: textarea
     id: steps
     attributes:
-      label: Steps to reproduce
-      description: How do you trigger this bug? Please walk us through it step by step.
+      label: Steps to Reproduce
+      description: Provide detailed steps to reproduce the issue
       value: |
         1.
         2.
         3.
+        4.
     validations:
       required: true
+
   - type: textarea
     id: logs
     attributes:
-      label: Relevant server logs
-      description: Please copy and paste any relevant output. This will be automatically formatted into code, so no need for backticks.
+      label: Logs and Error Messages
+      description: |
+        Include any relevant logs, error messages, or console output.
+        You can find logs in ~/.1mcp/logs/ or use `1mcp logs` command.
       render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: |
+        Share your 1MCP configuration if relevant (remove any sensitive information).
+      render: json
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Bug Severity
+      description: How severe is this bug?
+      options:
+        - Low - Minor inconvenience, workaround available
+        - Medium - Affects functionality but not critical
+        - High - Breaks important functionality
+        - Critical - Application unusable or data loss
+    validations:
+      required: true
+
   - type: textarea
     id: additional-context
     attributes:
-      label: Additional context
-      description: Add any other context about the problem here, such as screenshots or related issues.
+      label: Additional Context
+      description: |
+        Add any other context about the problem here:
+        - Screenshots or videos
+        - Related issues or PRs
+        - Workarounds you've tried
+        - Any other relevant information

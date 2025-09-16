@@ -1,0 +1,98 @@
+name: 📚 Documentation Issue
+description: Report missing, unclear, or incorrect documentation
+title: '[Docs]: '
+labels: ['documentation']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve 1MCP documentation! Please provide details about documentation issues or suggestions.
+
+        **Language:** Please write your issue in English to help our global community understand and contribute to the discussion.
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation issue is this?
+      options:
+        - Missing Documentation
+        - Incorrect/Outdated Information
+        - Unclear Instructions
+        - Typo/Grammar Issue
+        - Missing Examples
+        - API Documentation
+        - Tutorial/Guide Request
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: doc-location
+    attributes:
+      label: Documentation Location
+      description: Where is this documentation located? (URL, file path, section name)
+      placeholder: 'https://docs.1mcp.app/getting-started or README.md section X'
+    validations:
+      required: false
+
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: Issue Description
+      description: Describe the documentation issue in detail
+      placeholder: |
+        **Current problem:**
+        Explain what's missing, incorrect, or unclear.
+
+        **Expected information:**
+        Describe what should be documented or how it should be improved.
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What were you trying to accomplish when you encountered this issue?
+      placeholder: "I was trying to set up my first MCP server and couldn't find information about..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: suggested-improvement
+    attributes:
+      label: Suggested Improvement
+      description: How would you improve this documentation? (optional but helpful)
+      placeholder: |
+        **Suggested changes:**
+        - Add a section explaining X
+        - Include an example showing Y
+        - Clarify the relationship between A and B
+    validations:
+      required: false
+
+  - type: dropdown
+    id: user-level
+    attributes:
+      label: User Level
+      description: What's your experience level? This helps us understand the documentation needs.
+      options:
+        - Beginner - New to 1MCP and MCP servers
+        - Intermediate - Some experience with 1MCP
+        - Advanced - Experienced user
+        - Developer - Contributing to the project
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context about this documentation issue:
+        - Screenshots of confusing sections
+        - Links to helpful resources
+        - Related documentation that works well
+        - Specific use cases that need better coverage

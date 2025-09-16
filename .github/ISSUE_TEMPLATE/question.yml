@@ -1,0 +1,107 @@
+name: ❓ Question & Support
+description: Ask a question or get help with using 1MCP
+title: '[Question]: '
+labels: ['question']
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using 1MCP? We're here to help! Please provide as much context as possible.
+
+        **Language:** Please write your question in English to help our global community understand and assist you.
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Pre-submission checklist
+      description: Please check these items before submitting your question
+      options:
+        - label: I have searched existing issues and discussions for similar questions
+          required: true
+        - label: I have checked the documentation at docs.1mcp.app
+          required: false
+
+  - type: dropdown
+    id: question-category
+    attributes:
+      label: Question Category
+      description: What area does your question relate to?
+      options:
+        - Installation & Setup
+        - MCP Server Configuration
+        - CLI Usage & Commands
+        - Authentication & Security
+        - Troubleshooting & Debugging
+        - Best Practices
+        - Integration & Compatibility
+        - Performance & Optimization
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: Please ask your question clearly and provide context
+      placeholder: |
+        **My question:**
+        What specific question do you have?
+
+        **What I'm trying to achieve:**
+        Describe your goal or what you're trying to accomplish.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-tried
+    attributes:
+      label: What have you tried?
+      description: What steps have you already taken to solve this? What didn't work?
+      placeholder: |
+        **Steps I've taken:**
+        1. I tried X but got error Y
+        2. I looked at documentation Z but it wasn't clear
+        3. I searched for similar issues and found A but it didn't apply
+    validations:
+      required: false
+
+  - type: input
+    id: version
+    attributes:
+      label: 1MCP Version
+      description: What version of 1MCP are you using? (Run `1mcp --version`)
+      placeholder: 'v0.22.2'
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: What's your environment? (OS, Node.js version, etc.)
+      placeholder: 'macOS 14, Node.js v18.17.0'
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Relevant Configuration
+      description: |
+        If applicable, share relevant parts of your configuration (remove sensitive info)
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Any other context that might help us answer your question:
+        - Error messages or logs
+        - Screenshots
+        - Links to relevant resources
+        - Specific use case details

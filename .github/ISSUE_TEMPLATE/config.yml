@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/1mcp-app/agent/discussions
+    about: Join our community discussions for general questions, ideas, and showcasing your 1MCP setups
+  - name: 📖 Documentation
+    url: https://docs.1mcp.app
+    about: Check our comprehensive documentation for guides, API reference, and tutorials
