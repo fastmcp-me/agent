@@ -1,4 +1,6 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import fs from 'fs';
+import path from 'path';
 
 import { setupServer } from '../../server.js';
 import logger from '../../logger/logger.js';
@@ -11,6 +13,9 @@ import { displayLogo } from '../../utils/logo.js';
 import { McpLoadingManager } from '../../core/loading/mcpLoadingManager.js';
 import { TagQueryParser, TagExpression } from '../../utils/tagQueryParser.js';
 import ConfigContext from '../../config/configContext.js';
+import { getDefaultInstructionsTemplatePath } from '../../constants.js';
+import { validateTemplateContent, formatValidationError } from '../../core/instructions/templateValidator.js';
+import { InstructionAggregator } from '../../core/instructions/instructionAggregator.js';
 
 export interface ServeOptions {
   config?: string;
@@ -34,6 +39,77 @@ export interface ServeOptions {
   'trust-proxy': string;
   'health-info-level': string;
   'enable-async-loading': boolean;
+  'instructions-template'?: string;
+}
+
+/**
+ * Load custom instructions template from file with validation
+ * @param templatePath Path to template file (CLI option or default)
+ * @param configDir Config directory for default template location
+ * @returns Template content or undefined if not found/error
+ */
+function loadInstructionsTemplate(templatePath?: string, configDir?: string): string | undefined {
+  let templateFilePath: string;
+
+  if (templatePath) {
+    // Use provided template path (resolve relative paths)
+    templateFilePath = path.isAbsolute(templatePath) ? templatePath : path.resolve(process.cwd(), templatePath);
+  } else {
+    // Use default template file in config directory
+    templateFilePath = getDefaultInstructionsTemplatePath(configDir);
+  }
+
+  try {
+    if (fs.existsSync(templateFilePath)) {
+      const templateContent = fs.readFileSync(templateFilePath, 'utf-8');
+
+      // Validate template content and syntax
+      const validation = validateTemplateContent(templateContent, templateFilePath);
+
+      if (!validation.valid) {
+        const errorMessage = formatValidationError(validation);
+        logger.error(`Invalid instructions template: ${errorMessage}`);
+
+        // For explicit template paths, this is a hard error
+        if (templatePath) {
+          logger.error('Template validation failed. Server will use built-in template.');
+        }
+
+        return undefined;
+      }
+
+      logger.info(`Loaded and validated custom instructions template from: ${templateFilePath}`);
+      logger.debug(`Template length: ${templateContent.length} characters`);
+      return templateContent;
+    } else {
+      if (templatePath) {
+        // If user explicitly provided a template path, warn about missing file
+        logger.warn(`Custom instructions template file not found: ${templateFilePath}`);
+        logger.info('Template file resolution:');
+        logger.info(`  • Check that the file path is correct`);
+        logger.info(`  • Ensure the file has read permissions`);
+        logger.info(`  • Use absolute paths or paths relative to current directory`);
+        logger.info(`  • Server will use built-in template as fallback`);
+      } else {
+        // If using default path, just log debug (it's optional)
+        logger.debug(`Default instructions template file not found: ${templateFilePath} (using built-in template)`);
+      }
+      return undefined;
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to load instructions template from ${templateFilePath}: ${errorMessage}`);
+
+    // Provide helpful troubleshooting guidance
+    logger.info('Template loading failed. Troubleshooting steps:');
+    logger.info(`  • Verify file exists and has read permissions`);
+    logger.info(`  • Check file encoding (should be UTF-8)`);
+    logger.info(`  • Ensure no other process is locking the file`);
+    logger.info(`  • Try using an absolute file path`);
+    logger.info(`  • Server will use built-in template as fallback`);
+
+    return undefined;
+  }
 }
 
 /**
@@ -43,6 +119,7 @@ function setupGracefulShutdown(
   serverManager: ServerManager,
   loadingManager?: McpLoadingManager,
   expressServer?: ExpressServer,
+  instructionAggregator?: InstructionAggregator,
 ): void {
   const shutdown = async () => {
     logger.info('Shutting down server...');
@@ -77,6 +154,16 @@ function setupGracefulShutdown(
         logger.info(`Closed transport: ${sessionId}`);
       } catch (error) {
         logger.error(`Error closing transport ${sessionId}: ${error}`);
+      }
+    }
+
+    // Cleanup InstructionAggregator if it exists
+    if (instructionAggregator && typeof instructionAggregator.cleanup === 'function') {
+      try {
+        instructionAggregator.cleanup();
+        logger.info('InstructionAggregator cleanup complete');
+      } catch (error) {
+        logger.error(`Error cleaning up InstructionAggregator: ${error}`);
       }
     }
 
@@ -179,7 +266,7 @@ export async function serveCommand(parsedArgv: ServeOptions): Promise<void> {
     PresetManager.getInstance(parsedArgv['config-dir']);
 
     // Initialize server and get server manager with custom config path if provided
-    const { serverManager, loadingManager, asyncOrchestrator } = await setupServer();
+    const { serverManager, loadingManager, asyncOrchestrator, instructionAggregator } = await setupServer();
 
     let expressServer: ExpressServer | undefined;
 
@@ -224,11 +311,15 @@ export async function serveCommand(parsedArgv: ServeOptions): Promise<void> {
           }
         }
 
+        // Load custom instructions template if provided
+        const customTemplate = loadInstructionsTemplate(parsedArgv['instructions-template'], parsedArgv['config-dir']);
+
         await serverManager.connectTransport(transport, 'stdio', {
           tags,
           tagExpression,
           tagFilterMode,
           enablePagination: parsedArgv.pagination,
+          customTemplate,
         });
 
         // Initialize notifications for async loading if enabled
@@ -259,7 +350,7 @@ export async function serveCommand(parsedArgv: ServeOptions): Promise<void> {
     }
 
     // Set up graceful shutdown handling
-    setupGracefulShutdown(serverManager, loadingManager, expressServer);
+    setupGracefulShutdown(serverManager, loadingManager, expressServer, instructionAggregator);
 
     // Log MCP loading progress (non-blocking)
     loadingManager.on('loading-progress', (summary) => {
