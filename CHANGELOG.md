@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.0] - 2025-09-18
+
+### 🚀 Features
+- Implement instruction aggregation and filtering by @xizhibei in [#130](https://github.com/1mcp-app/agent/pull/130)
+- Enhance tokens command with preset support and improved output by @xizhibei in [#128](https://github.com/1mcp-app/agent/pull/128)
+
+### 📚 Documentation
+- Update index.md with new MCP server examples by @xizhibei
+- Improve issue templates for 1MCP repository by @xizhibei
+
+### ⚙️ Miscellaneous Tasks
+- Add workflow to close stale issues and PRs by @xizhibei
+
+
 ## [0.22.3] - 2025-09-15
 
 ### 🚀 Features
@@ -680,6 +694,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.23.0]: https://github.com/1mcp-app/agent/compare/v0.22.3..v0.23.0
 [0.22.3]: https://github.com/1mcp-app/agent/compare/v0.22.2..v0.22.3
 [0.22.2]: https://github.com/1mcp-app/agent/compare/v0.22.1..v0.22.2
 [0.22.1]: https://github.com/1mcp-app/agent/compare/v0.22.0..v0.22.1
