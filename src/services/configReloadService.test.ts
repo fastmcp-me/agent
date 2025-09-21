@@ -3,7 +3,7 @@ import { ConfigReloadService } from './configReloadService.js';
 import { McpConfigManager, ConfigChangeEvent } from '../config/mcpConfigManager.js';
 import { ClientManager } from '../core/client/clientManager.js';
 import { createTransports } from '../transport/transportFactory.js';
-import { setupCapabilities } from '../capabilities/capabilityManager.js';
+import { setupCapabilities } from '../core/capabilities/capabilityManager.js';
 import { ServerManager } from '../core/server/serverManager.js';
 import logger from '../logger/logger.js';
 
@@ -29,7 +29,7 @@ vi.mock('../transport/transportFactory.js', () => ({
   createTransports: vi.fn(),
 }));
 
-vi.mock('../capabilities/capabilityManager.js', () => ({
+vi.mock('../core/capabilities/capabilityManager.js', () => ({
   setupCapabilities: vi.fn(),
 }));
 

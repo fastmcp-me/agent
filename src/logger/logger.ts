@@ -136,4 +136,131 @@ export function configureLogger(options: { logLevel?: string; logFile?: string; 
   }
 }
 
+/**
+ * Check if debug logging is enabled
+ * Use this to avoid expensive operations when debug logging is disabled
+ */
+export function isDebugEnabled(): boolean {
+  return logger.isDebugEnabled();
+}
+
+/**
+ * Check if info logging is enabled
+ * Use this to avoid expensive operations when info logging is disabled
+ */
+export function isInfoEnabled(): boolean {
+  return logger.isInfoEnabled();
+}
+
+/**
+ * Check if warn logging is enabled
+ * Use this to avoid expensive operations when warn logging is disabled
+ */
+export function isWarnEnabled(): boolean {
+  return logger.isWarnEnabled();
+}
+
+/**
+ * Conditional debug logging - only executes the message function if debug is enabled
+ * @param messageOrFunc Message string or function that returns message and metadata
+ */
+export function debugIf(messageOrFunc: string | (() => { message: string; meta?: any })): void {
+  if (isDebugEnabled()) {
+    if (typeof messageOrFunc === 'string') {
+      logger.debug(messageOrFunc);
+    } else {
+      try {
+        const result = messageOrFunc();
+        if (result && typeof result === 'object' && 'message' in result) {
+          const { message, meta } = result;
+          if (meta) {
+            logger.debug(message, meta);
+          } else {
+            logger.debug(message);
+          }
+        } else {
+          // Fallback for malformed callback results
+          logger.debug('[debugIf: Invalid callback result]', { callbackResult: result });
+        }
+      } catch (error) {
+        // Never let logging errors crash the application
+        // Use logger.warn to avoid infinite recursion if debugIf were to call itself
+        if (logger.isWarnEnabled()) {
+          logger.warn('debugIf callback failed', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Conditional info logging - only executes the message function if info is enabled
+ * @param messageOrFunc Message string or function that returns message and metadata
+ */
+export function infoIf(messageOrFunc: string | (() => { message: string; meta?: any })): void {
+  if (isInfoEnabled()) {
+    if (typeof messageOrFunc === 'string') {
+      logger.info(messageOrFunc);
+    } else {
+      try {
+        const result = messageOrFunc();
+        if (result && typeof result === 'object' && 'message' in result) {
+          const { message, meta } = result;
+          if (meta) {
+            logger.info(message, meta);
+          } else {
+            logger.info(message);
+          }
+        } else {
+          // Fallback for malformed callback results
+          logger.info('[infoIf: Invalid callback result]', { callbackResult: result });
+        }
+      } catch (error) {
+        // Never let logging errors crash the application
+        // Use logger.warn to avoid infinite recursion if infoIf were to call itself
+        if (logger.isWarnEnabled()) {
+          logger.warn('infoIf callback failed', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Conditional warn logging - only executes the message function if warn is enabled
+ * @param messageOrFunc Message string or function that returns message and metadata
+ */
+export function warnIf(messageOrFunc: string | (() => { message: string; meta?: any })): void {
+  if (isWarnEnabled()) {
+    if (typeof messageOrFunc === 'string') {
+      logger.warn(messageOrFunc);
+    } else {
+      try {
+        const result = messageOrFunc();
+        if (result && typeof result === 'object' && 'message' in result) {
+          const { message, meta } = result;
+          if (meta) {
+            logger.warn(message, meta);
+          } else {
+            logger.warn(message);
+          }
+        } else {
+          // Fallback for malformed callback results
+          logger.warn('[warnIf: Invalid callback result]', { callbackResult: result });
+        }
+      } catch (error) {
+        // Never let logging errors crash the application
+        // For warnIf, we use console.error as last resort to avoid recursion
+        console.error('warnIf callback failed:', error instanceof Error ? error.message : String(error));
+      }
+    }
+  }
+}
+
 export default logger;

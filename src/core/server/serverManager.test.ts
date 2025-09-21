@@ -4,7 +4,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { ServerManager } from './serverManager.js';
 import logger from '../../logger/logger.js';
 import configReloadService from '../../services/configReloadService.js';
-import { setupCapabilities } from '../../capabilities/capabilityManager.js';
+import { setupCapabilities } from '../capabilities/capabilityManager.js';
 import { enhanceServerWithLogging } from '../../logger/mcpLoggingEnhancer.js';
 import { OutboundConnections } from '../types/index.js';
 
@@ -27,6 +27,7 @@ vi.mock('../../logger/logger.js', () => {
   return {
     __esModule: true,
     default: mockLogger,
+    debugIf: vi.fn(),
   };
 });
 
@@ -38,7 +39,7 @@ vi.mock('../../services/configReloadService.js', () => ({
   },
 }));
 
-vi.mock('../../capabilities/capabilityManager.js', () => ({
+vi.mock('../capabilities/capabilityManager.js', () => ({
   setupCapabilities: vi.fn(),
 }));
 
