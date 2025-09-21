@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import Handlebars from 'handlebars';
-import { LRUCache } from 'lru-cache';
 import logger from '../../logger/logger.js';
 import { FilteringService } from '../filtering/filteringService.js';
 import { OutboundConnections, InboundConnectionConfig } from '../types/index.js';
@@ -40,27 +39,10 @@ export interface InstructionAggregatorEvents {
 export class InstructionAggregator extends EventEmitter {
   private serverInstructions = new Map<string, string>();
   private isInitialized: boolean = false;
-  private templateCache: LRUCache<string, Handlebars.TemplateDelegate>;
 
   constructor() {
     super();
     this.setMaxListeners(50);
-
-    // Initialize LRU cache with reasonable limits
-    this.templateCache = new LRUCache({
-      max: 100, // Maximum 100 compiled templates
-      maxSize: 10 * 1024 * 1024, // 10MB total size limit
-      sizeCalculation: (template: Handlebars.TemplateDelegate, key: string) => {
-        // Estimate size based on template string length (key) plus overhead
-        return key.length + 1024; // Template overhead estimate
-      },
-      ttl: 1000 * 60 * 60, // 1 hour TTL to prevent indefinite growth
-    });
-
-    // Set up cache invalidation on instruction changes
-    this.on('instructions-changed', () => {
-      this.invalidateTemplateCache('instructions-changed');
-    });
   }
 
   /**
@@ -128,9 +110,27 @@ export class InstructionAggregator extends EventEmitter {
     const filteringSummary = FilteringService.getFilteringSummary(connections, filteredConnections, config);
     logger.info('InstructionAggregator: Filtering applied', filteringSummary);
 
-    // Use custom template if provided, otherwise use default template
-    const template = config.customTemplate || DEFAULT_INSTRUCTION_TEMPLATE;
-    return this.renderCustomTemplate(template, filteredConnections, config);
+    // Try custom template first, fall back to default if it fails
+    if (config.customTemplate) {
+      logger.info('InstructionAggregator: Trying custom template', { templateLength: config.customTemplate.length });
+      try {
+        return this.renderTemplate(config.customTemplate, filteredConnections, config);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        // Log detailed error for debugging
+        logger.error('InstructionAggregator: Custom template failed, falling back to default template', {
+          error: errorMessage,
+          templateLength: config.customTemplate.length,
+        });
+
+        // Fall back to default template
+        return this.renderTemplate(DEFAULT_INSTRUCTION_TEMPLATE, filteredConnections, config);
+      }
+    } else {
+      // Use default template directly
+      return this.renderTemplate(DEFAULT_INSTRUCTION_TEMPLATE, filteredConnections, config);
+    }
   }
 
   /**
@@ -213,121 +213,46 @@ export class InstructionAggregator extends EventEmitter {
   }
 
   /**
-   * Render a custom Handlebars template with template variables
-   * @param template Custom template string
+   * Render a Handlebars template with template variables
+   * @param template Template string (custom or default)
    * @param filteredConnections Filtered server connections
    * @param config Client configuration
    * @returns Rendered template string
    */
-  private renderCustomTemplate(
+  private renderTemplate(
     template: string,
     filteredConnections: OutboundConnections,
     config: InboundConnectionConfig,
   ): string {
-    try {
-      // Get or compile template
-      const compiledTemplate = this.getCompiledTemplate(template);
-
-      // Generate template variables
-      const variables = this.generateTemplateVariables(filteredConnections, config);
-
-      // Render template
-      const rendered = compiledTemplate(variables);
-
-      logger.debug('InstructionAggregator: Custom template rendered successfully', {
-        templateLength: template.length,
-        variableCount: Object.keys(variables).length,
-        renderedLength: rendered.length,
-      });
-
-      return rendered;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('InstructionAggregator: Failed to render custom template', {
-        error: errorMessage,
-        templateLength: template.length,
-      });
-
-      // Provide actionable guidance for template errors
-      logger.warn('InstructionAggregator: Template rendering failed, returning error instructions with guidance');
-
-      const serverCount = Array.from(filteredConnections.keys()).filter((name) =>
-        this.serverInstructions.has(name),
-      ).length;
-
-      // Generate helpful error message with troubleshooting steps
-      return `# 1MCP - Template Rendering Error
-
-⚠️  **Template rendering failed:** ${errorMessage}
-
-## Available Resources
-- **${serverCount} server(s)** are connected and have instructions
-- **Built-in template** is available as fallback
-
-## Troubleshooting Steps
-
-1. **Check Template Syntax**:
-   - Verify all Handlebars expressions use correct syntax: \`{{variable}}\`
-   - Ensure block helpers are properly closed: \`{{#if}}...{{/if}}\`
-   - Check for unmatched braces or quotes
-
-2. **Validate Template Variables**:
-   - Use only supported variables: \`serverCount\`, \`serverNames\`, \`hasServers\`, etc.
-   - Check template documentation for full variable list
-
-3. **Test Template**:
-   - Start with a simple template: \`# {{title}}\\n{{serverCount}} servers available\`
-   - Add complexity gradually
-
-4. **Get Help**:
-   - Remove custom template to use built-in version
-   - Check server logs for detailed error information
-   - Consult 1MCP documentation for template examples
-
----
-*To restore normal operation, remove or fix the custom template file*`;
-    }
-  }
-
-  /**
-   * Get or compile a Handlebars template with caching
-   * @param template Template string
-   * @returns Compiled template function
-   */
-  private getCompiledTemplate(template: string): Handlebars.TemplateDelegate {
     // Validate template size before processing
-    if (template.length > 1024 * 1024) {
-      // 1MB limit per template
+    // Priority: config > default
+    const templateSizeLimit = config.templateSizeLimit || DEFAULT_TEMPLATE_CONFIG.templateSizeLimit;
+    if (template.length > templateSizeLimit) {
       const sizeMB = (template.length / 1024 / 1024).toFixed(1);
+      const limitMB = (templateSizeLimit / 1024 / 1024).toFixed(1);
       throw new Error(
-        `Template too large: ${sizeMB}MB (max 1.0MB). ` +
+        `Template too large: ${sizeMB}MB (max ${limitMB}MB). ` +
           'Consider splitting into smaller files or removing unnecessary content. ' +
           'Large templates can cause memory issues and slow performance.',
       );
     }
 
-    // Use template string as cache key (first 500 chars + hash for uniqueness)
-    const cacheKey =
-      template.length > 500
-        ? template.substring(0, 500) + '_' + template.length + '_' + this.hashString(template)
-        : template;
+    // Compile template directly
+    const compiledTemplate = Handlebars.compile(template, { noEscape: true });
 
-    // Check cache first
-    let compiledTemplate = this.templateCache.get(cacheKey);
+    // Generate template variables
+    const variables = this.generateTemplateVariables(filteredConnections, config);
 
-    if (!compiledTemplate) {
-      // Compile and cache template
-      compiledTemplate = Handlebars.compile(template, { noEscape: true });
-      this.templateCache.set(cacheKey, compiledTemplate);
+    // Render template
+    const rendered = compiledTemplate(variables);
 
-      logger.debug('InstructionAggregator: Compiled and cached new template', {
-        templateLength: template.length,
-        cacheSize: this.templateCache.size,
-        cacheKeyLength: cacheKey.length,
-      });
-    }
+    logger.debug('InstructionAggregator: Template rendered successfully', {
+      templateLength: template.length,
+      variableCount: Object.keys(variables).length,
+      renderedLength: rendered.length,
+    });
 
-    return compiledTemplate;
+    return rendered;
   }
 
   /**
@@ -396,59 +321,7 @@ export class InstructionAggregator extends EventEmitter {
   }
 
   /**
-   * Clear template cache (useful for testing)
-   */
-  public clearTemplateCache(): void {
-    this.templateCache.clear();
-    logger.debug('InstructionAggregator: Template cache cleared');
-  }
-
-  /**
-   * Get template cache statistics for monitoring
-   */
-  public getTemplateCacheStats(): {
-    size: number;
-    maxSize: number;
-    calculatedSize: number;
-  } {
-    return {
-      size: this.templateCache.size,
-      maxSize: this.templateCache.max,
-      calculatedSize: this.templateCache.calculatedSize || 0,
-    };
-  }
-
-  /**
-   * Invalidate template cache with reason logging
-   * @param reason Reason for cache invalidation
-   */
-  private invalidateTemplateCache(reason: string): void {
-    const sizeBefore = this.templateCache.size;
-    this.templateCache.clear();
-    logger.debug(`InstructionAggregator: Template cache invalidated due to ${reason}`, {
-      clearedTemplates: sizeBefore,
-    });
-  }
-
-  /**
-   * Force template cache invalidation (for external triggers)
-   * @param reason Reason for forced invalidation
-   */
-  public forceTemplateCacheInvalidation(reason: string = 'external-trigger'): void {
-    this.invalidateTemplateCache(reason);
-  }
-
-  /**
-   * Cryptographically secure hash function for template cache keys
-   * Uses SHA-256 to prevent collision attacks
-   */
-  private hashString(str: string): string {
-    const crypto = require('crypto');
-    return crypto.createHash('sha256').update(str, 'utf8').digest('hex').substring(0, 16);
-  }
-
-  /**
-   * Cleanup method to remove all event listeners and clear caches
+   * Cleanup method to remove all event listeners
    * Should be called when the aggregator is no longer needed
    */
   public cleanup(): void {
@@ -457,15 +330,12 @@ export class InstructionAggregator extends EventEmitter {
     // Clear all event listeners
     this.removeAllListeners();
 
-    // Clear template cache
-    this.templateCache.clear();
-
     // Clear server instructions
     this.serverInstructions.clear();
 
     // Reset initialization state
     this.isInitialized = false;
 
-    logger.info('InstructionAggregator: Cleanup completed - all listeners and caches cleared');
+    logger.info('InstructionAggregator: Cleanup completed - all listeners cleared');
   }
 }

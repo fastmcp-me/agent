@@ -285,11 +285,12 @@ No matching servers found
 
       const result = instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
 
-      // Should show improved error template with troubleshooting guidance
-      expect(result).toContain('# 1MCP - Template Rendering Error');
-      expect(result).toContain('Template rendering failed');
-      expect(result).toContain('Troubleshooting Steps');
-      expect(result).toContain('Built-in template');
+      // Should fall back to default template, not show error template
+      expect(result).toContain('# 1MCP - Model Context Protocol Proxy');
+      expect(result).toContain('You are interacting with 1MCP');
+      expect(result).toContain('Currently Connected Servers');
+      expect(result).toContain('3 MCP servers are currently available');
+      expect(result).not.toContain('Template Rendering Error');
     });
 
     it('should handle template with undefined variables gracefully', () => {
@@ -324,22 +325,21 @@ No matching servers found
       expect(result1).toBe('Servers: 3');
     });
 
-    it('should clear template cache', () => {
+    it('should handle multiple template renders without caching', () => {
       const template = 'Test: {{serverCount}}';
       const config: InboundConnectionConfig = {
         tagFilterMode: 'none',
         customTemplate: template,
       };
 
-      // Render template to cache it
-      instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
+      // Multiple renders should work (no cache issues)
+      const result1 = instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
+      const result2 = instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
+      const result3 = instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
 
-      // Clear cache
-      instructionAggregator.clearTemplateCache();
-
-      // Should still work (recompile template)
-      const result = instructionAggregator.getFilteredInstructions(config, mockOutboundConnections);
-      expect(result).toBe('Test: 3');
+      expect(result1).toBe('Test: 3');
+      expect(result2).toBe('Test: 3');
+      expect(result3).toBe('Test: 3');
     });
   });
 
