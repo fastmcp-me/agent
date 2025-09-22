@@ -15,16 +15,37 @@ This page provides a complete reference for all variables available in custom in
 ### <span v-pre>`{{serverCount}}`</span>
 
 - **Type**: `number`
-- **Description**: Number of connected servers that have instructions
+- **Description**: Number of connected servers that have instructions (LEGACY - kept for backward compatibility)
+- **Example**: `3`
+- **Notes**: Only counts servers with non-empty instructions. Use `instructionalServerCount` for new templates.
+
+### <span v-pre>`{{instructionalServerCount}}`</span>
+
+- **Type**: `number`
+- **Description**: Number of connected servers that have instructions (clearer name for `serverCount`)
 - **Example**: `3`
 - **Notes**: Only counts servers with non-empty instructions
+
+### <span v-pre>`{{connectedServerCount}}`</span>
+
+- **Type**: `number`
+- **Description**: Total number of connected servers (including those without instructions)
+- **Example**: `5`
+- **Notes**: Counts all connected servers regardless of whether they have instructions
 
 ### <span v-pre>`{{hasServers}}`</span>
 
 - **Type**: `boolean`
 - **Description**: Whether any servers with instructions are connected
 - **Example**: `true`
-- **Usage**: Primary conditional for template logic
+- **Usage**: Primary conditional for template logic (same as `hasInstructionalServers`)
+
+### <span v-pre>`{{hasInstructionalServers}}`</span>
+
+- **Type**: `boolean`
+- **Description**: Whether any servers with instructions are connected
+- **Example**: `true`
+- **Usage**: Primary conditional for displaying instruction-based content
 
 ### <span v-pre>`{{serverList}}`</span>
 
@@ -73,15 +94,29 @@ This page provides a complete reference for all variables available in custom in
 ### <span v-pre>`{{pluralServers}}`</span>
 
 - **Type**: `string`
-- **Description**: Grammatically correct singular/plural form
-- **Values**: `"server"` (count = 1) or `"servers"` (count ≠ 1)
+- **Description**: Grammatically correct singular/plural form based on instructional server count
+- **Values**: `"server"` (instructionalServerCount = 1) or `"servers"` (instructionalServerCount ≠ 1)
 - **Example**: `"servers"`
 
 ### <span v-pre>`{{isAre}}`</span>
 
 - **Type**: `string`
-- **Description**: Grammatically correct verb form
-- **Values**: `"is"` (count = 1) or `"are"` (count ≠ 1)
+- **Description**: Grammatically correct verb form based on instructional server count
+- **Values**: `"is"` (instructionalServerCount = 1) or `"are"` (instructionalServerCount ≠ 1)
+- **Example**: `"are"`
+
+### <span v-pre>`{{connectedPluralServers}}`</span>
+
+- **Type**: `string`
+- **Description**: Grammatically correct singular/plural form based on total connected server count
+- **Values**: `"server"` (connectedServerCount = 1) or `"servers"` (connectedServerCount ≠ 1)
+- **Example**: `"servers"`
+
+### <span v-pre>`{{connectedIsAre}}`</span>
+
+- **Type**: `string`
+- **Description**: Grammatically correct verb form based on total connected server count
+- **Values**: `"is"` (connectedServerCount = 1) or `"are"` (connectedServerCount ≠ 1)
 - **Example**: `"are"`
 
 ## Content Variables
@@ -178,12 +213,14 @@ You can provide custom examples in configuration:
 ::: v-pre
 
 ```text
-Connected to {{serverCount}} {{pluralServers}}
+Connected to {{connectedServerCount}} {{connectedPluralServers}}
+With instructions: {{instructionalServerCount}} {{pluralServers}}
 ```
 
 :::
 
-Output: `Connected to 3 servers`
+Output: `Connected to 5 servers`
+Output: `With instructions: 3 servers`
 
 ### Conditional Content
 
@@ -191,9 +228,12 @@ Output: `Connected to 3 servers`
 
 ```text
 {{#if hasServers}}
-  {{serverCount}} {{pluralServers}} {{isAre}} ready
+  {{instructionalServerCount}} {{pluralServers}} {{isAre}} providing instructions
+  {{#if connectedServerCount}}
+    ({{connectedServerCount}} total {{connectedPluralServers}} connected)
+  {{/if}}
 {{else}}
-  No servers connected
+  No servers with instructions available
 {{/if}}
 ```
 
@@ -248,16 +288,17 @@ Available tools:
 ```text
 # {{title}}
 
-## Status: {{#if hasServers}}✅ Active{{else}}⏳ Waiting{{/if}}
+## Status: {{#if hasServers}}✅ Connected{{else}}⏳ Waiting{{/if}}
 
 {{#if hasServers}}
-**{{serverCount}} {{pluralServers}} connected**{{filterContext}}
+**{{connectedServerCount}} {{connectedPluralServers}} connected**{{filterContext}}
 
 ### Servers
 {{#each serverNames}}
 - 🔧 {{this}}
 {{/each}}
 
+{{#if hasInstructionalServers}}
 ### Instructions
 {{instructions}}
 
@@ -267,6 +308,9 @@ Available tools:
 {{/each}}
 
 *Tools use pattern: `{{toolPattern}}`*
+{{else}}
+*Servers connected but no instructions provided yet*
+{{/if}}
 {{else}}
 Waiting for server connections...
 {{/if}}
@@ -278,9 +322,10 @@ Waiting for server connections...
 
 ### Filtering Impact
 
-When filtering is active, only variables reflect the filtered subset:
+When filtering is active, variables reflect the filtered subset:
 
-- <span v-pre>`{{serverCount}}`</span> = count of filtered servers
+- <span v-pre>`{{connectedServerCount}}`</span> = count of all filtered servers
+- <span v-pre>`{{instructionalServerCount}}`</span> = count of filtered servers with instructions
 - <span v-pre>`{{serverNames}}`</span> = names of filtered servers only
 - <span v-pre>`{{instructions}}`</span> = instructions from filtered servers only
 - <span v-pre>`{{filterContext}}`</span> = description of active filter

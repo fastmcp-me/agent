@@ -9,6 +9,7 @@ import {
   DEFAULT_TEMPLATE_CONFIG,
   DEFAULT_INSTRUCTION_TEMPLATE,
 } from './templateTypes.js';
+import { registerTemplateHelpers } from './templateHelpers.js';
 
 /**
  * Events emitted by InstructionAggregator
@@ -43,6 +44,9 @@ export class InstructionAggregator extends EventEmitter {
   constructor() {
     super();
     this.setMaxListeners(50);
+
+    // Register custom Handlebars helpers for template processing
+    registerTemplateHelpers();
   }
 
   /**
@@ -272,7 +276,6 @@ export class InstructionAggregator extends EventEmitter {
     config: InboundConnectionConfig,
   ): TemplateVariables {
     // Get server data for both arrays and individual server objects
-    const availableServers: string[] = [];
     const serverInstructionSections: string[] = [];
     const servers: ServerData[] = [];
 
@@ -281,14 +284,16 @@ export class InstructionAggregator extends EventEmitter {
 
     for (const [serverName, _connection] of sortedConnections) {
       const serverInstructions = this.serverInstructions.get(serverName);
-      if (serverInstructions?.trim()) {
-        availableServers.push(serverName);
-        serverInstructionSections.push(`<${serverName}>\n${serverInstructions.trim()}\n</${serverName}>`);
+      const instructions = serverInstructions?.trim() || '';
+      if (instructions) {
+        // Wrap instructions in XML-like tags
+        const wrappedInstructions = `<${serverName}>\n${instructions}\n</${serverName}>`;
+        serverInstructionSections.push(wrappedInstructions);
 
         // Add individual server data for iteration
         servers.push({
           name: serverName,
-          instructions: serverInstructions.trim(),
+          instructions: instructions,
           hasInstructions: true,
         });
       } else {
@@ -300,8 +305,14 @@ export class InstructionAggregator extends EventEmitter {
       }
     }
 
-    const serverCount = availableServers.length;
-    const hasServers = serverCount > 0;
+    const connectedServerCount = filteredConnections.size;
+    const hasInstructionalServers = serverInstructionSections.length > 0;
+    const serverCount = serverInstructionSections.length;
+    const hasServers = serverInstructionSections.length > 0;
+
+    // Generate server lists (only servers with instructions)
+    const serverNames = servers.filter((server) => server.hasInstructions).map((server) => server.name);
+    const serverList = serverNames.join('\n');
 
     // Merge configuration with defaults
     const templateConfig = {
@@ -313,13 +324,20 @@ export class InstructionAggregator extends EventEmitter {
 
     return {
       // Server state
+      connectedServerCount,
+      hasInstructionalServers,
       serverCount,
+      instructionalServerCount: serverCount, // Alias for clarity
       hasServers,
-      serverList: availableServers.join('\n'),
-      serverNames: availableServers,
+      serverList,
+      serverNames,
       servers,
       pluralServers: serverCount === 1 ? 'server' : 'servers',
       isAre: serverCount === 1 ? 'is' : 'are',
+
+      // Grammar helpers for connected servers
+      connectedPluralServers: connectedServerCount === 1 ? 'server' : 'servers',
+      connectedIsAre: connectedServerCount === 1 ? 'is' : 'are',
 
       // Content
       instructions: serverInstructionSections.join('\n\n'),

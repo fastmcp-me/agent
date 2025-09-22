@@ -15,16 +15,37 @@
 ### <span v-pre>`{{serverCount}}`</span>
 
 - **类型**: `number`
-- **描述**: 连接且有指令的服务器数量
+- **描述**: 连接且有指令的服务器数量（旧版 - 保留用于向后兼容）
+- **示例**: `3`
+- **注意**: 仅计算具有非空指令的服务器。新模板请使用 `instructionalServerCount`。
+
+### <span v-pre>`{{instructionalServerCount}}`</span>
+
+- **类型**: `number`
+- **描述**: 连接且有指令的服务器数量（`serverCount` 的更清晰名称）
 - **示例**: `3`
 - **注意**: 仅计算具有非空指令的服务器
+
+### <span v-pre>`{{connectedServerCount}}`</span>
+
+- **类型**: `number`
+- **描述**: 连接的服务器总数（包括没有指令的服务器）
+- **示例**: `5`
+- **注意**: 计算所有连接的服务器，无论是否有指令
 
 ### <span v-pre>`{{hasServers}}`</span>
 
 - **类型**: `boolean`
 - **描述**: 是否有任何有指令的服务器连接
 - **示例**: `true`
-- **用法**: 模板逻辑的主要条件
+- **用法**: 模板逻辑的主要条件（与 `hasInstructionalServers` 相同）
+
+### <span v-pre>`{{hasInstructionalServers}}`</span>
+
+- **类型**: `boolean`
+- **描述**: 是否有任何有指令的服务器连接
+- **示例**: `true`
+- **用法**: 显示基于指令内容的主要条件
 
 ### <span v-pre>`{{serverList}}`</span>
 
@@ -73,15 +94,29 @@
 ### <span v-pre>`{{pluralServers}}`</span>
 
 - **类型**: `string`
-- **描述**: 语法正确的单数/复数形式
-- **值**: `"server"`（数量 = 1）或 `"servers"`（数量 ≠ 1）
+- **描述**: 基于有指令服务器数量的语法正确的单数/复数形式
+- **值**: `"server"`（instructionalServerCount = 1）或 `"servers"`（instructionalServerCount ≠ 1）
 - **示例**: `"servers"`
 
 ### <span v-pre>`{{isAre}}`</span>
 
 - **类型**: `string`
-- **描述**: 语法正确的动词形式
-- **值**: `"is"`（数量 = 1）或 `"are"`（数量 ≠ 1）
+- **描述**: 基于有指令服务器数量的语法正确的动词形式
+- **值**: `"is"`（instructionalServerCount = 1）或 `"are"`（instructionalServerCount ≠ 1）
+- **示例**: `"are"`
+
+### <span v-pre>`{{connectedPluralServers}}`</span>
+
+- **类型**: `string`
+- **描述**: 基于连接服务器总数的语法正确的单数/复数形式
+- **值**: `"server"`（connectedServerCount = 1）或 `"servers"`（connectedServerCount ≠ 1）
+- **示例**: `"servers"`
+
+### <span v-pre>`{{connectedIsAre}}`</span>
+
+- **类型**: `string`
+- **描述**: 基于连接服务器总数的语法正确的动词形式
+- **值**: `"is"`（connectedServerCount = 1）或 `"are"`（connectedServerCount ≠ 1）
 - **示例**: `"are"`
 
 ## 内容变量
@@ -178,12 +213,14 @@
 ::: v-pre
 
 ```text
-连接到 {{serverCount}} 个 {{pluralServers}}
+连接到 {{connectedServerCount}} 个 {{connectedPluralServers}}
+有指令的: {{instructionalServerCount}} 个 {{pluralServers}}
 ```
 
 :::
 
-输出: `连接到 3 个服务器`
+输出: `连接到 5 个服务器`
+输出: `有指令的: 3 个服务器`
 
 ### 条件内容
 
@@ -191,7 +228,12 @@
 
 ```text
 {{#if hasServers}}
-  {{serverCount}} 个 {{pluralServers}} {{isAre}} 就绪
+  {{connectedServerCount}} 个 {{connectedPluralServers}} 已连接
+  {{#if hasInstructionalServers}}
+    {{instructionalServerCount}} 个 {{pluralServers}} 正在提供指令
+  {{else}}
+    暂无服务器提供指令
+  {{/if}}
 {{else}}
   没有连接服务器
 {{/if}}
@@ -248,16 +290,17 @@
 ```text
 # {{title}}
 
-## 状态: {{#if hasServers}}✅ 活跃{{else}}⏳ 等待中{{/if}}
+## 状态: {{#if hasServers}}✅ 已连接{{else}}⏳ 等待中{{/if}}
 
 {{#if hasServers}}
-**{{serverCount}} 个 {{pluralServers}} 已连接**{{filterContext}}
+**{{connectedServerCount}} 个 {{connectedPluralServers}} 已连接**{{filterContext}}
 
 ### 服务器
 {{#each serverNames}}
 - 🔧 {{this}}
 {{/each}}
 
+{{#if hasInstructionalServers}}
 ### 指令
 {{instructions}}
 
@@ -267,6 +310,9 @@
 {{/each}}
 
 *工具使用模式: `{{toolPattern}}`*
+{{else}}
+*服务器已连接但尚未提供指令*
+{{/if}}
 {{else}}
 等待服务器连接...
 {{/if}}
@@ -278,9 +324,10 @@
 
 ### 过滤影响
 
-当过滤激活时，只有变量反映过滤的子集：
+当过滤激活时，变量反映过滤的子集：
 
-- <span v-pre>`{{serverCount}}`</span> = 过滤后的服务器数量
+- <span v-pre>`{{connectedServerCount}}`</span> = 所有过滤后的服务器数量
+- <span v-pre>`{{instructionalServerCount}}`</span> = 有指令的过滤后服务器数量
 - <span v-pre>`{{serverNames}}`</span> = 仅过滤后的服务器名称
 - <span v-pre>`{{instructions}}`</span> = 仅来自过滤后服务器的指令
 - <span v-pre>`{{filterContext}}`</span> = 活动过滤器的描述

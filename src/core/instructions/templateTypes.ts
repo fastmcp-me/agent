@@ -18,11 +18,20 @@ export interface ServerData {
  */
 export interface TemplateVariables {
   // Basic server state
-  /** Number of connected servers (e.g., 3) */
+  /** Number of connected servers with instructions (e.g., 3) - LEGACY: kept for backward compatibility */
   serverCount: number;
 
-  /** Boolean indicating if any servers are connected */
+  /** Number of connected servers with instructions (same as serverCount, clearer name) */
+  instructionalServerCount: number;
+
+  /** Total number of connected servers (including those without instructions) */
+  connectedServerCount: number;
+
+  /** Boolean indicating if any servers with instructions are connected */
   hasServers: boolean;
+
+  /** Boolean indicating if any servers with instructions are connected */
+  hasInstructionalServers: boolean;
 
   /** Newline-separated list of server names */
   serverList: string;
@@ -36,8 +45,14 @@ export interface TemplateVariables {
   /** "server" or "servers" based on count */
   pluralServers: string;
 
-  /** "is" or "are" based on count */
+  /** "is" or "are" based on instructional server count */
   isAre: string;
+
+  /** "server" or "servers" based on connected server count */
+  connectedPluralServers: string;
+
+  /** "is" or "are" based on connected server count */
+  connectedIsAre: string;
 
   // Content
   /** All server instructions wrapped in XML-like tags */
@@ -138,6 +153,7 @@ You are interacting with 1MCP, a proxy server that aggregates capabilities from 
 
 {{serverList}}
 
+{{#if hasInstructionalServers}}
 ## Available Capabilities
 
 All tools from connected servers are accessible using the format: \`{{toolPattern}}\`
@@ -164,6 +180,11 @@ The following sections contain instructions from each connected MCP server. Each
 
 - Tools are namespaced by server to avoid conflicts
 
+{{else}}
+## Status
+
+Connected servers are available but have not provided instructions yet. Tools and capabilities will become available once servers provide their instructions.
+{{/if}}
 {{else}}
 You are interacting with 1MCP, a proxy server that aggregates capabilities from multiple MCP (Model Context Protocol) servers.
 
