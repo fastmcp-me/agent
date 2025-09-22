@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.23.2] - 2025-09-22
+
+### 🚀 Features
+- Enhance instruction template variables and grammar helpers by @xizhibei
+- Enhance instruction template system with empty server handling and documentation by @xizhibei in [#134](https://github.com/1mcp-app/agent/pull/134)
+
+### 🚜 Refactor
+- Improve logging infrastructure and fix test reliability by @xizhibei in [#133](https://github.com/1mcp-app/agent/pull/133)
+
+
 ## [0.23.1] - 2025-09-21
 
 ### 🐛 Bug Fixes
@@ -703,6 +713,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @xizhibei made their first contribution in [#1](https://github.com/1mcp-app/agent/pull/1)
 * @dependabot[bot] made their first contribution
 
+[0.23.2]: https://github.com/1mcp-app/agent/compare/v0.23.1..v0.23.2
 [0.23.1]: https://github.com/1mcp-app/agent/compare/v0.23.0..v0.23.1
 [0.23.0]: https://github.com/1mcp-app/agent/compare/v0.22.3..v0.23.0
 [0.22.3]: https://github.com/1mcp-app/agent/compare/v0.22.2..v0.22.3
