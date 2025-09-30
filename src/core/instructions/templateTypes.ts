@@ -149,9 +149,11 @@ You are interacting with 1MCP, a proxy server that aggregates capabilities from 
 
 ## Currently Connected Servers
 
-{{serverCount}} MCP {{pluralServers}} {{isAre}} currently available{{filterContext}}:
+{{connectedServerCount}} MCP {{connectedPluralServers}} {{connectedIsAre}} currently available{{filterContext}}:
 
-{{serverList}}
+{{#each servers}}
+{{name}}
+{{/each}}
 
 {{#if hasInstructionalServers}}
 ## Available Capabilities
