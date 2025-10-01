@@ -9,6 +9,8 @@ on:
       - 'docs/**'
       - '.github/workflows/deploy-docs.yml'
       - 'package.json'
+    tags:
+      - 'v*'
 
   # Allow manual triggering
   workflow_dispatch:
